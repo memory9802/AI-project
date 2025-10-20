@@ -1,1 +1,1 @@
-print('Hello, World!FK off. '*3)
+print('Hello, World!Have a Good day. '*3)
