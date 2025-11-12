@@ -1,0 +1,93 @@
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    height: 100vh;
+    background: #f5f5f5;
+  }
+
+  /* 固定在右下角的按鈕和對話框容器 */
+  .dialog-container {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column-reverse; /* 按鈕在下方，對話框在上方 */
+    align-items: flex-end;
+  }
+
+  /* 按鈕樣式 */
+  #toggleBtn {
+    padding: 10px 15px;
+    font-size: 14px;
+    background: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    z-index: 2;
+  }
+
+  #toggleBtn:hover {
+    background: #0056b3;
+  }
+
+  /* 對話框樣式 */
+  #dialog {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    width: 300px;
+    padding: 20px;
+    margin-bottom: 10px; /* 與按鈕距離 */
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+    transform-origin: bottom right;
+    transition: all 0.4s ease;
+    pointer-events: none; /* 關閉時不會遮擋按鈕 */
+  }
+
+  /* 彈出對話框 */
+  #dialog.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  #hero-1946 .cs-item {
+    text-align: center;
+    list-style: none;
+    width: 20%;
+    margin: 0;
+    box-sizing: border-box;
+    /* 24px - 32px */
+    padding: clamp(1.5rem, 3vw, 2rem);
+    background-color: #F7F7F7;
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    grid-column: span 12;
+    position: relative;
+    z-index: 1;
+    transition: border-color 0.3s;
+  }
+  #hero-1946 .cs-item:hover {
+    border-color: var(--primary);
+  }
+  #hero-1946 .cs-item:hover .cs-h3 {
+    color: var(--primary);
+  }
+  #hero-1946 .cs-item:hover .cs-icon {
+    transform: rotateY(360deg);
+  }
+  #hero-1946 .cs-icon-picture {
+    margin-bottom: 1.25rem;
+    perspective: 700px;
+    transform-style: preserve-3d;
+  }
+  #hero-1946 .cs-icon {
+    width: 2.5rem;
+    height: auto;
+    display: block;
+    transition: transform 0.5s;
+  }
