@@ -1,1 +1,0 @@
-print('Hello, World!Have a Good day. '*3)
