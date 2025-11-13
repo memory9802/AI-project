@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Outfit AI 聊天助手 👗</title>
+  <style>
+    body {
+      font-family: "Segoe UI", "Noto Sans TC", sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+    header {
+      background-color: #4285f4;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    #chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background-color: #fafafa;
+    }
+    .message {
+      max-width: 75%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      word-wrap: break-word;
+      line-height: 1.6;
+      font-size: 16px;
+      animation: fadeIn 0.3s ease-in;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+    .user {
+      align-self: flex-end;
+      background-color: #4285f4;
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+    .ai {
+      align-self: flex-start;
+      background-color: #e9ecef;
+      color: #333;
+      border-bottom-left-radius: 2px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #input-area {
+      display: flex;
+      padding: 20px;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+      gap: 10px;
+      align-items: center;
+    }
+    #user-input {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    #user-input:focus {
+      border-color: #4285f4;
+    }
+    #send-btn {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 14px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background-color 0.3s, transform 0.1s;
+    }
+    #send-btn:hover {
+      background-color: #3367d6;
+      transform: translateY(-1px);
+    }
+    #send-btn:active {
+      transform: translateY(0);
+    }
+    #model-select {
+      padding: 14px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      background-color: white;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.3s;
+      min-width: 130px;
+    }
+    #model-select:focus {
+      border-color: #4285f4;
+    }
+  </style>
+</head>
+<body>
+  <header>👗 Outfit AI 聊天助手</header>
+
+  <div id="chat-container">
+    <div class="ai message">
+      哈囉，我是你的穿搭助理！請告訴我今天的場合，例如：「今天要去約會」、「今天下雨要穿什麼」。
+    </div>
+  </div>
+
+  <div id="input-area">
+    <input id="user-input" type="text" placeholder="輸入你的問題..." />
+    <select id="model-select">
+      <option value="auto">自動切換</option>
+      <option value="gemini">Gemini</option>
+      <option value="groq">Groq</option>
+      <option value="deepseek">DeepSeek</option>
+    </select>
+    <button id="send-btn">發送</button>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById("chat-container");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const modelSelect = document.getElementById("model-select");
+
+    // 生成或讀取 session ID（維持對話記憶）
+    let sessionId = localStorage.getItem("outfit_ai_session");
+    if (!sessionId) {
+      sessionId = "user-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem("outfit_ai_session", sessionId);
+    }
+
+    // 新增聊天氣泡
+    function appendMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      
+      // 使用 innerHTML 以支援換行和格式，並將 Markdown 格式轉換為 HTML
+      const formattedText = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // **粗體**
+        .replace(/\n/g, '<br>');  // 換行
+      
+      msg.innerHTML = formattedText;
+      chatContainer.appendChild(msg);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // 發送訊息
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      const selectedModel = modelSelect.value;
+      if (!text) return;
+
+      appendMessage("user", text);
+      userInput.value = "";
+
+      appendMessage("ai", "正在思考中...");
+
+      try {
+        const res = await fetch("/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            session_id: sessionId,
+            model: selectedModel
+          })
+        });
+        const data = await res.json();
+
+        // 清除「正在思考中...」
+        chatContainer.lastChild.remove();
+
+        if (data.response) {
+          appendMessage("ai", data.response);
+        } else if (data.error) {
+          appendMessage("ai", "⚠️ 錯誤：" + data.error);
+        } else {
+          appendMessage("ai", "（未收到 AI 回覆，請稍後再試）");
+        }
+      } catch (err) {
+        chatContainer.lastChild.remove();
+        appendMessage("ai", "🚨 錯誤：" + err.message);
+      }
+    }
+
+    // 清除對話記憶（可選功能）
+    async function clearMemory() {
+      try {
+        await fetch("/clear_session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        appendMessage("ai", "✅ 對話記憶已清除");
+      } catch (err) {
+        appendMessage("ai", "❌ 清除失敗：" + err.message);
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
