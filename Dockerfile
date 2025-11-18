@@ -7,9 +7,8 @@ ENV LANG=C.UTF-8 \
 
 WORKDIR /app
 
-COPY app.py /app/
-COPY langchain_agent.py /app/
-COPY templates /app/templates
+
+COPY . /app
 
 RUN pip install --no-cache-dir flask pymysql requests langchain langchain-google-genai langchain-core langchain-community langchain-groq langchain-openai
 

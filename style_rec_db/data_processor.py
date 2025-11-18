@@ -80,11 +80,55 @@ def get_clothing_summary_for_llm(user_id, current_occasion="", current_temp_rang
     
     return llm_prompt_summary, clothing_list_json
 
-# 保持 __main__ 區塊不變，用於獨立測試
+
+def fetch_images_by_ids(item_ids):
+    """
+    根據 LLM 推薦的 item_id 清單，從 Item 表格中獲取圖片路徑及必要細節。
+    """
+    if not item_ids:
+        return []
+
+    conn = get_db_connection()
+    if conn is None:
+        return []
+
+    try:
+        # 使用 IN 語句一次查詢所有推薦的 ID
+        # 將 item_ids 列表轉換為 SQL 語句可用的逗號分隔字串
+        ids_str = ','.join(map(str, item_ids)) 
+        
+        query = f"""
+            SELECT item_id, name, category, color, image_path, is_user_owned, price
+            FROM Item
+            WHERE item_id IN ({ids_str});
+        """
+        
+        # 課綱：Pandas 介紹 / 載入資料 [cite: 7]
+        df = pd.read_sql(query, conn)
+        
+        # 將 DataFrame 轉換為 Python 列表，方便 Flask 回傳 JSON
+        # 課綱：資料清洗與轉換 [cite: 7]
+        result_list = df.to_dict(orient='records')
+        
+        return result_list
+        
+    except Exception as e:
+        print(f"Error fetching images by IDs: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+# --- 測試區塊 (可選，但建議執行) ---
 if __name__ == '__main__':
-    llm_prompt, json_data = get_clothing_summary_for_llm(TEST_USER_ID, "正式", "15度")
-    if "沒有任何衣物數據" not in llm_prompt:
-        print("\n--- 成功從資料庫抓取數據並轉換為 LLM Prompt ---")
-        print(llm_prompt)
+    # 測試 LLM 推薦的正式穿搭 ID: 2002, 2008, 2010
+    test_ids = [2002, 2008, 2010] 
+    
+    outfit_details = fetch_images_by_ids(test_ids)
+    
+    print("\n--- 根據 ID 查詢到的穿搭細節 ---")
+    if outfit_details:
+        for item in outfit_details:
+            print(f"ID: {item['item_id']}, 名稱: {item['name']}, 圖片路徑: {item['image_path']}")
     else:
-        print("\n--- 資料抓取失敗，請檢查資料庫連線 ---")
+        print("查詢失敗或未找到資料。")
