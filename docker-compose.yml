@@ -1,20 +1,46 @@
 version: '3.8'
 
 services:
+  # 1. MySQL 資料庫服務
   mysql:
     image: mysql:8.0
     container_name: outfit-mysql
     restart: always
     environment:
+      # 這是 root 帳號的密碼，Flask 會用這個連線
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: outfit_db
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      # 確保您的專案根目錄有 init 資料夾，裡面放著 init.sql
       - ./init:/docker-entrypoint-initdb.d
+    # 確保使用相容的認證外掛
     command: --default-authentication-plugin=mysql_native_password
 
+  # 2. Flask 應用程式服務 (機器人 / 後端)
+  flask:
+    build: .
+    container_name: outfit-flask
+    restart: always
+    # 設定連線資訊，直接使用 root 帳號
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root          # ⬅️ 確定使用 root
+      DB_PASS: rootpassword  # ⬅️ 確定使用 rootpassword
+      DB_NAME: outfit_db
+      # 其他 API Key 相關環境變數...
+      LLM_API_KEY: ${LLM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+    ports:
+      - "5001:5000" # 外部訪問用 5001，映射到容器內部的 5000
+    depends_on:
+      - mysql
+
+  # 3. phpMyAdmin 服務 (可選，但方便您檢查資料)
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: outfit-phpmyadmin
@@ -23,34 +49,10 @@ services:
       PMA_HOST: mysql
       PMA_USER: root
       PMA_PASSWORD: rootpassword
-      UPLOAD_LIMIT: 100M
     ports:
       - "8080:80"
     depends_on:
       - mysql
 
-  flask:
-    build: .
-    container_name: outfit-flask
-    restart: always
-    volumes: # 確保程式碼能同步到容器內
-      - .:/app
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASS: rootpassword
-      DB_NAME: outfit_db
-      LLM_API_KEY: ${LLM_API_KEY}  # Gemini API Key
-      GROQ_API_KEY: ${GROQ_API_KEY}  # Groq API Key
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}  # DeepSeek API Key
-    ports:
-      - "5001:5000"
-    depends_on:
-      - mysql
-    command: bash -c "sleep 10 && python app.py"
-
 volumes:
   mysql_data:
-
-

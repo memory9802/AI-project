@@ -22,7 +22,7 @@ def json_serial(obj):
     raise TypeError(f"Type {type(obj)} not serializable")
 
 # =======================
-# ⚙️ 環境設定
+# 環境設定
 # =======================
 DB_HOST = os.getenv('DB_HOST', 'mysql')
 DB_PORT = int(os.getenv('DB_PORT', '3306'))
@@ -30,29 +30,30 @@ DB_USER = os.getenv('DB_USER', 'root')
 DB_PASS = os.getenv('DB_PASS', 'rootpassword')
 DB_NAME = os.getenv('DB_NAME', 'outfit_db')
 
+# 只用 Gemini
 LLM_API_KEY = os.getenv('LLM_API_KEY')
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 
-USE_GEMINI = bool(LLM_API_KEY or GROQ_API_KEY or DEEPSEEK_API_KEY)
+# 只要有 Gemini key 就啟用 AI
+USE_GEMINI = bool(LLM_API_KEY)
 
-# 初始化 LangChain Agent（支援多 AI 備援）
+# 初始化 LangChain Agent（只給 Gemini）
 agent = None
 if USE_GEMINI:
     agent = OutfitAIAgent(
         gemini_key=LLM_API_KEY,
-        groq_key=GROQ_API_KEY,
-        deepseek_key=DEEPSEEK_API_KEY
+        groq_key=None,
+        deepseek_key=None
     )
 
-# 使用最新、可用的模型（你查到的）
+# 使用最新、可用的模型
 GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={LLM_API_KEY}"
 
 # =======================
-# 🗃️ 資料庫連線
+# 資料庫連線
 # =======================
 def get_db_conn():
+    print("DB 連線資訊：", DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME, flush=True)
     return pymysql.connect(
         host=DB_HOST,
         port=DB_PORT,
@@ -324,5 +325,5 @@ def ping():
 # 🏁 主程式
 # =======================
 if __name__ == '__main__':
-    # host='0.0.0.0' 是 Docker 容器內必須設定的，確保外部可以透過 5001 埠號連入
+    # 修正：在 Docker 環境中必須監聽 0.0.0.0，埠號使用容器內部埠號 5000
     app.run(debug=True, host='0.0.0.0', port=5000)

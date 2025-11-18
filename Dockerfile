@@ -10,8 +10,11 @@ WORKDIR /app
 
 COPY . /app
 
-RUN pip install --no-cache-dir flask pymysql requests langchain langchain-google-genai langchain-core langchain-community langchain-groq langchain-openai
-
+RUN pip install --no-cache-dir \
+    flask pymysql requests \
+    langchain langchain-google-genai langchain-core langchain-community langchain-groq langchain-openai \
+    cryptography
+    
 EXPOSE 5000
 
 CMD ["python", "app.py"]
