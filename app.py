@@ -172,28 +172,29 @@ def generate_recommendation(user_input: str,
         
         return ai_response, outfits, keywords
 
-    # 🆕 優化：詳細的錯誤分類處理
+    # 🆕 本檔案新增：詳細的錯誤分類處理
+    # 將 AI 錯誤分為 5 種類型，提供具體解決方案
     except ConnectionError as e:
-        # 網路連線錯誤 - 無法連接到 AI 服務
+        # 類型1: 網路連線錯誤
         error_msg = f"❌ 網路連線問題\n\n無法連接到 AI 服務，請檢查網路連線或稍後再試。\n\n技術細節：{str(e)}"
         return error_msg, outfits, keywords
     
     except TimeoutError as e:
-        # 請求逾時 - AI 回應時間過長
+        # 類型2: 請求逾時錯誤
         error_msg = f"❌ 請求逾時\n\nAI 服務回應時間過長，請稍後再試。建議切換到「自動選擇」模式。\n\n技術細節：{str(e)}"
         return error_msg, outfits, keywords
     
     except Exception as e:
-        # 🆕 優化：根據錯誤類型提供不同的解決建議
+        # 類型3-5: 根據錯誤訊息內容分類
         error_msg = str(e)
         
-        # API 相關錯誤
+        # 類型3: API 相關錯誤（API Key、權限等）
         if 'API' in error_msg or 'api' in error_msg:
             fallback = f"❌ AI API 錯誤\n\nAI 服務暫時無法使用，請稍後再試或切換模型。\n\n錯誤詳情：{error_msg}\n\n💡 建議：\n1. 切換到「自動選擇」模式\n2. 檢查 API Key 是否有效\n3. 稍後再試"
-        # 配額用完錯誤
+        # 類型4: 配額用完錯誤（429 或 quota 關鍵字）
         elif 'quota' in error_msg.lower() or '429' in error_msg:
             fallback = f"❌ API 配額已用完\n\n目前選擇的 AI 模型配額已達上限。\n\n💡 解決方法：\n1. 切換到「自動選擇」模式（系統會自動使用其他可用模型）\n2. 或手動選擇其他模型（Gemini/Groq/DeepSeek）"
-        # 其他未知錯誤
+        # 類型5: 其他未知錯誤（提供資料庫備援）
         else:
             fallback = f"❌ 系統錯誤\n\n處理請求時發生問題。\n\n錯誤資訊：{error_msg}\n\n💡 以下是資料庫推薦的穿搭：\n"
             for idx, outfit in enumerate(outfits[:3], 1):

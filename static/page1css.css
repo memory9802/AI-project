@@ -43,15 +43,16 @@
     font-size: 28px;
   }
 
-  /* 🆕 優化：調整對話框高度，避免太靠上 */
-  /* 從 700px 改為 580px，並增加 max-height 限制 */
+  /* 🆕 本檔案修改：對話框高度調整 */
+  /* 問題：原本 700px 導致對話框太高，位置太靠上 */
+  /* 解決：改為 580px，並新增 max-height 限制 */
   #dialog {
     background: white;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     width: 500px;
-    height: 580px;  /* 🆕 從 700px 改為 580px */
-    max-height: calc(100vh - 140px);  /* 🆕 新增：確保小螢幕也不會太高 */
+    height: 580px;  /* 修改前：700px → 修改後：580px */
+    max-height: calc(100vh - 140px);  /* 新增：小螢幕自動調整高度 */
     margin-bottom: 16px;
     opacity: 0;
     transform: translateY(20px) scale(0.95);

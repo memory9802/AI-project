@@ -1,12 +1,18 @@
 version: '3.8'
 
 # ==========================================
-# 🆕 Jinja Test 分支優化版本
+# 🆕 本檔案修改內容 (docker-compose.yml)
 # 
-# 主要改進：
-# 1. Port 環境變數化 - 避免多設備衝突
-# 2. 容器名稱前綴化 - 支援多實例運行
-# 3. 獨立 volumes - 資料隔離
+# 1. Port 環境變數化：
+#    - ${FLASK_PORT:-5001} 可在 .env 自訂
+#    - ${MYSQL_PORT:-3306} 可在 .env 自訂
+#    - ${PHPMYADMIN_PORT:-8080} 可在 .env 自訂
+# 
+# 2. 容器名稱前綴化：
+#    - ${CONTAINER_PREFIX:-outfit} 支援多開發者同時運行
+# 
+# 3. 新增獨立 volume：
+#    - conversations_data 存放 AI 對話記錄
 # ==========================================
 
 services:

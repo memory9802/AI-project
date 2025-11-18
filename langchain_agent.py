@@ -235,15 +235,15 @@ class OutfitAIAgent:
                 error_msg = str(e)
                 print(f"❌ {model_name} 失敗: {error_msg}", flush=True, file=sys.stderr)
                 
-                # 🆕 優化：手動模式錯誤處理改善
+                # 🆕 本檔案改善：手動模式錯誤處理邏輯
                 if preferred_model != "auto":
                     # 手動模式失敗時返回友善的錯誤訊息
-                    # 🆕 優化：增加 429 和 quota 錯誤檢測
+                    # 🆕 改善重點：增加 429 和 quota 關鍵字檢測（解決 Gemini 配額問題）
                     if "Insufficient Balance" in error_msg or "402" in error_msg or "429" in error_msg or "quota" in error_msg.lower():
                         return f"❌ {model_name} 配額不足或已超過限制，請切換到「自動切換」模式或選擇其他模型"
                     else:
                         return f"❌ {model_name} 回應失敗: {error_msg}\n\n💡 建議切換到「自動切換」模式或選擇其他模型"
-                # 🆕 優化：自動模式下繼續嘗試下一個模型
+                # 🆕 改善重點：自動模式下繼續嘗試下一個模型（Gemini → Groq → DeepSeek）
                 print(f"🔄 切換到下一個模型...", flush=True, file=sys.stderr)
                 continue
         
