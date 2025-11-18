@@ -43,13 +43,15 @@
     font-size: 28px;
   }
 
-  /* 對話框樣式 */
+  /* 🆕 優化：調整對話框高度，避免太靠上 */
+  /* 從 700px 改為 580px，並增加 max-height 限制 */
   #dialog {
     background: white;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     width: 500px;
-    height: 700px;
+    height: 580px;  /* 🆕 從 700px 改為 580px */
+    max-height: calc(100vh - 140px);  /* 🆕 新增：確保小螢幕也不會太高 */
     margin-bottom: 16px;
     opacity: 0;
     transform: translateY(20px) scale(0.95);

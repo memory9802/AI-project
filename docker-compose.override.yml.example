@@ -1,0 +1,26 @@
+version: '3.8'
+
+# 這是個人化設定檔案，覆蓋 docker-compose.yml 的設定
+# 此檔案不會被 git 追蹤（已加入 .gitignore）
+# 每個開發者可以有自己的 override 檔案
+
+services:
+  flask:
+    ports:
+      - "5002:5000"  # 修改為你要的 port
+    container_name: my-custom-flask  # 自訂容器名稱
+
+  mysql:
+    ports:
+      - "3307:3306"  # 修改為你要的 port
+    container_name: my-custom-mysql
+
+  phpmyadmin:
+    ports:
+      - "8081:80"  # 修改為你要的 port
+    container_name: my-custom-phpmyadmin
+
+# 使用方式：
+# 1. 複製此檔案為 docker-compose.override.yml
+# 2. 修改為你要的 port
+# 3. 執行 docker-compose up -d (會自動合併 docker-compose.yml 和 override)

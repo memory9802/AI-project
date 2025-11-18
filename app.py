@@ -164,15 +164,42 @@ def generate_recommendation(user_input: str,
             db_outfits=outfits,
             preferred_model=preferred_model
         )
+        
+        # 🆕 優化：檢查回應是否為錯誤訊息
+        # 前端會根據內容判斷是否顯示為錯誤框
+        if ai_response and (ai_response.startswith('❌') or '抱歉' in ai_response):
+            return ai_response, outfits, keywords
+        
         return ai_response, outfits, keywords
 
+    # 🆕 優化：詳細的錯誤分類處理
+    except ConnectionError as e:
+        # 網路連線錯誤 - 無法連接到 AI 服務
+        error_msg = f"❌ 網路連線問題\n\n無法連接到 AI 服務，請檢查網路連線或稍後再試。\n\n技術細節：{str(e)}"
+        return error_msg, outfits, keywords
+    
+    except TimeoutError as e:
+        # 請求逾時 - AI 回應時間過長
+        error_msg = f"❌ 請求逾時\n\nAI 服務回應時間過長，請稍後再試。建議切換到「自動選擇」模式。\n\n技術細節：{str(e)}"
+        return error_msg, outfits, keywords
+    
     except Exception as e:
-        # 簡化版錯誤處理：回傳資料庫推薦 + 錯誤資訊
+        # 🆕 優化：根據錯誤類型提供不同的解決建議
         error_msg = str(e)
-        fallback = f"系統遇到一些問題，但仍為你提供資料庫推薦。\n\n錯誤資訊：{error_msg}\n"
-        for idx, outfit in enumerate(outfits[:3], 1):
-            fallback += f"\n推薦 {idx}：{outfit.get('name', '')}（場合：{outfit.get('occasion', '')}）\n"
-            fallback += f"說明：{outfit.get('description', '')}\n"
+        
+        # API 相關錯誤
+        if 'API' in error_msg or 'api' in error_msg:
+            fallback = f"❌ AI API 錯誤\n\nAI 服務暫時無法使用，請稍後再試或切換模型。\n\n錯誤詳情：{error_msg}\n\n💡 建議：\n1. 切換到「自動選擇」模式\n2. 檢查 API Key 是否有效\n3. 稍後再試"
+        # 配額用完錯誤
+        elif 'quota' in error_msg.lower() or '429' in error_msg:
+            fallback = f"❌ API 配額已用完\n\n目前選擇的 AI 模型配額已達上限。\n\n💡 解決方法：\n1. 切換到「自動選擇」模式（系統會自動使用其他可用模型）\n2. 或手動選擇其他模型（Gemini/Groq/DeepSeek）"
+        # 其他未知錯誤
+        else:
+            fallback = f"❌ 系統錯誤\n\n處理請求時發生問題。\n\n錯誤資訊：{error_msg}\n\n💡 以下是資料庫推薦的穿搭：\n"
+            for idx, outfit in enumerate(outfits[:3], 1):
+                fallback += f"\n推薦 {idx}：{outfit.get('name', '')}（場合：{outfit.get('occasion', '')}）\n"
+                fallback += f"說明：{outfit.get('description', '')}\n"
+        
         return fallback, outfits, keywords
 
 # =======================

@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Outfit AI 穿搭推薦</title>
   <style>
+    /* ==========================================
+       🎨 Jinja Test 分支優化版本
+       
+       主要改進：
+       1. 新增載入動畫 (Loading Spinner)
+       2. 新增錯誤提示樣式 (Error Messages)
+       3. 優化按鈕狀態 (Button States)
+       4. 改善使用者體驗 (UX Improvements)
+       ========================================== */
     body {
       font-family: "Segoe UI", "Noto Sans TC", sans-serif;
       background-color: #f4f4f9;
@@ -62,9 +71,65 @@
       border: none;
       cursor: pointer;
       font-weight: 600;
+      position: relative;
     }
     button:hover {
       background-color: #3367d6;
+    }
+    /* 🆕 優化：新增按鈕禁用狀態，防止重複提交 */
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    /* 🆕 優化：載入動畫樣式 - 提升使用者體驗 */
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #4285f4;
+    }
+    .loading-spinner.active {
+      display: block;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4285f4;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* 錯誤提示 */
+    .error-message {
+      background-color: #fee;
+      border: 1px solid #fcc;
+      color: #c33;  /* 深紅色文字 */
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .error-message strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    /* 🆕 優化：成功提示樣式 - 視覺化回饋 */
+    .success-message {
+      background-color: #efe;  /* 淡綠色背景 */
+      border: 1px solid #cfc;
+      color: #363;  /* 深綠色文字 */
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
     }
     .section {
       margin-bottom: 24px;
@@ -178,15 +243,24 @@
       請描述你的穿搭需求，例如：「今天要去約會，但有點冷」，或「明天要去上班簡報」。
     </p>
 
+    <!-- 🆕 優化：載入提示區塊 - 提交表單時顯示 -->
+    <div id="loadingSpinner" class="loading-spinner">
+      <div class="spinner"></div>
+      <p>AI 正在思考中，請稍候... ⏳</p>
+    </div>
+
     <!-- 🔹 查詢表單：POST 回到 /recommend_page -->
-    <form method="POST">
+    <!-- 🆕 優化：新增 id 屬性，方便 JavaScript 控制 -->
+    <form id="recommendForm" method="POST">
       <div>
         <label for="message">你的需求：</label>
         <textarea
           id="message"
           name="message"
           placeholder="輸入你今天的場合、風格或天氣描述..."
+          required
         >{{ user_input or '' }}</textarea>
+        <!-- 🆕 優化：新增 required 屬性，確保使用者輸入內容 -->
       </div>
 
       <div>
@@ -199,7 +273,8 @@
         </select>
       </div>
 
-      <button type="submit">送出查詢</button>
+      <!-- 🆕 優化：新增 id 屬性，方便控制按鈕狀態 -->
+      <button id="submitBtn" type="submit">送出查詢</button>
     </form>
 
     <!-- 🔍 關鍵字區塊 -->
@@ -214,17 +289,26 @@
     </div>
     {% endif %}
 
+    <!-- 🆕 優化：智能錯誤訊息顯示 -->
+    <!-- 根據回應內容判斷是否為錯誤，並用紅色框顯示 -->
+    {% if ai_response and (ai_response.startswith('❌') or '錯誤' in ai_response or '失敗' in ai_response or '無法' in ai_response) %}
+    <div class="error-message">
+      <strong>⚠️ AI 連線問題</strong>
+      {{ ai_response }}
+    </div>
+    {% endif %}
+
     <!-- 💬 AI 文字回覆 -->
-    {% if ai_response %}
+    {% if ai_response and not (ai_response.startswith('❌') or '錯誤' in ai_response or '失敗' in ai_response) %}
     <div class="section">
       <h2>💬 AI 推薦說明</h2>
       <pre>{{ ai_response }}</pre>
     </div>
-    {% elif user_input %}
-    <!-- 有輸入但沒有回覆（理論上不太會發生），給個提示 -->
-    <div class="section">
-      <h2>💬 AI 推薦說明</h2>
-      <p class="empty-tip">已收到你的輸入，但目前沒有可顯示的 AI 回應。</p>
+    {% elif user_input and not ai_response %}
+    <!-- 有輸入但沒有回覆 -->
+    <div class="error-message">
+      <strong>⚠️ 無法取得回應</strong>
+      系統處理時發生問題，請稍後再試或嘗試切換模型。
     </div>
     {% endif %}
 
@@ -281,5 +365,59 @@
     </div>
     {% endif %}
   </div>
+
+  <script>
+    /* ==========================================
+       🆕 優化：JavaScript 互動邏輯
+       
+       功能：
+       1. 表單提交時顯示載入動畫
+       2. 防止重複提交
+       3. 輸入驗證
+       4. 自動捲動
+       ========================================== */
+    
+    // 🆕 優化：表單提交處理
+    document.getElementById('recommendForm').addEventListener('submit', function(e) {
+      const submitBtn = document.getElementById('submitBtn');
+      const spinner = document.getElementById('loadingSpinner');
+      const messageInput = document.getElementById('message');
+      
+      // 🆕 優化：輸入驗證 - 確保使用者有輸入內容
+      if (!messageInput.value.trim()) {
+        e.preventDefault();
+        alert('請輸入你的穿搭需求！');
+        return;
+      }
+      
+      // 🆕 優化：顯示載入狀態
+      submitBtn.disabled = true;  // 禁用按鈕，防止重複提交
+      submitBtn.textContent = '處理中...';  // 改變按鈕文字
+      spinner.classList.add('active');  // 顯示載入動畫
+      
+      // 🆕 優化：自動捲動到載入提示位置
+      spinner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // 🆕 優化：頁面載入完成時重置狀態
+    // 防止重新整理後載入動畫還在顯示
+    window.addEventListener('load', function() {
+      const spinner = document.getElementById('loadingSpinner');
+      const submitBtn = document.getElementById('submitBtn');
+      
+      spinner.classList.remove('active');  // 隱藏載入動畫
+      submitBtn.disabled = false;  // 啟用按鈕
+      submitBtn.textContent = '送出查詢';  // 重置按鈕文字
+    });
+
+    // 🆕 優化：錯誤訊息自動捲動
+    // 如果有錯誤訊息，自動捲動到錯誤位置讓使用者看到
+    window.addEventListener('load', function() {
+      const errorMsg = document.querySelector('.error-message');
+      if (errorMsg) {
+        errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  </script>
 </body>
 </html>

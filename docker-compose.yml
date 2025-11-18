@@ -1,15 +1,24 @@
 version: '3.8'
 
+# ==========================================
+# 🆕 Jinja Test 分支優化版本
+# 
+# 主要改進：
+# 1. Port 環境變數化 - 避免多設備衝突
+# 2. 容器名稱前綴化 - 支援多實例運行
+# 3. 獨立 volumes - 資料隔離
+# ==========================================
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: outfit-mysql
+    container_name: ${CONTAINER_PREFIX:-outfit}-mysql  # 🆕 可自訂前綴
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: outfit_db
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"  # 🆕 可在 .env 自訂 port
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d
@@ -17,7 +26,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: outfit-phpmyadmin
+    container_name: ${CONTAINER_PREFIX:-outfit}-phpmyadmin  # 🆕 可自訂前綴
     restart: always
     environment:
       PMA_HOST: mysql
@@ -25,16 +34,17 @@ services:
       PMA_PASSWORD: rootpassword
       UPLOAD_LIMIT: 100M
     ports:
-      - "8080:80"
+      - "${PHPMYADMIN_PORT:-8080}:80"  # 🆕 可在 .env 自訂 port
     depends_on:
       - mysql
 
   flask:
     build: .
-    container_name: outfit-flask
+    container_name: ${CONTAINER_PREFIX:-outfit}-flask  # 🆕 可自訂前綴
     restart: always
     volumes: # 確保程式碼能同步到容器內
       - .:/app
+      - conversations_data:/app/data  # 🆕 獨立 volume 存放對話記錄
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
@@ -45,12 +55,13 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY}  # Groq API Key
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}  # DeepSeek API Key
     ports:
-      - "5001:5000"
+      - "${FLASK_PORT:-5001}:5000"  # 🆕 可在 .env 自訂 port
     depends_on:
       - mysql
     command: bash -c "sleep 10 && python app.py"
 
 volumes:
-  mysql_data:
+  mysql_data:  # MySQL 資料庫存儲
+  conversations_data:  # 🆕 AI 對話記錄存儲
 
 

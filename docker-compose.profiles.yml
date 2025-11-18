@@ -1,0 +1,166 @@
+version: '3.8'
+
+# 這個版本使用 Docker Compose Profiles
+# 可以為不同開發者/環境設定不同的 profile
+
+services:
+  # ========== 共用基礎服務 ==========
+  mysql:
+    image: mysql:8.0
+    container_name: ${CONTAINER_PREFIX:-outfit}-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: outfit_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - app-network
+
+  # ========== 預設配置 (dev-a) ==========
+  flask-dev-a:
+    profiles: ["dev-a"]
+    build: .
+    container_name: dev-a-flask
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/app
+      - conversations_dev_a:/app/data
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_NAME: outfit_db
+      LLM_API_KEY: ${LLM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    command: bash -c "sleep 10 && python app.py"
+
+  phpmyadmin-dev-a:
+    profiles: ["dev-a"]
+    image: phpmyadmin:latest
+    container_name: dev-a-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  # ========== 開發者 B 配置 (dev-b) ==========
+  flask-dev-b:
+    profiles: ["dev-b"]
+    build: .
+    container_name: dev-b-flask
+    ports:
+      - "5002:5000"
+    volumes:
+      - .:/app
+      - conversations_dev_b:/app/data
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_NAME: outfit_db
+      LLM_API_KEY: ${LLM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    command: bash -c "sleep 10 && python app.py"
+
+  phpmyadmin-dev-b:
+    profiles: ["dev-b"]
+    image: phpmyadmin:latest
+    container_name: dev-b-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  # ========== 開發者 C 配置 (dev-c) ==========
+  flask-dev-c:
+    profiles: ["dev-c"]
+    build: .
+    container_name: dev-c-flask
+    ports:
+      - "5003:5000"
+    volumes:
+      - .:/app
+      - conversations_dev_c:/app/data
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_NAME: outfit_db
+      LLM_API_KEY: ${LLM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    command: bash -c "sleep 10 && python app.py"
+
+  phpmyadmin-dev-c:
+    profiles: ["dev-c"]
+    image: phpmyadmin:latest
+    container_name: dev-c-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8082:80"
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  conversations_dev_a:
+  conversations_dev_b:
+  conversations_dev_c:
+
+# ========== 使用方式 ==========
+#
+# 開發者 A：
+#   docker-compose --profile dev-a up -d
+#   訪問: http://localhost:5001
+#
+# 開發者 B：
+#   docker-compose --profile dev-b up -d
+#   訪問: http://localhost:5002
+#
+# 開發者 C：
+#   docker-compose --profile dev-c up -d
+#   訪問: http://localhost:5003
+#
+# MySQL port 在主機上開放為 3306 (如果衝突，可以修改 mysql 服務的 ports)

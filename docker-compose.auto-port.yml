@@ -1,0 +1,68 @@
+version: '3.8'
+
+# 這個版本使用 Docker 自動分配 port
+# 優點：完全不會衝突，Docker 會自動找可用的 port
+# 缺點：每次啟動 port 可能不同
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ${CONTAINER_PREFIX:-outfit}-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: outfit_db
+    ports:
+      - "3306"  # Docker 自動分配外部 port
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ${CONTAINER_PREFIX:-outfit}-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "80"  # Docker 自動分配外部 port
+    depends_on:
+      - mysql
+
+  flask:
+    build: .
+    container_name: ${CONTAINER_PREFIX:-outfit}-flask
+    restart: always
+    volumes:
+      - .:/app
+      - conversations_data:/app/data
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_NAME: outfit_db
+      LLM_API_KEY: ${LLM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+    ports:
+      - "5000"  # Docker 自動分配外部 port
+    depends_on:
+      - mysql
+    command: bash -c "sleep 10 && python app.py"
+
+volumes:
+  mysql_data:
+  conversations_data:
+
+# 使用方式：
+# docker-compose -f docker-compose.auto-port.yml up -d
+# 
+# 查看實際分配的 port：
+# docker-compose -f docker-compose.auto-port.yml ps
+# 或
+# docker ps --format "table {{.Names}}\t{{.Ports}}"
