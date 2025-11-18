@@ -30,9 +30,11 @@ services:
       - mysql
 
   flask:
-    build: ./flask_app
+    build: .
     container_name: outfit-flask
     restart: always
+    volumes: # 確保程式碼能同步到容器內
+      - .:/app
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
@@ -43,9 +45,7 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY}  # Groq API Key
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}  # DeepSeek API Key
     ports:
-      - "127.0.0.1:8000:5000"
-    volumes:
-      - ./data:/app/data  # 掛載對話記錄資料夾
+      - "5001:5000"
     depends_on:
       - mysql
     command: bash -c "sleep 10 && python app.py"

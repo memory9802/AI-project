@@ -12,7 +12,7 @@ sys.stderr.reconfigure(encoding='utf-8')
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False  # 確保 JSON 正確顯示中文
 
-# JSON 序列化輔助函數
+# JSON 序列化輔助函數（目前主要用在 debug / 如需自訂 json.dumps 時）
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, datetime):
@@ -20,9 +20,6 @@ def json_serial(obj):
     if isinstance(obj, Decimal):
         return float(obj)
     raise TypeError(f"Type {type(obj)} not serializable")
-
-# 初始化 LangChain Agent
-agent = None
 
 # =======================
 # ⚙️ 環境設定
@@ -40,6 +37,7 @@ DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 USE_GEMINI = bool(LLM_API_KEY or GROQ_API_KEY or DEEPSEEK_API_KEY)
 
 # 初始化 LangChain Agent（支援多 AI 備援）
+agent = None
 if USE_GEMINI:
     agent = OutfitAIAgent(
         gemini_key=LLM_API_KEY,
@@ -67,15 +65,169 @@ def get_db_conn():
     )
 
 # =======================
-# 🔹 首頁（HTML）
+# 🔑 RAG 關鍵字映射
+# =======================
+KEYWORD_MAPPING = {
+    '約會': ['約會', 'date', '浪漫', '晚餐'],
+    '運動': ['運動', 'sport', '健身', '跑步', '瑜珈'],
+    '上班': ['上班', '辦公', '正式', '商務', 'office'],
+    '休閒': ['休閒', '逛街', '週末', 'casual', '放鬆'],
+    '派對': ['派對', 'party', '聚會', '夜店'],
+    '旅遊': ['旅遊', '旅行', '出遊', 'travel'],
+}
+
+def extract_keywords(text: str):
+    """從使用者輸入中提取關鍵字"""
+    found_keywords = []
+    for key, synonyms in KEYWORD_MAPPING.items():
+        for synonym in synonyms:
+            if synonym in text:
+                found_keywords.append(key)
+                break
+    return list(set(found_keywords))  # 去重
+
+# =======================
+# 🤖 共用：AI 穿搭推薦邏輯（Jinja / JSON 共用）
+# =======================
+def generate_recommendation(user_input: str,
+                            session_id: str = 'default',
+                            preferred_model: str = 'auto'):
+    """
+    根據使用者輸入產生推薦：
+    回傳 (ai_response文字, outfits資料(list), keywords(list))
+    """
+
+    if not user_input:
+        return "請輸入訊息", [], []
+
+    # 🔍 RAG: 從使用者輸入提取關鍵字
+    keywords = extract_keywords(user_input)
+
+    # 先從資料庫取出可能的穿搭
+    conn = get_db_conn()
+    outfits = []
+    try:
+        with conn.cursor() as cur:
+            # 如果有關鍵字，優先檢索相關穿搭
+            if keywords:
+                placeholders = ','.join(['%s'] * len(keywords))
+                sql = f"SELECT * FROM outfits WHERE occasion IN ({placeholders}) LIMIT 5"
+                cur.execute(sql, keywords)
+                outfits = cur.fetchall()
+
+                # 如果找不到，退回全部
+                if not outfits:
+                    cur.execute("SELECT * FROM outfits LIMIT 5")
+                    outfits = cur.fetchall()
+            else:
+                # 沒有關鍵字，返回全部
+                cur.execute("SELECT * FROM outfits LIMIT 5")
+                outfits = cur.fetchall()
+
+            # 幫每個 outfit 抓對應 items
+            for o in outfits:
+                cur.execute("""
+                    SELECT i.* FROM items i
+                    JOIN outfit_items oi ON i.id = oi.item_id
+                    WHERE oi.outfit_id=%s
+                """, (o['id'],))
+                o['items'] = cur.fetchall()
+
+                # 轉換 datetime 和 Decimal 為可序列化類型
+                if 'created_at' in o:
+                    o['created_at'] = o['created_at'].isoformat() if o['created_at'] else None
+                for item in o['items']:
+                    if 'created_at' in item:
+                        item['created_at'] = item['created_at'].isoformat() if item['created_at'] else None
+                    if 'price' in item and isinstance(item['price'], Decimal):
+                        item['price'] = float(item['price'])
+    finally:
+        conn.close()
+
+    # 若未啟用 AI，僅返回資料庫內容（組一段說明文字）
+    if not USE_GEMINI or not agent:
+        text = "AI 尚未啟用，以下為資料庫推薦：\n"
+        for idx, outfit in enumerate(outfits[:3], 1):
+            text += f"\n推薦 {idx}：{outfit.get('name', '')}（場合：{outfit.get('occasion', '')}）\n"
+            text += f"說明：{outfit.get('description', '')}\n"
+        return text, outfits, keywords
+
+    # 使用 LangChain Agent 處理對話（帶 RAG context）
+    try:
+        rag_context = ""
+        if keywords:
+            rag_context = f"\n\n偵測到關鍵字：{', '.join(keywords)}，已替你檢索到 {len(outfits)} 組穿搭資料。"
+
+        ai_response = agent.chat(
+            session_id=session_id,
+            user_input=user_input + rag_context,
+            db_outfits=outfits,
+            preferred_model=preferred_model
+        )
+        return ai_response, outfits, keywords
+
+    except Exception as e:
+        # 簡化版錯誤處理：回傳資料庫推薦 + 錯誤資訊
+        error_msg = str(e)
+        fallback = f"系統遇到一些問題，但仍為你提供資料庫推薦。\n\n錯誤資訊：{error_msg}\n"
+        for idx, outfit in enumerate(outfits[:3], 1):
+            fallback += f"\n推薦 {idx}：{outfit.get('name', '')}（場合：{outfit.get('occasion', '')}）\n"
+            fallback += f"說明：{outfit.get('description', '')}\n"
+        return fallback, outfits, keywords
+
+# =======================
+# 🔹 首頁（page1.html，外層頁面）
 # =======================
 @app.route('/')
 @app.route('/home')
-def home_page():
-    return render_template('index.html')
+@app.route('/page1')
+def page1():
+    """
+    首頁：使用 page1.html
+    建議在 page1.html 的 iframe 裡使用：
+      src="{{ url_for('recommend_page') }}"
+    讓內嵌視窗載入真正的穿搭機器人頁面。
+    """
+    return render_template('page1.html')
 
 # =======================
-# 📦 取得所有衣物
+# 👕 Jinja 版 AI 穿搭頁面（index.html）
+# =======================
+@app.route('/recommend_page', methods=['GET', 'POST'])
+def recommend_page():
+    """
+    這個路由用來呈現 Jinja 版的穿搭機器人頁面：
+    - GET：顯示空白表單
+    - POST：接收表單資料，呼叫 generate_recommendation()，再把結果 render 回 index.html
+    """
+    ai_response = None
+    outfits = []
+    keywords = []
+    user_input = ""
+    selected_model = "auto"
+
+    if request.method == 'POST':
+        user_input = request.form.get('message', '')
+        selected_model = request.form.get('model', 'auto')
+        session_id = "web-page-session"  # 固定給這個頁面用的 session
+
+        ai_response, outfits, keywords = generate_recommendation(
+            user_input=user_input,
+            session_id=session_id,
+            preferred_model=selected_model
+        )
+
+    return render_template(
+        'index.html',  # Jinja 版的穿搭機器人頁面
+        ai_response=ai_response,
+        outfits=outfits,
+        keywords=keywords,
+        user_input=user_input,
+        selected_model=selected_model
+    )
+
+# =======================
+# 📦 取得所有衣物（純 JSON API，保留）
 # =======================
 @app.route('/items', methods=['GET'])
 def get_items():
@@ -106,163 +258,42 @@ def get_items():
     return jsonify(items)
 
 # =======================
-# � RAG 關鍵字映射
-# =======================
-KEYWORD_MAPPING = {
-    '約會': ['約會', 'date', '浪漫', '晚餐'],
-    '運動': ['運動', 'sport', '健身', '跑步', '瑜珈'],
-    '上班': ['上班', '辦公', '正式', '商務', 'office'],
-    '休閒': ['休閒', '逛街', '週末', 'casual', '放鬆'],
-    '派對': ['派對', 'party', '聚會', '夜店'],
-    '旅遊': ['旅遊', '旅行', '出遊', 'travel'],
-}
-
-def extract_keywords(text):
-    """從使用者輸入中提取關鍵字"""
-    found_keywords = []
-    for key, synonyms in KEYWORD_MAPPING.items():
-        for synonym in synonyms:
-            if synonym in text:
-                found_keywords.append(key)
-                break
-    return list(set(found_keywords))  # 去重
-
-# =======================
-# �👕 AI 穿搭推薦（使用 LangChain + RAG）
+# 🤖 JSON 版 AI 穿搭推薦 API（保留給前端 fetch 用）
 # =======================
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    data = request.json
+    """
+    純後端 API 版本：
+    - 接收 JSON：{"message": "...", "session_id": "...", "model": "..."}
+    - 回傳 JSON，給前端 fetch / axios 使用
+    """
+    data = request.json or {}
     user_input = data.get('message', '')
     session_id = data.get('session_id', 'default')
-    preferred_model = data.get('model', 'auto')  # 新增：讀取用戶選擇的模型
+    preferred_model = data.get('model', 'auto')
 
     if not user_input:
         return jsonify({"error": "請輸入訊息"}), 400
 
-    # 🔍 RAG: 從使用者輸入提取關鍵字
-    keywords = extract_keywords(user_input)
-    
-    # 先從資料庫取出可能的穿搭
-    conn = get_db_conn()
-    try:
-        with conn.cursor() as cur:
-            # 如果有關鍵字，優先檢索相關穿搭
-            if keywords:
-                placeholders = ','.join(['%s'] * len(keywords))
-                sql = f"SELECT * FROM outfits WHERE occasion IN ({placeholders}) LIMIT 5"
-                cur.execute(sql, keywords)
-                outfits = cur.fetchall()
-                
-                # 如果找不到，退回全部
-                if not outfits:
-                    cur.execute("SELECT * FROM outfits LIMIT 5")
-                    outfits = cur.fetchall()
-            else:
-                # 沒有關鍵字，返回全部
-                cur.execute("SELECT * FROM outfits LIMIT 5")
-                outfits = cur.fetchall()
-            for o in outfits:
-                cur.execute("""
-                    SELECT i.* FROM items i
-                    JOIN outfit_items oi ON i.id = oi.item_id
-                    WHERE oi.outfit_id=%s
-                """, (o['id'],))
-                o['items'] = cur.fetchall()
-                
-                # 轉換 datetime 和 Decimal 為可序列化類型
-                if 'created_at' in o:
-                    o['created_at'] = o['created_at'].isoformat() if o['created_at'] else None
-                for item in o['items']:
-                    if 'created_at' in item:
-                        item['created_at'] = item['created_at'].isoformat() if item['created_at'] else None
-                    if 'price' in item and isinstance(item['price'], Decimal):
-                        item['price'] = float(item['price'])
-    finally:
-        conn.close()
+    ai_response, outfits, keywords = generate_recommendation(
+        user_input=user_input,
+        session_id=session_id,
+        preferred_model=preferred_model
+    )
 
-    # 若未啟用 AI，僅返回資料庫內容
-    if not USE_GEMINI or not agent:
-        return jsonify({
-            "response": "AI 尚未啟用，僅回傳資料庫內容",
-            "db_data": outfits,
-            "session_id": session_id
-        })
-
-    # 使用 LangChain Agent 處理對話（帶 RAG context）
-    try:
-        # 加入 RAG 提示
-        rag_context = ""
-        if keywords:
-            rag_context = f"\n\n🔍 偵測到關鍵字：{', '.join(keywords)}\n系統已為您檢索相關的 {len(outfits)} 組穿搭資料。"
-        
-        ai_response = agent.chat(
-            session_id=session_id,
-            user_input=user_input + rag_context,
-            db_outfits=outfits,
-            preferred_model=preferred_model  # 新增：傳遞用戶選擇的模型
-        )
-        
-        return jsonify({
-            "response": ai_response,
-            "session_id": session_id,
-            "db_data": outfits,
-            "keywords": keywords  # 回傳偵測到的關鍵字
-        })
-    except Exception as e:
-        error_msg = str(e)
-        
-        # 如果是 API 配額超限，提供友善提示
-        if "429" in error_msg or "quota" in error_msg.lower():
-            fallback_response = f"""抱歉，AI 服務暫時超過使用配額 😅
-
-不過別擔心！以下是資料庫中符合「{user_input}」的穿搭推薦：
-
-"""
-            for idx, outfit in enumerate(outfits[:3], 1):
-                fallback_response += f"\n**推薦 {idx}：{outfit['name']}**\n"
-                fallback_response += f"- 場合：{outfit['occasion']}\n"
-                fallback_response += f"- 說明：{outfit['description']}\n"
-                fallback_response += "- 包含：\n"
-                for item in outfit['items']:
-                    fallback_response += f"  • {item['name']} ({item['color']}, {item['category']})\n"
-            
-            fallback_response += "\n💡 提示：請稍後再試，或聯繫管理員增加 API 配額。"
-            
-            return jsonify({
-                "response": fallback_response,
-                "session_id": session_id,
-                "db_data": outfits,
-                "note": "AI 配額超限，使用資料庫推薦"
-            }), 200  # 返回 200 而不是錯誤狀態
-        
-        # 其他錯誤也返回友善訊息
-        fallback_response = f"""系統遇到了一些問題 😅
-
-不過別擔心！以下是資料庫中的穿搭推薦：
-
-"""
-        for idx, outfit in enumerate(outfits[:3], 1):
-            fallback_response += f"\n**推薦 {idx}：{outfit['name']}**\n"
-            fallback_response += f"- 場合：{outfit['occasion']}\n"
-            fallback_response += f"- 說明：{outfit['description']}\n"
-            fallback_response += "- 包含：\n"
-            for item in outfit['items']:
-                fallback_response += f"  • {item['name']} ({item['color']}, {item['category']})\n"
-        
-        return jsonify({
-            "response": fallback_response,
-            "session_id": session_id,
-            "db_data": outfits,
-            "error_details": error_msg
-        }), 200
+    return jsonify({
+        "response": ai_response,
+        "session_id": session_id,
+        "db_data": outfits,
+        "keywords": keywords
+    })
 
 # =======================
 # 🗑️ 清除對話記憶
 # =======================
 @app.route('/clear_session', methods=['POST'])
 def clear_session():
-    data = request.json
+    data = request.json or {}
     session_id = data.get('session_id')
     
     if not session_id:
@@ -293,4 +324,5 @@ def ping():
 # 🏁 主程式
 # =======================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # host='0.0.0.0' 是 Docker 容器內必須設定的，確保外部可以透過 5001 埠號連入
+    app.run(debug=True, host='0.0.0.0', port=5000)
