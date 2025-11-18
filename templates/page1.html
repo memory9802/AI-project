@@ -5,12 +5,14 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>StyleRec - Your Personal Stylist</title>
 
-  <!-- Tailwind & 自訂 JS / CSS -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script src="page1js1.js"></script>
+
+  <!-- 你的自訂 JS / CSS：記得檔案已經搬到 static/ 底下 -->
+  <script src="{{ url_for('static', filename='page1js1.js') }}"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <link href="page1css.css" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='page1css.css') }}" rel="stylesheet"/>
 
   <script id="tailwind-config">
     tailwind.config = {
@@ -67,21 +69,42 @@
           <div class="hidden md:flex items-center gap-9">
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="p\png1.png" decoding="async" alt="icon" width="40" height="40" aria-hidden="true">
+                <!-- icon 1 -->
+                <img class="cs-icon"
+                     src="{{ url_for('static', filename='p/png1.png') }}"
+                     decoding="async"
+                     alt="My Wardrobe icon"
+                     width="40"
+                     height="40"
+                     aria-hidden="true">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="#">My Wardrobe</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="p\png2.png" decoding="async" alt="icon" width="40" height="40" aria-hidden="true">
+                <!-- icon 2 -->
+                <img class="cs-icon"
+                     src="{{ url_for('static', filename='p/png2.png') }}"
+                     decoding="async"
+                     alt="Outfit Recommendation icon"
+                     width="40"
+                     height="40"
+                     aria-hidden="true">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Outfit Recommendation</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="p\png3.png" decoding="async" alt="icon" width="40" height="40" aria-hidden="true">
+                <!-- icon 3 -->
+                <img class="cs-icon"
+                     src="{{ url_for('static', filename='p/png3.png') }}"
+                     decoding="async"
+                     alt="Rating & Interaction icon"
+                     width="40"
+                     height="40"
+                     aria-hidden="true">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Rating &amp; Interaction</a>
             </li>
@@ -171,10 +194,11 @@
     </div>
   </section>
 
-  <!-- 浮動對話框：這裡嵌入 Flask 的 /recommend_page，而不是 127.0.0.1:8000 -->
+  <!-- 浮動對話框：粉色圓形按鈕 + 內嵌機器人 iframe -->
   <div class="dialog-container">
+    <!-- 這顆按鈕的樣式（粉色圓形）在 page1css.css 裡，JS 在 page1js2.js 控制開關 -->
     <button id="toggleBtn">
-      <span class="material-symbols-outlined">psychology</span>
+      <span class="material-symbols-outlined">forum</span>
     </button>
     <div id="dialog">
       <div class="dialog-header">
@@ -192,6 +216,7 @@
     </div>
   </div>
 
-  <script src="page1js2.js"></script>
+  <!-- 控制對話框開關的 JS（也放在 static/） -->
+  <script src="{{ url_for('static', filename='page1js2.js') }}"></script>
 </body>
 </html>
