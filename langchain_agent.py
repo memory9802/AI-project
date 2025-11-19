@@ -10,8 +10,10 @@ from langchain_core.prompts import PromptTemplate
 import os
 import json
 import sys
+import time
 from datetime import datetime
 from threading import Lock
+from functools import lru_cache
 
 # 確保 Python 使用 UTF-8 編碼
 if hasattr(sys.stdout, 'reconfigure'):
@@ -23,6 +25,11 @@ if hasattr(sys.stderr, 'reconfigure'):
 CONVERSATIONS_FILE = "/app/data/conversations.json"
 file_lock = Lock()  # 防止多執行緒同時寫入
 
+# 速率限制設定
+last_request_time = {}
+rate_limit_lock = Lock()
+MIN_REQUEST_INTERVAL = 2  # 最少間隔 2 秒 (降低 RPM)
+
 # =========================
 # 🔧 初始化 LangChain 模型
 # =========================
@@ -33,16 +40,16 @@ class OutfitAIAgent:
         # 初始化多個 LLM（按優先順序：Gemini -> Groq -> DeepSeek）
         self.llms = []
         
-        # 1. Gemini (優先)
+        # 1. Gemini (優先) - 使用 Lite 版本,配額更高
         if gemini_key:
             try:
                 self.llms.append({
                     "name": "Gemini",
                     "llm": ChatGoogleGenerativeAI(
-                        model="gemini-2.0-flash-exp",
+                        model="gemini-2.0-flash-lite",  # Lite 版本:更高 RPM/TPM
                         google_api_key=gemini_key,
-                        temperature=1.0,
-                        max_output_tokens=200
+                        temperature=0.5,  # 降低溫度,減少隨機性
+                        max_output_tokens=300  # 減少輸出長度,降低 TPM
                     )
                 })
             except Exception as e:
@@ -171,30 +178,38 @@ class OutfitAIAgent:
             db_outfits: 資料庫檢索的穿搭資料
             preferred_model: 偏好模型 ("auto", "gemini", "groq", "deepseek")
         """
+        # ⏱️ 速率限制: 確保請求之間有最小間隔
+        with rate_limit_lock:
+            current_time = time.time()
+            if session_id in last_request_time:
+                elapsed = current_time - last_request_time[session_id]
+                if elapsed < MIN_REQUEST_INTERVAL:
+                    wait_time = MIN_REQUEST_INTERVAL - elapsed
+                    print(f"⏳ 速率限制: 等待 {wait_time:.1f} 秒...", file=sys.stderr)
+                    time.sleep(wait_time)
+            last_request_time[session_id] = time.time()
+        
         session = self.get_or_create_session(session_id)
         
-        # 建立對話上下文
+        # 🎯 建立精簡對話上下文 - 減少 token 消耗
         context = ""
         if db_outfits and len(db_outfits) > 0:
-            # 簡化資料庫資料格式，只保留關鍵資訊
-            simplified_outfits = []
-            for outfit in db_outfits[:5]:  # 最多5組
-                outfit_info = f"穿搭 {outfit.get('id', '')}: {outfit.get('name', '未命名')}"
-                if 'items' in outfit:
-                    items = [f"{item.get('name', '')}({item.get('category', '')})" 
-                            for item in outfit['items'][:4]]  # 最多4件單品
-                    outfit_info += f" - 包含: {', '.join(items)}"
-                simplified_outfits.append(outfit_info)
-            
-            context = f"\n\n【資料庫中的穿搭選項】:\n" + "\n".join(simplified_outfits)
+            # 只用前2組穿搭,只顯示名稱和場合
+            simplified = []
+            for outfit in db_outfits[:2]:
+                name = outfit.get('name', '未命名')
+                occasion = outfit.get('occasion', '')
+                simplified.append(f"{name}({occasion})")
+            context = f"\n資料庫: {', '.join(simplified)}"
         
-        # 組合歷史對話
+        # 只保留最近1輪對話 (大幅減少 token)
         history_text = ""
-        for msg in session["messages"][-3:]:  # 只保留最近3輪對話
-            history_text += f"使用者: {msg['user']}\nAI: {msg['ai']}\n\n"
+        if session["messages"]:
+            last_msg = session["messages"][-1]
+            history_text = f"上次: {last_msg['user'][:30]}...\n"
         
-        # 建立完整提示
-        full_prompt = f"{self.system_prompt}\n\n{history_text}使用者: {user_input}{context}\nAI:"
+        # 🔥 精簡提示詞
+        simple_prompt = f"你是穿搭顧問。{history_text}用戶: {user_input}{context}\n建議:"
         
         # 調試信息
         import sys
@@ -225,7 +240,7 @@ class OutfitAIAgent:
                 model_name = model_info["name"]
                 
                 print(f"🔄 嘗試使用 {model_name}...", flush=True, file=sys.stderr)
-                response = llm.invoke(full_prompt)
+                response = llm.invoke(simple_prompt)  # 使用精簡提示詞
                 response_text = response.content if hasattr(response, 'content') else str(response)
                 used_model = model_name
                 print(f"✅ {model_name} 回應成功", flush=True, file=sys.stderr)
