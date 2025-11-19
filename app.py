@@ -10,7 +10,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
 app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False  # 確保 JSON 正確顯示中文
+# 確保 JSON 正確顯示中文
+app.config['JSON_AS_ASCII'] = False
+app.config['JSON_SORT_KEYS'] = False
+app.json.ensure_ascii = False  # Flask 2.2+ 的新設定方式
 
 # JSON 序列化輔助函數（目前主要用在 debug / 如需自訂 json.dumps 時）
 def json_serial(obj):
@@ -45,8 +48,8 @@ if USE_GEMINI:
         deepseek_key=None
     )
 
-# 使用最新、可用的模型
-GEMINI_MODEL = "gemini-2.5-flash"
+# 使用 Lite 版本,配額更充足
+GEMINI_MODEL = "gemini-2.0-flash-lite"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={LLM_API_KEY}"
 
 # =======================

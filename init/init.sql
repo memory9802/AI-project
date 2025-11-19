@@ -114,7 +114,137 @@ INSERT INTO outfit_items (outfit_id, item_id, role) VALUES
 (2, 5, 'bottom'),
 (2, 6, 'shoes'),
 
--- 套裝 3：運動套裝
+-- 套裝 3:運動套裝
 (3, 7, 'top'),
 (3, 8, 'bottom'),
 (3, 9, 'shoes');
+
+
+-- =========================================================
+-- 7. users（使用者表 - 專題功能1：我的衣櫃）
+-- =========================================================
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(255),       -- 實際專題可用 bcrypt 加密
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入測試使用者
+INSERT INTO users (username, email, password_hash) VALUES
+('test_user', 'test@example.com', 'hashed_password_placeholder'),
+('alice', 'alice@example.com', 'hashed_password_placeholder'),
+('bob', 'bob@example.com', 'hashed_password_placeholder');
+
+
+-- =========================================================
+-- 8. user_wardrobe（使用者衣櫃 - 專題功能1：我的衣櫃）
+-- =========================================================
+DROP TABLE IF EXISTS user_wardrobe;
+
+CREATE TABLE user_wardrobe (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    category VARCHAR(100),            -- 上衣/下身/鞋子/配件
+    color VARCHAR(50),
+    material VARCHAR(100),            -- 材質：棉/麻/聚酯纖維等
+    tags VARCHAR(255),                -- 標籤，例如：休閒,正式,運動（逗號分隔）
+    image_url VARCHAR(255),           -- 使用者上傳的照片 URL
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_wardrobe_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入測試使用者衣櫃資料
+INSERT INTO user_wardrobe (user_id, item_name, category, color, material, tags, image_url) VALUES
+(1, '我的藍色襯衫', '上衣', '藍', '棉', '正式,上班', NULL),
+(1, '黑色牛仔褲', '下身', '黑', '丹寧', '休閒,百搭', NULL),
+(1, '紅色運動T恤', '上衣', '紅', '聚酯纖維', '運動,休閒', NULL),
+(2, '白色洋裝', '上衣', '白', '麻', '約會,正式', NULL);
+
+
+-- =========================================================
+-- 9. outfit_ratings（穿搭評分 - 專題功能3：評分互動）
+-- =========================================================
+DROP TABLE IF EXISTS outfit_ratings;
+
+CREATE TABLE outfit_ratings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    outfit_id INT NOT NULL,           -- 關聯到 outfits 表
+    user_id INT,                      -- NULL 表示匿名評分
+    rating INT NOT NULL,              -- 評分 1-5
+    is_owner BOOLEAN DEFAULT FALSE,   -- 是否為穿搭擁有者的自評
+    comment TEXT,                     -- 評語（選填）
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_rating_outfit
+        FOREIGN KEY (outfit_id) REFERENCES outfits(id)
+        ON DELETE CASCADE,
+    
+    CONSTRAINT fk_rating_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE SET NULL,
+    
+    CONSTRAINT chk_rating_range
+        CHECK (rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入測試評分資料
+INSERT INTO outfit_ratings (outfit_id, user_id, rating, is_owner, comment) VALUES
+(1, 1, 5, TRUE, '我自己很滿意這套約會穿搭'),
+(1, 2, 4, FALSE, '很清爽！但可以加個配件'),
+(2, 1, 4, TRUE, '商務場合很合適'),
+(2, NULL, 5, FALSE, '非常專業的穿搭'),  -- 匿名評分
+(3, 1, 5, TRUE, '運動起來很舒適');
+
+
+-- =========================================================
+-- 10. partner_products（合作商家商品 - 專題功能2：商品推薦）
+-- =========================================================
+DROP TABLE IF EXISTS partner_products;
+
+CREATE TABLE partner_products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL,
+    category VARCHAR(100),
+    color VARCHAR(50),
+    price DECIMAL(10,2),
+    partner_name VARCHAR(255),        -- 合作商家名稱
+    product_url VARCHAR(512),         -- 商品頁面連結
+    image_url VARCHAR(512),           -- 商品圖片
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入測試商品資料
+INSERT INTO partner_products (product_name, category, color, price, partner_name, product_url, image_url, description) VALUES
+('Uniqlo 白色 T-shirt', '上衣', '白', 390, 'Uniqlo', 'https://www.uniqlo.com/example', NULL, '經典基本款'),
+('Zara 黑色長褲', '下身', '黑', 1290, 'Zara', 'https://www.zara.com/example', NULL, '修身版型'),
+('Nike Air 運動鞋', '鞋子', '白', 3200, 'Nike', 'https://www.nike.com/example', NULL, '舒適氣墊');
+
+
+-- =========================================================
+-- 11. conversation_history（對話記錄表 - 供 AI 分析用）
+-- =========================================================
+DROP TABLE IF EXISTS conversation_history;
+
+CREATE TABLE conversation_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id VARCHAR(255) NOT NULL,
+    user_id INT,
+    user_message TEXT,
+    ai_response TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_conversation_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE SET NULL,
+    
+    INDEX idx_session (session_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
