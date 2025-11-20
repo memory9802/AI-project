@@ -14,17 +14,72 @@
 
 **核心功能**: AI 聊天 | 資料庫推薦 | 對話記憶 | 多模型備援  
 **技術棧**: Flask + MySQL + Docker + Gemini 2.0 Lite  
-**狀態**: ✅ 運行正常 (Windows/macOS 已測試)
+**狀態**:### 🔐 安全性
+
+### API Key 管理
+- ✅ `.env` 已加入 `.gitignore`
+- ✅ 使用 `.env.example` 作為範本
+- ⚠️ 不要將 API Key 寫入程式碼
+- ⚠️ 不要提交 `.env` 到 Git
+- 💡 每位開發者需自行申請 Gemini API Key
+
+### 🔑 API Key 申請步驟
+1. 前往 [Google AI Studio](https://aistudio.google.com/)
+2. 使用 Google 帳號登入
+3. 點擊 "Get API Key" → "Create API Key"
+4. 複製 API Key 並設定到 `.env` 檔案
+5. 免費額度：每分鐘 15 requests，每日足夠開發使用 (Windows/macOS 已測試)
 
 ---
 
 ## 🚀 快速開始
 
-### Windows 用戶
+### Windows 用### 📞 需要幫助?
+
+### 文件資源
+- **團隊協作**: [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md) - 詳細設定指南
+- **GitHub**: https://github.com/memory9802/AI-project
+- **Issues**: 在 GitHub 提問
+
+### 🚀 開發工作流程
+
+#### 功能開發流程
+```bash
+# 1. 建立功能分支
+git checkout -b feature/your-feature-name
+
+# 2. 開發並測試
+source venv/bin/activate  # 啟動 Python 環境
+docker compose up -d      # 啟動服務
+code .                    # 開啟 VS Code
+
+# 3. 提交變更
+git add .
+git commit -m "feat: 新增XXX功能"
+
+# 4. 推送並建立 Pull Request
+git push origin feature/your-feature-name
+```
+
+#### 專案架構說明
+```
+AI-project/
+├── app/
+│   ├── app.py              # 🔥 Flask 主程式
+│   ├── langchain_agent.py  # 🤖 AI Agent
+│   ├── requirements.txt    # 📦 Python 依賴
+│   ├── templates/          # 🎨 HTML 模板
+│   └── static/            # 🎨 CSS/JS/圖片
+├── init/init.sql          # 🗄️ 資料庫初始化
+├── docker-compose.yml     # 🐳 Docker 配置
+├── package.json          # 📦 Node.js 依賴
+├── venv/                 # 🐍 Python 虛擬環境
+└── .env                  # ⚙️ 環境變數（不要提交）
 ```powershell
 git clone https://github.com/memory9802/AI-project.git
 cd AI-project && git checkout Jinja
 Copy-Item .env.example .env
+# 編輯 .env 設定您的 API Key
 .\start-windows.ps1
 ```
 
@@ -33,6 +88,7 @@ Copy-Item .env.example .env
 git clone https://github.com/memory9802/AI-project.git
 cd AI-project && git checkout Jinja
 cp .env.example .env
+# 編輯 .env 設定您的 API Key
 chmod +x start-macos.sh && ./start-macos.sh
 ```
 
@@ -100,7 +156,130 @@ GET  /ping              健康檢查
 
 ---
 
-## 🔧 常用指令
+## � 開發環境設置
+
+### 📋 必需工具清單
+
+#### 本機全域安裝
+- **Docker Desktop**: 容器化平台
+- **Git**: 版本控制工具
+- **VS Code**: 程式碼編輯器（推薦）
+- **Node.js**: 前端開發環境
+- **Python 3.11+**: 後端開發環境
+
+#### macOS 用戶安裝指令
+```bash
+# 安裝 Homebrew（套件管理器）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 設定 Homebrew 環境
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+source ~/.zshrc
+
+# 安裝開發工具
+brew install node git
+brew install --cask docker visual-studio-code postman
+```
+
+#### Windows 用戶安裝
+1. 下載並安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. 下載並安裝 [Git for Windows](https://git-scm.com/download/win)  
+3. 下載並安裝 [Node.js](https://nodejs.org/)
+4. 下載並安裝 [VS Code](https://code.visualstudio.com/)
+
+### 🐍 Python 虛擬環境設置
+
+```bash
+# 1. 建立虛擬環境
+python3 -m venv venv
+
+# 2. 啟動虛擬環境
+# macOS/Linux:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# 3. 安裝 Python 套件
+pip install --upgrade pip
+pip install -r app/requirements.txt
+
+# 4. 驗證安裝
+python -c "import flask, cv2, langchain; print('✅ Python 環境就緒')"
+```
+
+### 🎨 前端開發環境
+
+```bash
+# 1. 初始化 npm 專案（如果沒有 package.json）
+npm init -y
+
+# 2. 安裝前端套件
+npm install bootstrap jquery axios
+npm install --save-dev webpack webpack-cli css-loader style-loader
+
+# 3. 驗證安裝
+npm list --depth=0
+```
+
+### 📱 VS Code 推薦擴展
+
+安裝以下擴展提升開發效率：
+```
+- Python
+- Flask Snippets  
+- Docker
+- Bootstrap IntelliSense
+- Auto Rename Tag
+- Prettier - Code formatter
+- GitLens
+- Thunder Client (API 測試)
+```
+
+### 🔧 API Key 設定
+
+1. **取得 Google Gemini API Key**:
+   - 前往 [Google AI Studio](https://aistudio.google.com/)
+   - 申請免費 API Key
+   - 複製 API Key
+
+2. **設定環境變數**:
+   ```bash
+   # 複製環境變數範本
+   cp .env.example .env
+   
+   # 編輯 .env 檔案
+   # 將 your_gemini_api_key_here 替換為您的實際 API Key
+   ```
+
+### 🧪 環境驗證
+
+```bash
+# 1. 檢查 Docker
+docker --version
+docker compose --version
+
+# 2. 檢查 Python 環境  
+source venv/bin/activate  # macOS/Linux
+python --version
+pip list | grep flask
+
+# 3. 檢查 Node.js 環境
+node --version
+npm --version
+
+# 4. 啟動完整服務
+docker compose up -d
+curl http://localhost:5001/ping  # 應該返回 JSON
+
+# 5. 測試 AI 功能
+curl -X POST http://localhost:5001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"message":"測試穿搭建議","session_id":"test"}'
+```
+
+---
+
+## �🔧 常用指令
 
 ### Docker 管理
 ```bash
@@ -128,8 +307,8 @@ curl -X POST http://localhost:5001/recommend \
 
 ### 環境變數 (.env)
 ```bash
-# AI 配置
-LLM_API_KEY=AIzaSyAaDSYKxfoq_4nVKaN9_2PE8R4lmhWYMfQ  # 團隊共用
+# AI 配置 - 請設定您的 API Key
+LLM_API_KEY=your_gemini_api_key_here
 GOOGLE_GENAI_API_VERSION=v1
 
 # 資料庫 (Docker 模式,不要改)
@@ -463,13 +642,21 @@ curl -X POST http://localhost:5001/recommend \
 
 ---
 
-## 👥 團隊成員
+## 👥 團隊開發
 
-- 成員 A - 資料庫設計 & 後端 API
-- 成員 B - AI 整合 & 優化
-- 成員 C - 前端開發
-- 成員 D - Docker 環境
-- 成員 E - 測試 & 文件
+### 分工建議
+- **後端開發** - Flask API、資料庫設計
+- **前端開發** - UI/UX、JavaScript 互動  
+- **AI 整合** - LangChain、模型優化
+- **DevOps** - Docker、部署、CI/CD
+- **測試** - 功能測試、文件撰寫
+
+### 開發注意事項
+- ✅ 遵循 Git Flow 工作流程
+- ✅ 提交前先執行本地測試
+- ✅ API Key 不要提交到 Git
+- ✅ 保持代碼風格一致
+- ✅ 及時更新文件和註釋
 
 ---
 

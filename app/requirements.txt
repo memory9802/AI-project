@@ -1,0 +1,24 @@
+# ====================================
+# 核心套件 (實際使用中)
+# ====================================
+
+# Flask Web 框架
+Flask==3.0.0
+
+# 資料庫連接
+PyMySQL==1.1.0
+cryptography==41.0.7  # PyMySQL 需要
+
+# HTTP 請求
+requests==2.31.0
+
+# 環境變數管理
+python-dotenv==1.0.0
+
+# LangChain & AI
+langchain==0.3.26
+langchain-core
+langchain-community
+langchain-google-genai
+langchain-groq
+langchain-openai
