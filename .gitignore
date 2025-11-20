@@ -38,9 +38,49 @@ mysql_data/
 
 # Environment variables (重要！避免上傳 API 密鑰)
 .env
+.env.local
+.env.*.local
 .envrc
 .venv
+venv/
+ENV/
+
+# Docker 個人配置 (重要！避免上傳個人適配設定)
 docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.override.yml.example
+docker-compose.local.yml
+docker-compose.dev.yml
+docker-compose.personal.yml
+
+# VS Code 個人設定 (保留團隊共用設定，忽略個人設定)
+.vscode/settings.local.json
+.vscode/launch.local.json  
+.vscode/tasks.local.json
+.vscode/*.personal.json
+
+# 個人開發工具設定
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# 個人暫存和備份檔案
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.#*
+\#*#
+
+# 個人日誌和除錯檔案
+*.log.*
+debug*.log
+personal-notes.md
+TODO.personal.md
+notes.personal.*
 
 # Project documentation and data
 PROJECT_STATUS.md
