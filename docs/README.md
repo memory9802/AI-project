@@ -156,22 +156,43 @@ docker run -p 5000:5000 ai-project:prod
 ## 🗄️ 資料庫配置
 
 ### 🐬 **MySQL 8.0 設置**
+
+#### **Docker 容器方式 (推薦)**
 ```bash
-# 本機 MySQL (macOS)
+# 建置自訂 MySQL 映像 (解決 macOS 權限問題)
+docker-compose build mysql
+
+# 啟動 MySQL 服務
+docker-compose up -d mysql
+
+# 使用管理腳本 (更方便)
+./scripts/mysql-manager.sh build   # 建置映像
+./scripts/mysql-manager.sh start   # 啟動服務
+./scripts/mysql-manager.sh reset   # 重置資料庫
+```
+
+#### **本機安裝方式**
+```bash
+# macOS 本機安裝
 brew install mysql@8.0
 brew services start mysql@8.0
 
 # 建立開發資料庫
 mysql -u root -p
-CREATE DATABASE ai_fashion CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'appuser'@'localhost' IDENTIFIED BY 'apppass';
-GRANT ALL PRIVILEGES ON ai_fashion.* TO 'appuser'@'localhost';
+GRANT ALL PRIVILEGES ON outfit_db.* TO 'appuser'@'localhost';
 ```
 
 ### 🔗 **連線配置**
 ```python
-# config.py 設定
-DATABASE_URL = 'mysql://appuser:apppass@localhost/ai_fashion'
+# Docker 環境配置 (預設)
+DATABASE_URL = 'mysql://root:rootpassword@mysql:3306/outfit_db'
+
+# 本機環境配置
+DATABASE_URL = 'mysql://appuser:apppass@localhost:3306/outfit_db'
+
+# Flask 應用設定
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 ```
