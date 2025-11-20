@@ -1,11 +1,22 @@
 # 👗 AI 穿搭推薦網站
 
 > 基於 Google Gemini + LangChain 的智能穿搭推薦系統  
-> **🚀 新組員請直接閱讀：[規格化開發指南](SPEC_GUIDE.md)**
+> **🚀 新組員請直接閱讀：[規格化開發指南](### 🆕 新組員開始
+1. 📖 閱讀 [規格化開發指南](SPEC_GUIDE.md)
+2. 📚 查看 [完整技術文檔](docs/README.md) 了解開發環境和工具
+3. ⚡ 快速啟動：使用 Docker 一鍵部署
+4. 🔧 參考技術文檔進行深度配置
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0-green.svg)](https://flask.palletsprojects.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+### 💻 日常開發
+1. 🔍 使用 OpenSpec 規格驅動開發  
+2. 📚 查閱 [技術文檔中心](docs/README.md) 獲取詳細指引
+3. 🤝 按照團隊協作流程提交代碼
+4. 🐛 參考文檔故障排除章節解決問題md)**
+
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.2-green.svg)](https://flask.palletsprojects.com/)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Stage-blue.svg)](https://www.docker.com/)
+[![Environment](https://img.shields.io/badge/Environment-Standardized-success.svg)](#)
 
 ---
 
@@ -14,8 +25,8 @@
 結合 AI 技術的穿搭建議網站，透過對話式互動提供個性化穿搭建議。
 
 **核心功能**: AI 聊天 | 資料庫推薦 | 對話記憶 | 多模型備援  
-**技術棧**: Flask + MySQL + Docker + Gemini 2.0 Lite  
-**開發模式**: OpenSpec 規格驅動開發
+**技術棧**: Flask 3.1.2 + MySQL 8.0 + Docker Multi-stage + Gemini 2.0 Lite  
+**開發模式**: OpenSpec 規格驅動開發 | **環境標準化完成** ✅
 
 ---
 
@@ -54,12 +65,19 @@ AI-project/
 ├── 📱 app/                    # Flask 應用程式
 │   ├── ai_agent.py           # AI 對話引擎
 │   ├── langchain_agent.py    # LangChain 整合
+│   ├── requirements.txt      # 核心生產依賴 ✨
+│   ├── requirements-dev.txt  # 開發環境依賴 ✨
+│   ├── requirements-prod.txt # 生產環境依賴 ✨
 │   └── blueprints/           # 功能模組
 ├── 🗄️ init/                   # 資料庫初始化
+├── 🐳 Dockerfile             # 多階段容器建置 ✨
 ├── 🐳 docker-compose.yml     # 容器編排
+├── 📚 docs/                   # 技術文檔 (標準化指南) ✨
 ├── 📋 SPEC_GUIDE.md          # 規格化開發指南
 └── 📂 openspec/              # OpenSpec 規格管理
 ```
+
+**✨ = 環境標準化新增/更新**
 
 ### 🔧 技術選型理由
 
@@ -77,23 +95,50 @@ AI-project/
 
 ### 🆕 新組員開始
 1. 📖 閱讀 [規格化開發指南](SPEC_GUIDE.md)
-2. ⚙️ 按照指南設置開發環境
-3. 🧪 執行環境檢查腳本
-4. 👥 加入團隊協作流程
+2. ⚙️ 按照 [環境配置指南](docs/ENVIRONMENT_SETUP.md) 設置開發環境  
+3. 📦 參考 [套件管理指南](docs/PACKAGE_MANAGEMENT.md) 安裝依賴
+4. � 使用 [快速參考卡片](docs/QUICK_REFERENCE.md) 開始開發
 
 ### 💻 日常開發
-1. 🔍 使用 OpenSpec 規格驅動開發
-2. 🔧 遵循配置分離原則
+1. 🔍 使用 OpenSpec 規格驅動開發  
+2. 🔧 參考 [快速參考卡片](docs/QUICK_REFERENCE.md) 
 3. 🤝 按照團隊協作流程提交代碼
-4. 🐛 遇到問題參考問題排除章節
+4. 🐛 查看 [環境配置指南](docs/ENVIRONMENT_SETUP.md) 排除問題
 
 ### 📋 重要文件
 
 | 文件 | 用途 | 目標讀者 |
 |------|------|----------|
 | [SPEC_GUIDE.md](SPEC_GUIDE.md) | 統一開發指南 | 所有開發者 |
+| [docs/README.md](docs/README.md) | **完整技術文檔中心** | 開發團隊 |
 | [openspec/](openspec/) | 規格管理 | 功能開發者 |
-| [docs/LEGACY/](docs/LEGACY/) | 歷史文檔備份 | 參考用 |
+| [docker-compose.yml](docker-compose.yml) | 容器編排配置 | DevOps |
+
+---
+
+## 📁 專案結構
+
+```
+AI-project/
+├── 📱 app/                    # Flask 應用程式
+│   ├── app.py                # 主應用程式入口
+│   ├── ai_agent.py           # AI 智能代理
+│   ├── langchain_agent.py    # LangChain 整合
+│   ├── requirements*.txt     # 三層式套件管理 ✨
+│   ├── blueprints/           # Flask 模組化路由
+│   ├── lib/                  # 共用函式庫
+│   ├── static/               # 靜態資源 (CSS, JS, 圖片)
+│   └── templates/            # Jinja2 HTML 樣板
+├── 🐳 Dockerfile             # 多階段容器建置 ✨
+├── 🐳 docker-compose.yml     # 容器編排
+├── 📚 docs/                   # 技術文檔
+├── 🗄️ init/                  # 資料庫初始化
+├── 🚀 scripts/               # 啟動腳本
+├── 📂 openspec/               # OpenSpec 規格管理
+└── 📋 SPEC_GUIDE.md          # 規格化開發指南
+```
+
+**✨ = 環境標準化後更新**
 
 ---
 
@@ -109,7 +154,7 @@ AI-project/
 
 ### 快速支援
 - **🆘 緊急問題**: 查看 [SPEC_GUIDE.md - 問題排除](SPEC_GUIDE.md#問題排除)
-- **📖 完整文檔**: 閱讀 [規格化開發指南](SPEC_GUIDE.md)
+- **� 技術文檔**: 參考 [完整技術文檔中心](docs/README.md)
 - **🐛 Bug 回報**: [GitHub Issues](https://github.com/memory9802/AI-project/issues)
 - **💬 團隊討論**: 團隊群組
 
