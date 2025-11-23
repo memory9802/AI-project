@@ -1,0 +1,8 @@
+FROM mysql:8.0
+
+# Copy init SQL into the image to avoid host volume permission issues (e.g., macOS Docker Desktop).
+COPY ./init /docker-entrypoint-initdb.d
+RUN chmod -R 644 /docker-entrypoint-initdb.d || true
+
+# Keep the same MySQL server options that were previously set in docker-compose.
+CMD ["mysqld", "--default-authentication-plugin=mysql_native_password", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
