@@ -54,11 +54,11 @@ AI-project-crawler-test/
 │
 └─ 📖 文檔 (詳細說明)
     └─ docs/
-        ├─ DATABASE_CONCEPTS_EXPLAINED.md     # 資料庫原理圖解
-        ├─ DATABASE_SHARING_GUIDE.md          # 資料庫共享指南
-        ├─ CRAWLER_TEAM_UPLOAD_GUIDE.md       # 爬蟲組上傳指南
-        ├─ TEST_ACCOUNTS.md                   # 測試帳號 (不會上傳)
-        └─ USER_GENERATION_REPORT.md          # 用戶生成報告
+        ├─ DATABASE_GUIDE.md          # 資料庫完整指南 ⭐
+        ├─ CRAWLER_GUIDE.md           # 爬蟲開發指南 ⭐
+        ├─ TEAM_GUIDE.md              # 團隊協作指南 ⭐
+        ├─ TEST_ACCOUNTS.md           # 測試帳號 (不會上傳)
+        └─ USER_GENERATION_REPORT.md  # 用戶生成報告
 ```
 
 ---
@@ -230,7 +230,7 @@ docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "SELECT COUNT(
 - ❌ 只上傳 CSV = 別人還要手動匯入,容易出錯
 - ✅ 匯出 SQL = 其他人一鍵就能同步資料
 
-詳細說明: [爬蟲組上傳指南](docs/CRAWLER_TEAM_UPLOAD_GUIDE.md)
+詳細說明: [爬蟲組上傳指南](docs/CRAWLER_GUIDE.md)
 
 ---
 
@@ -249,7 +249,7 @@ docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "SELECT COUNT(
 重點:資料存在「右邊」,所以要匯出成「左邊」才能用 Git 分享!
 ```
 
-詳細圖解: [資料庫原理說明](docs/DATABASE_CONCEPTS_EXPLAINED.md)
+詳細圖解: [資料庫原理說明](docs/DATABASE_GUIDE.md)
 
 ---
 
@@ -353,7 +353,7 @@ develop (開發分支) ← 日常在這裡工作
 feature/* (功能分支) ← 開發新功能時使用
 ```
 
-**詳細說明:** [Git 工作流程指南](docs/GIT_WORKFLOW_GUIDE.md) ⭐
+**詳細說明:** [Git 工作流程指南](GIT_GUIDE.md) ⭐
 
 ---
 
@@ -488,18 +488,26 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 
 ## 📚 詳細文檔
 
-如需更深入了解,請參考 `docs/` 資料夾:
+如需更深入了解,請參考以下文檔:
 
+### 🚀 快速上手
+- [QUICK_START.md](QUICK_START.md) - 5 分鐘快速開始指南 ⭐ **新人必看!**
+
+### 📖 完整指南
 | 文檔 | 說明 | 適合對象 |
 |------|------|---------|
-| [GIT_WORKFLOW_GUIDE.md](docs/GIT_WORKFLOW_GUIDE.md) | Git 工作流程完整指南 ⭐ | 所有人必讀! |
-| [GIT_QUICK_REFERENCE.md](docs/GIT_QUICK_REFERENCE.md) | Git 快速參考與指令 | 所有人 |
-| [TEAM_WORKFLOW_RULES.md](docs/TEAM_WORKFLOW_RULES.md) | 團隊協作規範 | 所有人必讀! |
-| [DATABASE_CONCEPTS_EXPLAINED.md](docs/DATABASE_CONCEPTS_EXPLAINED.md) | 資料庫原理圖解 | 後端初學者 ⭐ |
-| [DATABASE_SHARING_GUIDE.md](docs/DATABASE_SHARING_GUIDE.md) | 完整共享指南 | 所有人 |
-| [CRAWLER_TEAM_UPLOAD_GUIDE.md](docs/CRAWLER_TEAM_UPLOAD_GUIDE.md) | 爬蟲組專屬 | 爬蟲組 ⭐ |
-| [USER_GENERATION_REPORT.md](docs/USER_GENERATION_REPORT.md) | 用戶生成與登入實作 | 後端組 |
-| [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 | 前端/後端組 |
+| [GIT_GUIDE.md](GIT_GUIDE.md) | Git 版本控制完整指南 ⭐ | 所有人必讀! |
+| [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | 資料庫管理完整指南 ⭐ | 所有人必讀! |
+| [CRAWLER_GUIDE.md](docs/CRAWLER_GUIDE.md) | 爬蟲開發完整指南 | 爬蟲組 ⭐ |
+| [TEAM_GUIDE.md](docs/TEAM_GUIDE.md) | 團隊協作完整指南 | 所有人 |
+
+### 📋 參考資料
+| 文檔 | 說明 |
+|------|------|
+| [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 |
+| [USER_GENERATION_REPORT.md](docs/USER_GENERATION_REPORT.md) | 用戶生成與登入實作 |
+| [PIPELINE_OVERVIEW.md](PIPELINE_OVERVIEW.md) | 爬蟲 Pipeline 概覽 |
+| [SPEC_GUIDE.md](SPEC_GUIDE.md) | 專案規格說明 |
 
 ---
 
