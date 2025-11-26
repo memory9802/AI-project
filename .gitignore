@@ -99,3 +99,5 @@ init/GEMINI_*.md
 # 其他專案
 other_projects/
 misc/
+docs/TEST_ACCOUNTS.md
+init/outfit_db_with_data.sql

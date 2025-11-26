@@ -1,347 +1,180 @@
--- 初始化穿搭資料庫
+-- ========================================
+-- 穿搭資料庫初始化腳本 (僅結構定義)
+-- ========================================
+-- 
+-- 📋 此檔案用途:建立資料庫結構 (不含資料)
+-- 
+-- ⚠️ 重要提醒:
+--   - 新組員請使用 outfit_db_with_data.sql (包含完整資料)
+--   - 此檔案只適合「從零建立」時使用
+-- 
+-- 🚀 快速上手:
+--   ./scripts/setup_database_for_teammates.sh
+-- 
+-- ========================================
+
+-- 設定字符集 (解決中文亂碼)
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE outfit_db;
 
 -- =============================
 -- 衣物表 items
 -- =============================
+-- 注意: category 和其他 ENUM 欄位已改為 VARCHAR 以支援更多資料來源
 CREATE TABLE IF NOT EXISTS items (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  sku VARCHAR(50) UNIQUE,
-  name VARCHAR(100) NOT NULL,
-  gender ENUM('男','女','-') DEFAULT NULL,
-  clothing_type VARCHAR(50),
-  category ENUM('top','bottom','outer','shoes','accessory') NOT NULL,
-  length ENUM('短','長','-') DEFAULT NULL,
-  color VARCHAR(50),
-  size VARCHAR(10),
-  price VARCHAR(20),
-  image_url VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(100) DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',
+  color VARCHAR(50) DEFAULT NULL,
+  size VARCHAR(20) DEFAULT NULL,
+  price DECIMAL(10,2) DEFAULT NULL,
+  image_url VARCHAR(255) DEFAULT NULL,
+  description TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  sku VARCHAR(50) UNIQUE DEFAULT NULL,
+  gender VARCHAR(20) DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',
+  clothing_type VARCHAR(50) DEFAULT NULL,
+  length VARCHAR(20) DEFAULT NULL COMMENT '短, 長, 中',
+  price_text VARCHAR(20) DEFAULT NULL,
+  source VARCHAR(50) DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, fashion_small, malefashion',
+  
+  INDEX idx_category (category),
+  INDEX idx_color (color),
+  INDEX idx_gender (gender),
+  INDEX idx_source (source),
+  INDEX idx_sku (sku)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+COMMENT='單品表 - 支援多來源資料(UNIQLO, 時尚資料集等)';
 
--- UNIQLO 商品資料（共 231 筆）
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052705', '短版T恤(短袖)', '女', '女裝T恤上衣', 'top', '短', '白色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052705/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000018277', '圓領T恤(短袖)', '女', '女裝T恤上衣', 'top', '短', '黑色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000018277/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052527', 'UTme! 寶可夢特別慶典UT印花T恤', '男', '男裝T恤上衣', 'top', '短', '白色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052527/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052400', '柔軟針織刷毛圓領T恤(長袖)', '女', '女裝T恤上衣', 'top', '長', '深紫色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052400/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051637', '棉質T恤(無袖)', '女', '女裝T恤上衣', 'top', '短', '白色', 'NT$190', 'https://www.uniqlo.com/tw/hmall/test/u0000000051637/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052524', 'UTme! 寶可夢特別慶典UT印花T恤', '男', '男裝T恤上衣', 'top', '短', '白色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052524/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051597', '圓領T恤(短袖)', '-', '-', NULL, '-', '-', 'NT$190', 'https://www.uniqlo.com/tw/hmall/test/u0000000051597/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052049', 'AIRism棉質寬版圓領T恤(五分袖)', '男', '男裝T恤上衣', 'top', '短', '米色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052049/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052522', 'UTme! 寶可夢特別慶典UT印花T恤', '男', '男裝T恤上衣', 'top', '短', '黑色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052522/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052799', 'DRY多色圓領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '深藍色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052799/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050621', '羅紋船型領T恤(五分袖)', '女', '女裝T恤上衣', 'top', '短', '酒紅色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050621/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052431', 'HEATTECH刷毛高領T恤(長袖)', '女', '女裝T恤上衣', 'top', '長', '深灰色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052431/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050586', 'AIRism棉質寬版圓領T恤(五分袖)', '男', '男裝T恤上衣', 'top', '短', '酒紅色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050586/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050617', 'AIRism棉質T恤(無袖)', '男', '男裝T恤上衣', 'top', '短', '深灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000050617/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052958', '圓領T恤(短袖)', '女', '女裝T恤上衣', 'top', '短', '深咖啡色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052958/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052523', 'UTme! 寶可夢特別慶典UT印花T恤', '男', '男裝T恤上衣', 'top', '短', '黑色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052523/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052291', '柔軟羅紋圓領T恤(長袖)', '女', '女裝T恤上衣', 'top', '長', '淺灰色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052291/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052707', 'AIRism棉質T恤(短袖)', '男', '男裝T恤', 'top', '短', '深藍色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052707/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052434', 'SUPIMA COTTON圓領T恤(長袖)', '女', '女裝T恤', 'top', '長', '深咖啡色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052434/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052437', 'HEATTECH彈性刷毛半開襟T恤(長袖)', '女', '女裝T恤上衣', 'top', '長', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052437/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052281', '柔軟羅紋拼色圓領T恤(長袖)', '女', '女裝T恤上衣', 'top', '長', '淺灰色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052281/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050368', 'AIRism棉質圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '咖啡色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050368/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000013896', 'Gordon Reid 圓領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '白色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000013896/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000013938', '河村康輔 圓領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '黑色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000013938/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052211', 'SUPIMA COTTON T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '橘色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052211/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000013909', '錦織圭 圓領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '白色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000013909/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050640', 'SUPIMA COTTON T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050640/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051730', 'Pokémon 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051730/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051656', '府綢寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '白色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051656/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052024', '法蘭絨寬版襯衫(長袖)(格紋)', '女', '女裝襯衫', 'top', '長', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052024/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050920', '休閒寬褲(褲腳抽繩)', '男', '男裝長褲', 'bottom', '長', '淺灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050920/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052359', '短版休閒上衣(長袖)', '女', '女裝休閒上衣', 'top', '長', '正紅色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052359/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052867', '休閒寬褲(褲腳抽繩)', '男', '男裝長褲', 'bottom', '長', '淺灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052867/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051733', 'Pokémon 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '淺紫色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051733/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051591', '牛仔寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '淺藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051591/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051905', '泡泡瑪特 半開襟休閒上衣(長袖)', '女', '女裝休閒上衣', 'top', '長', '米色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051905/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052016', '法蘭絨寬版襯衫(長袖)', '女', '女裝襯衫', 'top', '長', '米色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052016/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052833', '圓領T恤(短袖)', '男', '男裝T恤', 'top', '短', '深灰色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052833/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051971', 'AIRism棉質T恤(短袖)', '女', '女裝T恤上衣', 'top', '短', '正紅色', 'NT$190', 'https://www.uniqlo.com/tw/hmall/test/u0000000051971/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051775', '吉卜力工作室 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '米色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051775/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051772', '吉卜力工作室 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051772/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000020296', 'KAWS + Warhol 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '黑色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000020296/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051603', 'T2CLASSIC/粗紡T恤(短袖)', '女', '女裝T恤上衣', 'top', '短', '白色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051603/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052136', 'PEANUTS 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '黃色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052136/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052280', '休閒側線長褲', '女', '女裝長褲', 'bottom', '長', '淺灰色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052280/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051569', '嫡縈開領上衣(七分袖)', '女', '女裝襯衫', 'top', '短', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051569/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052727', 'ZOOTOPIA 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052727/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052010', '休閒長褲', '男', '男裝休閒長褲', 'bottom', '長', '咖啡色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052010/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052892', '休閒上衣(長袖)', '男', '男裝衛衣', 'top', '長', '淺灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052892/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051831', '府綢襯衫(長袖)(格紋)', '男', '男裝襯衫', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051831/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052133', 'PEANUTS 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052133/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051571', 'DRY-EX T恤(短袖)(印花)', '男', '男裝T恤上衣', 'top', '短', '黑色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051571/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050694', '木代爾棉質印花開領襯衫(短袖)', '男', '男裝襯衫', 'top', '短', '米色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050694/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052021', '法蘭絨寬版襯衫(長袖)(格紋)', '女', '女裝襯衫', 'top', '長', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052021/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052421', 'DRY-EX T恤(短袖)(印花)', '男', '男裝T恤上衣', 'top', '短', '淺藍色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052421/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052828', '特級抗皺合身襯衫(長袖)(標準領)', '男', '男裝襯衫', 'top', '長', '黑色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052828/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052000', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052000/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050759', 'DRY網眼POLO衫(短袖)', '男', '男裝POLO衫', 'top', '短', '淺灰色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050759/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052403', '燈芯絨寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '米色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052403/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052555', '刷毛半開襟休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052555/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051255', 'DRY-EX T恤(短袖)(印花)', '男', '男裝T恤上衣', 'top', '短', '深藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051255/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051411', 'AIRism棉質網眼POLO衫(短袖)', '男', '男裝POLO衫', 'top', '短', '白色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051411/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052301', '柔軟針織刷毛圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '橘色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052301/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052013', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052013/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050699', '棉麻襯衫(短袖)', '男', '男裝襯衫', 'top', '短', '米色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050699/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052017', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '黃色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052017/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050470', '府綢襯衫(長袖)(鈕釦領)', '男', '男裝襯衫', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000050470/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052380', '磨毛棉質開領寬版襯衫(長袖)(格紋)', '男', '男裝襯衫', 'top', '長', '咖啡色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052380/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052040', '工裝寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '卡其色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052040/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050630', '圓領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '深咖啡色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050630/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050366', '垂墜感牛仔寬褲(稍長)', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050366/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053018', 'EZY牛仔褲', '男', '男裝長褲', 'bottom', '長', '黑色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000053018/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052763', '繭型褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052763/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050292', '直筒牛仔寬褲(稍長)', '女', '女裝牛仔褲', 'bottom', '長', '米色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050292/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051847', '合身喇叭牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051847/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052761', '繭型褲(稍長)', '女', '女裝長褲', 'bottom', '長', '深咖啡色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052761/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050276', '直筒牛仔寬褲', '女', '女裝長褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050276/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052715', '直筒牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '卡其色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052715/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051849', '特級彈性緊身九分牛仔褲', '女', '女裝牛仔褲', 'bottom', '短', '黑色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051849/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052787', '繭型牛仔褲(稍長)', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052787/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051828', '繭型牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051828/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052371', '直筒牛仔寬褲(稍長)', '男', '男裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052371/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052771', '繭型牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052771/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050310', '寬版牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '深藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050310/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052762', '喇叭牛仔褲', '女', '女士牛仔褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052762/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052370', '直筒牛仔寬褲', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052370/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050530', '寬版牛仔褲(稍長)', '女', '女裝牛仔褲', 'bottom', '長', '白色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050530/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050198', '垂墜感牛仔寬褲', '女', '女裝牛仔褲', 'bottom', '長', '米色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050198/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051694', '孕婦包腹特級彈性牛仔緊身褲', '女', '女裝牛仔緊身褲', 'bottom', '長', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051694/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050827', '直筒牛仔褲', '女', '女裝長褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050827/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051881', '繭型牛仔褲(稍長)', '女', '女裝牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051881/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053080', '直筒牛仔褲', '女', '女裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000053080/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050984', 'AIRism柔軟羅紋喇叭緊身褲', '女', '女裝喇叭緊身褲', 'bottom', '長', '淺藍色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050984/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050207', '孕婦包腹特級彈性緊身褲', '女', '女裝緊身褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050207/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052571', '特級彈性緊身褲', '女', '女裝長褲', 'bottom', '長', '深綠色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052571/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050647', '寬版錐形牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050647/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050369', '彈性赤耳合身牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050369/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053023', '寬版直筒牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '淺灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000053023/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051858', '寬版直筒牛仔褲(稍長)', '男', '男裝牛仔褲', 'bottom', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051858/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050652', 'EZY牛仔褲(稍長)', '男', '男裝牛仔褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050652/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052143', '寬版直筒牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '淺藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052143/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052665', '直筒牛仔褲', '男', '男裝長褲', 'bottom', '長', '咖啡色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052665/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050295', '合身刷破牛仔褲', '男', '男裝長褲', 'bottom', '長', '淺藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050295/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050253', '寬版直筒牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050253/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050254', '合身牛仔褲', '男', '男裝牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050254/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052984', '合身直筒牛仔褲', '男', '男士牛仔褲', 'bottom', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052984/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052061', '直筒牛仔褲', '男', '男士牛仔褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052061/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052530', '寬版牛仔褲', '男', '男裝長褲', 'bottom', '長', '黑色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052530/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052849', '棉質舒適九分褲', '男', '男裝長褲', 'bottom', '長', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052849/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051214', '棉質彈性短褲', '男', '男裝短褲', 'bottom', '短', '淺藍色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051214/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051888', '寬版降落傘褲', '男', '男裝長褲', 'bottom', '長', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051888/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050098', 'SMART 九分褲', '男', '男裝長褲', 'bottom', '長', '深咖啡色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000050098/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052721', '特級彈性Active束口褲', '男', '男裝長褲', 'bottom', '長', '卡其色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052721/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052887', 'Miracle Air 西裝長褲(稍長)', '男', '男裝西裝長褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052887/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052331', '絨面寬褲', '女', '女裝寬褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052331/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050788', '特級彈性長褲(稍長)', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050788/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051179', '寬版工裝五分褲', '男', '男裝短褲', 'bottom', '短', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051179/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051830', '打褶寬褲', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051830/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050883', '防潑水多口袋機能短褲', '男', '男裝短褲', 'bottom', '短', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050883/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050950', '特級彈性Active短褲', '男', '男裝短褲', 'bottom', '短', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050950/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052026', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '黃色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052026/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052538', '刷毛休閒寬褲', '男', '男裝休閒寬褲', 'bottom', '長', '咖啡色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052538/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052605', '刷毛寬版開襟外套', '男', '男裝外套', 'top', '長', '深紫色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052605/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052605', '刷毛寬版開襟外套', '男', '男裝外套', 'top', '長', '深紫色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052605/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052100', '柔軟棉質圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052100/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052100', '柔軟棉質圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052100/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053021', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000053021/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051664', '牛津襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051664/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050301', '休閒連帽外套(長袖)', '男', '男裝連帽外套', 'top', '長', '粉紅色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050301/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050301', '休閒連帽外套(長袖)', '男', '男裝連帽外套', 'top', '長', '粉紅色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050301/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051997', '法蘭絨襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '酒紅色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051997/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051997', '法蘭絨襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '酒紅色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051997/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052135', 'PEANUTS 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052135/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050830', 'DRY網眼POLO衫(短袖)(滾邊)', '男', '男裝POLO衫', 'top', '短', '淺藍色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000050830/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051737', 'Pokémon 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '深紫色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051737/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052025', '法蘭絨寬版襯衫(長袖)(格紋)', '女', '女裝襯衫', 'top', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052025/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051773', '吉卜力工作室 印花休閒上衣(長袖)', '男', '男裝大學T', 'top', '長', '深綠色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051773/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051070', '寬版休閒連帽上衣(長袖)', '男', '男裝連帽上衣', 'top', '長', '黑色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051070/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052430', '防風防潑水刷毛連帽外套(長袖)', '男', '男裝外套', 'top', '長', '深藍色', 'NT$1490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052430/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051461', 'DRY華夫格亨利領T恤(短袖)', '男', '男裝T恤上衣', 'top', '短', '深灰色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051461/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052093', '刷毛外套(長袖)', '男', '男裝外套', 'top', '長', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052093/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053020', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '酒紅色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000053020/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050558', '休閒長褲(稍長)', '男', '男裝長褲', 'bottom', '長', '淺灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050558/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052883', 'AIRism棉質網眼POLO衫(短袖)', '男', '男裝POLO衫', 'top', '短', '深藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052883/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052525', '斜紋工作寬版襯衫(長袖)(格紋)', '男', '男裝襯衫', 'top', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052525/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052428', '可機洗針織羅紋長褲', '女', '女裝長褲', 'bottom', '長', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052428/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053084', '棉質舒適九分褲(牛仔)', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000053084/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053084', '棉質舒適九分褲(牛仔)', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000053084/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052001', 'DRY休閒繭型長褲', '女', '女裝長褲', 'bottom', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052001/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052300', '法蘭絨長褲(格紋)', '女', '女裝長褲', 'bottom', '長', '咖啡色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052300/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052619', 'SMART 九分褲', '女', '女裝長褲', 'bottom', '長', '深咖啡色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052619/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000018369', '孕婦包腹SMART九分褲', '女', '女裝九分褲', 'bottom', '短', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000018369/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051834', '百褶褲裙', '女', '女裝短褲', 'bottom', '短', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051834/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051799', '棉質舒適九分褲', '男', '男裝九分褲', 'bottom', '長', '米色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051799/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052329', 'HEATTECH毛絨休閒長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052329/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052329', 'HEATTECH毛絨休閒長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052329/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052288', '燈芯絨舒適九分褲', '男', '男裝長褲', 'bottom', '長', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052288/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052202', '寬褲', '女', '女裝長褲', 'bottom', '長', '深咖啡色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052202/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050135', '棉質舒適九分褲(牛仔)', '女', '女裝長褲', 'bottom', '短', '淺藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050135/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052381', '寬褲', '女', '女裝長褲', 'bottom', '長', '深紫色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052381/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052172', '寬襬褲裙(格紋)', '女', '女裝褲裙', 'bottom', '短', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052172/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052003', '繭型褲(稍長)', '女', '女裝長褲', 'bottom', '長', '深綠色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052003/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051698', '特級彈性緊身褲', '女', '女裝緊身褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051698/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051698', '特級彈性緊身褲', '女', '女裝緊身褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051698/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000019501', '棉質舒適九分褲', '女', '女裝長褲', 'bottom', '長', '米色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000019501/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000019602', 'SMART 九分褲(彈性)(格紋)(稍長)', '女', '女裝長褲', 'bottom', '長', '咖啡色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000019602/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052455', '特級彈性Active束口褲', '女', '女裝長褲', 'bottom', '長', '淺灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052455/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052455', '特級彈性Active束口褲', '女', '女裝長褲', 'bottom', '長', '淺灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052455/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052618', 'SMART 寬褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052618/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052618', 'SMART 寬褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052618/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050249', '棉質舒適九分褲(牛仔)', '男', '男裝長褲', 'bottom', '長', '淺藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050249/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052642', '繭型褲', '女', '女裝長褲', 'bottom', '長', '米色', 'NT$1490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052642/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052321', '燈芯絨工裝長褲', '男', '男裝長褲', 'bottom', '長', '深咖啡色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052321/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052089', '刷毛外套(長袖)(拼色)', '男', '男裝外套', 'top', '長', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052089/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052605', '刷毛寬版開襟外套', '男', '男裝開襟外套', 'top', '長', '深紫色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052605/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052605', '刷毛寬版開襟外套', '男', '男裝開襟外套', 'top', '長', '深紫色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052605/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000020399', '寬版休閒連帽上衣', '男', '男裝連帽上衣', 'top', '長', '黑色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000020399/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050265', 'UNIQLO LOGO印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000050265/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050685', 'DRY-EX防曬印花連帽外套', '男', '男裝連帽外套', 'top', '長', '淺藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000050685/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052417', 'DRY-EX防曬連帽外套', '男', '男裝外套', 'top', '長', '深灰色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000052417/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051873', '府綢襯衫(長袖)(格紋)', '男', '男裝襯衫', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051873/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000019304', '吉卜力工作室 休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '深綠色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000019304/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052201', '寬版休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '淺灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052201/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052603', '刷毛寬褲', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052603/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052725', 'ZOOTOPIA 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '黑色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052725/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052756', '休閒連帽上衣(長袖)', '男', '男裝連帽上衣', 'top', '長', '深藍色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052756/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052379', '磨毛棉質開領寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '淺灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052379/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051926', '寬版休閒連帽上衣(長袖)', '男', '男裝連帽上衣', 'top', '長', '深綠色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051926/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051997', '法蘭絨襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '酒紅色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051997/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051997', '法蘭絨襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '酒紅色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051997/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050307', '休閒上衣(長袖)', '男', '男裝衛衣', 'top', '長', '米色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000050307/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050301', '休閒連帽外套(長袖)', '男', '男裝外套', 'top', '長', '粉紅色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050301/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050301', '休閒連帽外套(長袖)', '男', '男裝外套', 'top', '長', '粉紅色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050301/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051575', '牛仔寬版襯衫(長袖)', '男', '男裝襯衫', 'top', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051575/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052020', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '深綠色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052020/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052733', 'ZOOTOPIA 印花休閒上衣(長袖)', '男', '男裝休閒上衣', 'top', '長', '淺灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052733/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052100', '柔軟棉質圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052100/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052100', '柔軟棉質圓領T恤(長袖)', '男', '男裝T恤上衣', 'top', '長', '深綠色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052100/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052582', '針織刷毛外套(長袖)', '男', '男裝外套', 'top', '長', '深藍色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052582/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053019', '法蘭絨襯衫(長袖/格紋)', '男', '男裝襯衫', 'top', '長', '白色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000053019/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052503', '柔軟刷毛舒適束口褲', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052503/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050267', '打褶寬褲(稍長)', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000050267/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052167', '棉質繭型九分褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052167/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052712', '休閒長褲', '男', '男裝長褲', 'bottom', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052712/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052618', 'SMART 寬褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052618/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052618', 'SMART 寬褲', '女', '女裝長褲', 'bottom', '長', '卡其色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000052618/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052993', '休閒直筒長褲', '女', '女裝長褲', 'bottom', '長', '淺灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052993/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052329', 'HEATTECH毛絨休閒長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052329/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052329', 'HEATTECH毛絨休閒長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000052329/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052189', '細褶長裙(印花)', '女', '女裝裙子', 'bottom', '長', '深藍色', NULL, 'https://www.uniqlo.com/tw/hmall/test/u0000000052189/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051430', 'SMART 九分褲(稍長)', '女', '女裝長褲', 'bottom', '長', '米色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000051430/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051527', '可機洗米蘭羅紋寬襬裙', '女', '女裝裙', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051527/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051950', 'SMART 喇叭褲', '女', '女裝喇叭褲', 'bottom', '長', '黑色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000051950/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052772', '棉質舒適九分褲(牛仔)', '女', '女裝長褲', 'bottom', '長', '淺藍色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052772/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050639', '棉質短褲', '女', '女裝短褲', 'bottom', '短', '米色', 'NT$590', 'https://www.uniqlo.com/tw/hmall/test/u0000000050639/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052337', '保暖彈性長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$1490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052337/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051698', '特級彈性緊身褲', '女', '女裝緊身褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051698/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051698', '特級彈性緊身褲', '女', '女裝緊身褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000051698/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052573', '特級彈性牛仔緊身褲', '女', '女裝緊身褲', 'bottom', '長', '深藍色', 'NT$290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052573/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050348', '特級彈性Active束口褲', '女', '女裝長褲', 'bottom', '長', '米色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050348/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053084', '棉質舒適九分褲(牛仔)', '男', '男裝長褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000053084/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000053084', '棉質舒適九分褲(牛仔)', '男', '男裝長褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000053084/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051884', '蛋糕裙', '女', '女裝裙子', 'bottom', '長', '白色', 'NT$390', 'https://www.uniqlo.com/tw/hmall/test/u0000000051884/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050211', '孕婦包腹SMART九分褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000050211/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000050917', '特級彈性短褲', '男', '男裝短褲', 'bottom', '短', '深灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000050917/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052955', '可機洗針織羅紋長褲', '女', '女裝長褲', 'bottom', '長', '黑色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052955/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000051717', 'SMART 九分褲', '女', '女裝長褲', 'bottom', '長', '深灰色', 'NT$990', 'https://www.uniqlo.com/tw/hmall/test/u0000000051717/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052175', '細褶長裙(拼色)', '女', '女裝長裙', 'bottom', '長', '深綠色', 'NT$790', 'https://www.uniqlo.com/tw/hmall/test/u0000000052175/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052543', '棉質卡其褲', '女', '女裝長褲', 'bottom', '長', '深灰色', 'NT$1290', 'https://www.uniqlo.com/tw/hmall/test/u0000000052543/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052455', '特級彈性Active束口褲', '女', '女裝束口褲', 'bottom', '長', '淺灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052455/main/first/561/1.jpg');
-INSERT INTO items (sku, name, gender, clothing_type, category, length, color, price, image_url) VALUES ('u0000000052455', '特級彈性Active束口褲', '女', '女裝束口褲', 'bottom', '長', '淺灰色', 'NT$490', 'https://www.uniqlo.com/tw/hmall/test/u0000000052455/main/first/561/1.jpg');
-
-
--- =============================
--- 穿搭表 outfits
--- =============================
-CREATE TABLE IF NOT EXISTS outfits (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  occasion ENUM('casual','formal','street','sport','date') DEFAULT 'casual',
-  description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 範例穿搭資料
-INSERT INTO outfits (name, occasion, description)
-VALUES
-('白T + 牛仔 + 白球鞋', 'casual', '經典日常穿搭'),
-('灰外套 + 牛仔褲', 'formal', '簡約正式感'),
-('白T + 灰外套', 'street', '街頭風混搭');
-
--- =============================
--- 穿搭與衣物關聯表 outfit_items
--- =============================
-CREATE TABLE IF NOT EXISTS outfit_items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  outfit_id INT NOT NULL,
-  item_id INT NOT NULL,
-  FOREIGN KEY (outfit_id) REFERENCES outfits(id) ON DELETE CASCADE,
-  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
-);
-
--- 關聯：outfit 1 -> 白T + 牛仔 + 白鞋
-INSERT INTO outfit_items (outfit_id, item_id) VALUES
-(1, 1), (1, 2), (1, 3);
-
--- 關聯：outfit 2 -> 灰外套 + 牛仔褲
-INSERT INTO outfit_items (outfit_id, item_id) VALUES
-(2, 4), (2, 2);
-
--- 關聯：outfit 3 -> 白T + 灰外套
-INSERT INTO outfit_items (outfit_id, item_id) VALUES
-(3, 1), (3, 4);
-
--- =============================
--- 標籤表 tags（可選，用於AI分類）
--- =============================
-CREATE TABLE IF NOT EXISTS tags (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(50) UNIQUE
-);
-
-INSERT INTO tags (name) VALUES
-('休閒'), ('正式'), ('街頭'), ('運動'), ('約會');
+-- 注意: items 表格的資料請使用 Python 腳本匯入
+-- 執行: python3 scripts/import_csv_to_db.py
+-- 將會從以下來源匯入資料:
+--   - init/uniqlo_175_colored.csv (222 筆)
+--   - dataset/styles.csv (44,407 筆)
+--   - dataset/items_fashion_small_clean.csv (4,999 筆)
+--   - dataset/items_malefashion.csv (80 筆)
 
 -- =============================
 -- 使用者表 users
 -- =============================
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  favorite_style VARCHAR(50),
+  username VARCHAR(100) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE DEFAULT NULL,
+  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',
+  favorite_style VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='使用者表 - 使用 bcrypt 加密密碼';
 
--- 預設使用者
-INSERT INTO users (username, password, favorite_style)
-VALUES
-('ian', 'test123', '休閒'),
-('guest', '1234', '街頭');
+-- 注意: users 表格的資料請使用 Python 腳本生成
+-- 執行: python3 scripts/generate_users_with_bcrypt.py
+-- 將會生成 50 個測試用戶,包含:
+--   - 3 個主要測試帳號: admin, demo, test (密碼: admin123, demo123, test123)
+--   - 47 個虛擬用戶 (密碼: password123)
+--   - 所有密碼使用 bcrypt 加密儲存
+--
+-- 測試帳號清單請查看: docs/TEST_ACCOUNTS.md (已加入 .gitignore)
+-- 
+-- 前端登入流程:
+-- 1. 前端發送帳號密碼到後端 API: POST /api/login
+-- 2. 後端使用 bcrypt.checkpw() 驗證密碼
+-- 3. 驗證成功返回用戶資訊和 session/token
 
 -- =============================
--- 收藏表 user_favorites
+-- 使用者衣櫃表 user_wardrobe
 -- =============================
-CREATE TABLE IF NOT EXISTS user_favorites (
+CREATE TABLE IF NOT EXISTS user_wardrobe (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  outfit_id INT NOT NULL,
+  item_id INT NOT NULL,
+  nickname VARCHAR(100) DEFAULT NULL COMMENT '使用者自訂的衣物暱稱',
+  purchase_date DATE DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (outfit_id) REFERENCES outfits(id) ON DELETE CASCADE
-);
+  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_user_item (user_id, item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='使用者個人衣櫃';
 
--- 收藏範例
-INSERT INTO user_favorites (user_id, outfit_id) VALUES
-(1, 1),
-(1, 3),
-(2, 2);
+-- =============================
+-- 合作品牌商品表 partner_products
+-- =============================
+CREATE TABLE IF NOT EXISTS partner_products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_id INT NOT NULL,
+  brand VARCHAR(100) NOT NULL,
+  product_url VARCHAR(500) DEFAULT NULL,
+  affiliate_link VARCHAR(500) DEFAULT NULL,
+  current_price DECIMAL(10,2) DEFAULT NULL,
+  original_price DECIMAL(10,2) DEFAULT NULL,
+  discount_percent INT DEFAULT NULL,
+  stock_status ENUM('in_stock', 'out_of_stock', 'pre_order') DEFAULT 'in_stock',
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+  INDEX idx_brand (brand),
+  INDEX idx_stock (stock_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='合作品牌商品資訊(UNIQLO等)';
+
+-- =============================
+-- AI 對話歷史表 conversation_history
+-- =============================
+CREATE TABLE IF NOT EXISTS conversation_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT DEFAULT NULL,
+  session_id VARCHAR(100) NOT NULL,
+  message_type ENUM('user', 'assistant', 'system') NOT NULL,
+  content TEXT NOT NULL,
+  metadata JSON DEFAULT NULL COMMENT '額外資訊(如推薦的 outfit_ids, item_ids 等)',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_session (session_id),
+  INDEX idx_user (user_id),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='AI 聊天對話記錄';
+
+-- =============================
+-- 穿搭評分表 outfit_ratings
+-- =============================
+-- 注意: 此表格目前未使用,因為沒有 outfits 表格
+-- 如需要穿搭功能,請重新設計表格結構
+CREATE TABLE IF NOT EXISTS outfit_ratings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user (user_id),
+  INDEX idx_rating (rating)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='使用者對穿搭的評分(目前未使用)';
 
 -- =============================
 -- 完成訊息
 -- =============================
-SELECT '✅ Outfit database initialized successfully!' AS status;
+SELECT '✅ Database structure created successfully!' AS status;
+SELECT '📝 Note: Please import items data using: python3 scripts/import_csv_to_db.py' AS instruction;
+
+-- =============================
+-- 字符集修復 (如果遇到亂碼)
+-- =============================
+-- 如果 DBeaver 顯示中文亂碼,請執行以下指令:
+-- 
+-- ALTER DATABASE outfit_db CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- ALTER TABLE items CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE user_wardrobe CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE partner_products CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE conversation_history CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE outfit_ratings CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- 
+-- DBeaver 連接設定也要加入:
+--   characterEncoding = UTF-8
+--   useUnicode = true
