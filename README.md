@@ -506,6 +506,7 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 |------|------|
 | [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 |
 | [USER_GENERATION_REPORT.md](docs/USER_GENERATION_REPORT.md) | 用戶生成與登入實作 |
+| [TECHNICAL_SETUP.md](docs/TECHNICAL_SETUP.md) | 技術規格與環境設定 (進階) |
 | [PIPELINE_OVERVIEW.md](PIPELINE_OVERVIEW.md) | 爬蟲 Pipeline 概覽 |
 | [SPEC_GUIDE.md](SPEC_GUIDE.md) | 專案規格說明 |
 

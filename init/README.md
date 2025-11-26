@@ -236,8 +236,8 @@ docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "SELECT COUNT(
 ## 🆘 需要幫助?
 
 - 📖 查看主要文檔: [README.md](../README.md)
-- 🗄️ 資料庫原理說明: [docs/DATABASE_CONCEPTS_EXPLAINED.md](../docs/DATABASE_CONCEPTS_EXPLAINED.md)
-- 🔧 完整操作指南: [docs/DATABASE_SHARING_GUIDE.md](../docs/DATABASE_SHARING_GUIDE.md)
+- � 完整資料庫指南: [docs/DATABASE_GUIDE.md](../docs/DATABASE_GUIDE.md) ⭐
+- � 快速開始: [QUICK_START.md](../QUICK_START.md)
 
 ---
 
