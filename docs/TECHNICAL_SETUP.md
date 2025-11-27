@@ -332,4 +332,4 @@ template = """你是專業的穿搭顧問。
 
 ---
 
-*返回專案根目錄: [README.md](../README.md) | 查看規格指南: [SPEC_GUIDE.md](../SPEC_GUIDE.md)*
+*返回專案根目錄: [README.md](../README.md) | 查看規格指南: [SPEC_GUIDE.md](../SPEC_GUIDE.md)*# Final update
