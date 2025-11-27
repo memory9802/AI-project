@@ -65,3 +65,4 @@ AI-powered outfit recommendation system that helps users discover personalized c
 - **MySQL Database**: For user data and conversation history
 - **Docker Services**: MySQL, phpMyAdmin containers
 - **npm Packages**: Bootstrap, jQuery, Axios, Webpack toolchain
+
