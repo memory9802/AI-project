@@ -126,4 +126,4 @@ openspec list                  # 不會顯示變更提案 (因為已整合)
 ---
 
 *文檔導航建立時間: 2025年11月20日*  
-*維護團隊: AI-project 開發團隊*
+*維護團隊: AI-project 開發團隊*# Updated
