@@ -562,6 +562,11 @@ def ping():
         "ai_enabled": USE_GEMINI
     })
 
+# 相容外部健康檢查: /health 也回傳與 /ping 相同資訊
+@app.route('/health')
+def health():
+    return ping()
+
 # =======================
 # 🔍 資料品質檢查
 # =======================
