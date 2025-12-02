@@ -78,26 +78,3 @@ restructure_csv.py
 run_from_62.py
 update_*.py
 visual_*.py
-
-# CSV 資料與暫存檔
-init/*.csv
-init/gemini_full_results_*.json
-init/ai_verification_*.json
-init/image_verification_*.json
-init/*_report_*.txt
-init/import_uniqlo_data.sql
-init/outfit_db_backup_*.sql
-
-# 開發文檔（已整合）
-GEMINI_QUICKSTART.md
-IMPROVEMENT_REPORT.md
-README_ADVANCED_COLOR.md
-color_detection_*.md
-color_detection_*.txt
-init/GEMINI_*.md
-
-# 其他專案
-other_projects/
-misc/
-docs/TEST_ACCOUNTS.md
-init/outfit_db_with_data.sql
