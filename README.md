@@ -1,578 +1,683 @@
-# 🎨 AI 穿搭推薦系統
+# 👗 AI 穿搭推薦網站
 
-> 基於 AI 的智能服飾推薦與色彩分析平台
+> 基於 Google Gemini + LangChain 的智能穿搭推薦系統
 
-## 📚 目錄
-
-- [專案架構](#專案架構)
-- [快速開始](#快速開始)
-- [資料庫同步](#資料庫同步)
-- [開發須知](#開發須知)
-- [測試帳號](#測試帳號)
-- [團隊協作](#團隊協作)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-green.svg)](https://flask.palletsprojects.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ---
 
-## 📁 專案架構
+## 📖 專案簡介
 
-```
-AI-project-crawler-test/
-├─ 📱 前端資源
-│   ├─ app/                    # Flask 應用主程式
-│   │   ├─ app.py             # Flask 主程式
-│   │   ├─ ai_agent.py        # AI 代理邏輯
-│   │   ├─ langchain_agent.py # LangChain 整合
-│   │   ├─ static/            # CSS、JS、圖片
-│   │   └─ templates/         # HTML 模板
-│   └─ page/                   # 舊版前端頁面
-│
-├─ 🗄️ 資料庫相關
-│   ├─ init/
-│   │   ├─ outfit_db_with_data.sql    # 完整資料備份 ⭐ 新組員用這個!
-│   │   ├─ outfit_db.sql              # 資料庫結構定義 (不含資料)
-│   │   └─ README.md                  # 檔案使用說明 ⭐
-│   └─ docker-compose.yml             # MySQL Docker 配置
-│
-├─ 🔧 開發工具腳本
-│   ├─ scripts/
-│   │   ├─ generate_users_with_bcrypt.py      # 生成測試用戶
-│   │   ├─ export_database.sh                 # 匯出資料庫 (開發者用)
-│   │   ├─ setup_database_for_teammates.sh    # 一鍵設定 (組員用) ⭐
-│   │   └─ crawler_upload_helper.sh           # 爬蟲上傳助手 ⭐
-│   └─ pipeline/                               # 資料處理流程
-│       ├─ 01_crawl_uniqlo.py                 # UNIQLO 爬蟲
-│       ├─ 02_detect_colors.py                # 色彩檢測
-│       ├─ 03_gemini_verify.py                # AI 驗證
-│       ├─ 04_data_processing.py              # 資料處理
-│       └─ 05_database_import.py              # 匯入資料庫
-│
-├─ 📊 資料集
-│   └─ dataset/
-│       ├─ styles.csv                 # 時尚資料集 (44,407 筆)
-│       ├─ items_fashion_small_clean.csv  # 清理後小型資料集
-│       └─ items_malefashion.csv      # 男裝資料
-│
-└─ 📖 文檔 (詳細說明)
-    └─ docs/
-        ├─ DATABASE_GUIDE.md          # 資料庫完整指南 ⭐
-        ├─ CRAWLER_GUIDE.md           # 爬蟲開發指南 ⭐
-        ├─ TEAM_GUIDE.md              # 團隊協作指南 ⭐
-        ├─ TEST_ACCOUNTS.md           # 測試帳號 (不會上傳)
-        └─ USER_GENERATION_REPORT.md  # 用戶生成報告
-```
+結合 AI 技術的穿搭建議網站,透過對話式互動提供個性化穿搭建議。
+
+**核心功能**: AI 聊天 | 資料庫推薦 | 對話記憶 | 多模型備援  
+**技術棧**: Flask + MySQL + Docker + Gemini 2.0 Lite  
+**狀態**:### 🔐 安全性
+
+### API Key 管理
+- ✅ `.env` 已加入 `.gitignore`
+- ✅ 使用 `.env.example` 作為範本
+- ⚠️ 不要將 API Key 寫入程式碼
+- ⚠️ 不要提交 `.env` 到 Git
+- 💡 每位開發者需自行申請 Gemini API Key
+
+### 🔑 API Key 申請步驟
+1. 前往 [Google AI Studio](https://aistudio.google.com/)
+2. 使用 Google 帳號登入
+3. 點擊 "Get API Key" → "Create API Key"
+4. 複製 API Key 並設定到 `.env` 檔案
+5. 免費額度：每分鐘 15 requests，每日足夠開發使用 (Windows/macOS 已測試)
 
 ---
 
 ## 🚀 快速開始
 
-### 1️⃣ 首次設定 (新組員必看)
+### Windows 用### 📞 需要幫助?
 
+### 文件資源
+- **團隊協作**: [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md) - 詳細設定指南
+- **GitHub**: https://github.com/memory9802/AI-project
+- **Issues**: 在 GitHub 提問
+
+### 🚀 開發工作流程
+
+#### 功能開發流程
 ```bash
-# 1. Clone 專案
-git clone <repository-url>
-cd AI-project-crawler-test
+# 1. 建立功能分支
+git checkout -b feature/your-feature-name
 
-# 2. 啟動 Docker 容器 (MySQL)
-docker-compose up -d
+# 2. 開發並測試
+source venv/bin/activate  # 啟動 Python 環境
+docker compose up -d      # 啟動服務
+code .                    # 開啟 VS Code
 
-# 3. 一鍵匯入資料庫 ⭐ 
-./scripts/setup_database_for_teammates.sh
+# 3. 提交變更
+git add .
+git commit -m "feat: 新增XXX功能"
+
+# 4. 推送並建立 Pull Request
+git push origin feature/your-feature-name
 ```
 
-**就這樣!資料庫已經建立完成 ✅**
+#### 專案架構說明
+```
+AI-project/
+├── app/
+│   ├── app.py              # 🔥 Flask 主程式
+│   ├── langchain_agent.py  # 🤖 AI Agent
+│   ├── requirements.txt    # 📦 Python 依賴
+│   ├── templates/          # 🎨 HTML 模板
+│   └── static/            # 🎨 CSS/JS/圖片
+├── init/init.sql          # 🗄️ 資料庫初始化
+├── docker-compose.yml     # 🐳 Docker 配置
+├── package.json          # 📦 Node.js 依賴
+├── venv/                 # 🐍 Python 虛擬環境
+└── .env                  # ⚙️ 環境變數（不要提交）
+```powershell
+git clone https://github.com/memory9802/AI-project.git
+cd AI-project && git checkout Jinja
+Copy-Item .env.example .env
+# 編輯 .env 設定您的 API Key
+.\start-windows.ps1
+```
 
-### 2️⃣ 驗證安裝
-
+### macOS / Linux 用戶
 ```bash
-# 檢查資料是否正確
-docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "
-SELECT 'users 表' as table_name, COUNT(*) as count FROM users
-UNION ALL
-SELECT 'items 表' as table_name, COUNT(*) as count FROM items;
-"
+git clone https://github.com/memory9802/AI-project.git
+cd AI-project && git checkout Jinja
+cp .env.example .env
+# 編輯 .env 設定您的 API Key
+chmod +x start-macos.sh && ./start-macos.sh
 ```
 
-**預期結果:**
-```
-table_name | count
------------|--------
-users 表   | 50
-items 表   | 49,707
-```
+### 服務連結
+- 🌐 **網站**: http://localhost:5001
+- 🗄️ **資料庫管理**: http://localhost:8080 (帳號: root / 密碼: rootpassword)
 
-### 3️⃣ 連接資料庫 (DBeaver/Workbench)
+> **📘 詳細設定**: 請參考 [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md)
+
+---
+
+## 📁 專案結構
 
 ```
-Host:     localhost
-Port:     3306
-Database: outfit_db
-Username: root
-Password: rootpassword
+AI-project/
+├── app.py                    # Flask 主程式
+├── langchain_agent.py        # AI Agent (已優化配額)
+├── docker-compose.yml        # Docker 配置
+├── requirements.txt          # Python 依賴
+├── .env.example              # 環境變數範本
+│
+├── init/init.sql             # 資料庫初始化 (11 張表)
+├── templates/                # HTML 模板
+├── static/                   # CSS/JS/圖片
+├── data/                     # 對話記錄
+│
+├── start-windows.ps1         # Windows 啟動腳本
+├── start-macos.sh            # macOS 啟動腳本
+│
+└── TEAM_COLLABORATION.md     # 團隊協作指南 📘
 ```
 
 ---
 
-## 🔄 資料庫同步 (重要!)
+## 🛠️ 系統架構
 
-### ⚠️ 黃金規則:統一檔名!
-
-**所有人都必須匯出到同一個檔名:**
-```
-init/outfit_db_with_data.sql  ← 唯一的真相來源
-```
-
-**❌ 禁止做法:**
-```bash
-# ❌ 不要自創檔名!
-init/outfit_db_20251126.sql
-init/outfit_db_john.sql
-init/outfit_db_final.sql
-init/outfit_db_really_final_v3.sql  😱
+### 容器服務
+```yaml
+mysql:       資料庫 (port 3306)
+flask:       後端 API (port 5001) ⚠️ 注意是 5001
+phpmyadmin:  資料庫管理 (port 8080)
 ```
 
-**為什麼?**
-- ✅ Git 會自動追蹤檔案變更歷史
-- ✅ 組員永遠知道「最新版本」是哪個
-- ✅ 不會有 10 個不同檔名造成混亂
-- ✅ 腳本和文檔都指向同一個檔案
-
-**查看歷史版本:**
-```bash
-# Git 保留所有版本歷史
-git log init/outfit_db_with_data.sql
-git show <commit-hash>:init/outfit_db_with_data.sql
-```
-
----
-
-### 📤 開發者:如何上傳資料
-
-當你新增/修改資料後,需要讓其他人同步:
-
-#### 方式 A: 一鍵腳本 (推薦)
-
-```bash
-# 執行互動式上傳助手
-./scripts/export_database.sh
-
-# 按照提示操作:
-# 1. 匯出資料庫
-# 2. 檢查檔案
-# 3. Git commit & push
-# 4. 通知組員
-```
-
-#### 方式 B: 手動操作
-
-```bash
-# 1. 匯出資料庫
-docker exec outfit-mysql mysqldump \
-  -uroot -prootpassword \
-  --databases outfit_db \
-  --single-transaction \
-  --default-character-set=utf8mb4 \
-  > init/outfit_db_with_data.sql
-
-# 2. 提交到 Git
-git add init/outfit_db_with_data.sql
-git commit -m "更新資料庫:新增 XX 筆資料"
-git push
-
-# 3. 通知組員
-# 「資料庫已更新,請執行 git pull 並重新匯入」
-```
-
----
-
-### 📥 組員:如何下載最新資料
-
-當有人通知「資料庫已更新」時:
-
-```bash
-# 1. 下載最新版本
-git pull
-
-# 2. 重新匯入資料庫
-docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_db_with_data.sql
-
-# 3. 驗證 (確認數量正確)
-docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "SELECT COUNT(*) FROM items;"
-```
-
----
-
-### 🕷️ 爬蟲組專屬:上傳爬取的資料
-
-爬蟲組每次爬完資料後,**必須**執行:
-
-#### 使用自動化腳本 (推薦)
-
-```bash
-./scripts/crawler_upload_helper.sh
-```
-
-**腳本會自動幫你:**
-1. ✅ 顯示目前資料量
-2. ✅ 匯出資料庫
-3. ✅ 驗證檔案完整性
-4. ✅ Git commit (會提示你輸入訊息)
-5. ✅ 推送到 GitHub
-6. ✅ 生成通知訊息給組員
-
-#### 記住口訣 🎯
-
-```
-爬完 → 匯出 → Commit → Push → 通知
-```
-
-**為什麼重要?**
-- ❌ 不匯出 = 資料只在你電腦,其他人看不到
-- ❌ 只上傳 CSV = 別人還要手動匯入,容易出錯
-- ✅ 匯出 SQL = 其他人一鍵就能同步資料
-
-詳細說明: [爬蟲組上傳指南](docs/CRAWLER_GUIDE.md)
-
----
-
-## 💻 開發須知
-
-### 資料庫重要觀念
-
-```
-📄 SQL 檔案 (.sql)              💾 MySQL 資料庫 (Docker 容器)
-───────────────────            ──────────────────────────────
-• 文字檔案                      • 運行中的服務
-• 可以用記事本打開               • 儲存實際資料
-• Git 可以同步 ✅                • Git 無法同步 ❌
-• 類比:食譜                     • 類比:做好的菜
-
-重點:資料存在「右邊」,所以要匯出成「左邊」才能用 Git 分享!
-```
-
-詳細圖解: [資料庫原理說明](docs/DATABASE_GUIDE.md)
-
----
-
-### 資料庫結構
-
-#### users 表 (用戶資料)
-
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵 |
-| username | VARCHAR(100) | 用戶名 (唯一) |
-| email | VARCHAR(255) | 電子郵件 |
-| password_hash | VARCHAR(255) | bcrypt 加密密碼 |
-| favorite_style | VARCHAR(50) | 喜好風格 |
-| created_at | TIMESTAMP | 註冊時間 |
-
-#### items 表 (商品資料)
-
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵 |
-| item_id | VARCHAR(50) | 商品編號 |
-| item_name | VARCHAR(255) | 商品名稱 |
-| gender | VARCHAR(10) | 性別 |
-| category | VARCHAR(50) | 類別 |
-| color | VARCHAR(50) | 顏色 |
-| season | VARCHAR(20) | 季節 |
-| source | VARCHAR(50) | 資料來源 |
-| image_url | TEXT | 圖片網址 |
-
----
-
-### 密碼加密說明
-
-✅ 使用 **bcrypt** 加密,業界標準安全演算法
-
-**後端登入驗證範例:**
-
-```python
-import bcrypt
-import pymysql
-
-# 驗證用戶登入
-def verify_login(username, password):
-    conn = pymysql.connect(
-        host='localhost', port=3306,
-        user='root', password='rootpassword',
-        database='outfit_db', charset='utf8mb4'
-    )
-    cursor = conn.cursor()
-    
-    # 查詢用戶
-    cursor.execute(
-        "SELECT password_hash FROM users WHERE username = %s",
-        (username,)
-    )
-    result = cursor.fetchone()
-    
-    if result:
-        password_hash = result[0]
-        # bcrypt 驗證
-        return bcrypt.checkpw(
-            password.encode('utf-8'), 
-            password_hash.encode('utf-8')
-        )
-    return False
-```
-
-詳細實作: [用戶生成報告](docs/USER_GENERATION_REPORT.md)
-
----
-
-## 🔑 測試帳號
-
-### 主要測試帳號
-
-| 用戶名 | 密碼 | 用途 |
-|--------|------|------|
-| **admin** | `admin123` | 管理員測試 |
-| **demo** | `demo123` | 展示用帳號 |
-| **test** | `test123` | 一般測試 |
-
-### 其他帳號
-
-- 📋 另有 47 個虛擬用戶 (fashion_lover, style_icon, trendy_guy...)
-- 🔐 統一密碼: `password123`
-
-**完整列表:** `docs/TEST_ACCOUNTS.md` (⚠️ 此檔案不會上傳到 GitHub)
-
----
-
-## 👥 團隊協作
-
-### Git 分支策略
-
-```
-main (穩定版本)
-  ↓
-develop (開發分支) ← 日常在這裡工作
-  ↓
-feature/* (功能分支) ← 開發新功能時使用
-```
-
-**詳細說明:** [Git 工作流程指南](GIT_GUIDE.md) ⭐
-
----
-
-### 分工流程
-
-```
-🕷️ 爬蟲組                → 爬取資料 → 執行 crawler_upload_helper.sh → 通知組員
-🎨 前端組                → git pull → 重新匯入資料庫 → 開發 UI
-⚙️ 後端組                → git pull → 重新匯入資料庫 → 開發 API
-🤖 AI/色彩分析組         → git pull → 重新匯入資料庫 → 開發演算法
-```
-
-### 常用指令參考
-
-```bash
-# ===== 日常開發 =====
-
-# 1. 開始工作前
-git pull                          # 同步最新程式碼
-docker-compose up -d              # 啟動 MySQL
-
-# 2. 檢查資料庫
-docker exec outfit-mysql mysql -uroot -prootpassword outfit_db -e "SELECT COUNT(*) FROM items;"
-
-# 3. 如果資料庫有更新
-docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_db_with_data.sql
-
-# ===== 爬蟲組專用 =====
-
-# 爬完資料後執行
-./scripts/crawler_upload_helper.sh
-
-# ===== 前端組 =====
-
-# 啟動 Flask 應用
-cd app
-python3 app.py
-# 訪問 http://localhost:5000
-
-# ===== 測試 =====
-
-# 測試登入 API
-curl -X POST http://localhost:5000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-```
-
----
-
-## ⚠️ 常見問題
-
-### Q1: 為什麼我的資料其他人看不到?
-
-**A:** 因為 Git 只同步「檔案」,不同步「資料庫實例」
-
-**解決方法:**
-1. 匯出資料庫: `./scripts/export_database.sh`
-2. Git commit & push
-3. 通知組員重新匯入
-
----
-
-### Q2: init/ 資料夾有兩個 SQL 檔案,我該用哪個?
-
-**A:** 
-- ⭐ **`outfit_db_with_data.sql`** - 新組員用這個!(包含所有資料)
-- 📋 **`outfit_db.sql`** - 只有結構定義,沒有資料(用來查看表格設計)
-
-**詳細說明:** [init/README.md](init/README.md)
-
-**常見錯誤:**
-```bash
-# ❌ 錯誤:匯入 outfit_db.sql
-docker exec -i outfit-mysql mysql -uroot -prootpassword < init/outfit_db.sql
-# 結果:資料庫是空的!
-
-# ✅ 正確:匯入 outfit_db_with_data.sql
-docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_db_with_data.sql
-# 結果:50 個用戶 + 49,707 筆商品 ✅
-```
-
----
-
-### Q3: outfit_db_with_data.sql 是什麼?
-
-**A:** 完整的資料庫備份檔案,包含:
-- ✅ 表格結構 (CREATE TABLE)
-- ✅ 所有資料 (INSERT INTO)
-- ✅ 50 個用戶 + 49,707 筆商品
-
-組員只要匯入這個檔案,就能獲得**完全相同**的資料庫!
-
----
-
-### Q4: 檔案太大怎麼辦?
-
-**A:** 目前 8.2 MB,還可以接受
-
-如果超過 100 MB:
-- 📦 壓縮: `gzip init/outfit_db_with_data.sql`
-- ☁️ 改用雲端分享 (Google Drive/OneDrive)
-- 📋 只匯出必要的表格
-
----
-
-### Q5: 我不小心刪除了資料怎麼辦?
-
-**A:** 重新匯入即可恢復:
-
-```bash
-# 清空資料庫
-docker exec outfit-mysql mysql -uroot -prootpassword -e "
-DROP DATABASE IF EXISTS outfit_db;
-CREATE DATABASE outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-"
-
-# 重新匯入
-docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_db_with_data.sql
-```
-
----
-
-### Q6: 爬蟲組忘記上傳資料怎麼辦?
-
-**A:** 如果發現其他人沒有你的資料:
-
-1. 確認資料在你的資料庫: `SELECT COUNT(*) FROM items;`
-2. 執行上傳腳本: `./scripts/crawler_upload_helper.sh`
-3. 通知組員: 「我剛上傳了 XX 筆新資料,請重新匯入」
-
----
-
-## 📚 詳細文檔
-
-如需更深入了解,請參考以下文檔:
-
-### 🚀 快速上手
-- [QUICK_START.md](QUICK_START.md) - 5 分鐘快速開始指南 ⭐ **新人必看!**
-
-### 📖 完整指南
-| 文檔 | 說明 | 適合對象 |
+### 資料庫結構 (11 張表)
+| 表名 | 說明 | 測試資料 |
 |------|------|---------|
-| [GIT_GUIDE.md](GIT_GUIDE.md) | Git 版本控制完整指南 ⭐ | 所有人必讀! |
-| [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | 資料庫管理完整指南 ⭐ | 所有人必讀! |
-| [CRAWLER_GUIDE.md](docs/CRAWLER_GUIDE.md) | 爬蟲開發完整指南 | 爬蟲組 ⭐ |
-| [TEAM_GUIDE.md](docs/TEAM_GUIDE.md) | 團隊協作完整指南 | 所有人 |
+| `outfits` | 穿搭組合 | 3 筆 |
+| `items` | 單品項目 | 9 筆 |
+| `outfit_items` | 穿搭-單品關聯 | 9 筆 |
+| `users` | 用戶資料 | 4 筆 |
+| `user_wardrobe` | 用戶衣櫃 | 4 筆 |
+| `outfit_ratings` | 穿搭評分 | 5 筆 |
+| `partner_products` | 合作商品 | 3 筆 |
+| `conversation_history` | 對話記錄 | 動態 |
+| ... | 其他 | ... |
 
-### 📋 參考資料
-| 文檔 | 說明 |
-|------|------|
-| [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 |
-| [USER_GENERATION_REPORT.md](docs/USER_GENERATION_REPORT.md) | 用戶生成與登入實作 |
-| [TECHNICAL_SETUP.md](docs/TECHNICAL_SETUP.md) | 技術規格與環境設定 (進階) |
-| [PIPELINE_OVERVIEW.md](PIPELINE_OVERVIEW.md) | 爬蟲 Pipeline 概覽 |
-| [SPEC_GUIDE.md](SPEC_GUIDE.md) | 專案規格說明 |
-
----
-
-## ✅ 檢查清單
-
-### 新組員加入時
-
-- [ ] Clone 專案
-- [ ] 安裝 Docker Desktop
-- [ ] 執行 `docker-compose up -d`
-- [ ] 執行 `./scripts/setup_database_for_teammates.sh`
-- [ ] 驗證資料: `SELECT COUNT(*) FROM users;` 應為 50
-- [ ] 測試登入: admin / admin123
-
-### 爬蟲組每次爬完資料
-
-- [ ] 檢查資料已匯入資料庫
-- [ ] 執行 `./scripts/crawler_upload_helper.sh`
-- [ ] 確認 Git push 成功
-- [ ] 通知組員 (Line/Discord/Slack)
-
-### 前端/後端組收到更新通知
-
-- [ ] `git pull`
-- [ ] 重新匯入: `docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_db_with_data.sql`
-- [ ] 驗證資料量是否正確
-- [ ] 繼續開發
+### API 端點
+```
+GET  /                  首頁
+POST /recommend         AI 推薦 (JSON API)
+GET  /items             取得單品列表
+POST /clear_session     清除對話記憶
+GET  /ping              健康檢查
+```
 
 ---
 
-## 🎯 快速連結
+## � 開發環境設置
 
-- 🐳 **啟動資料庫:** `docker-compose up -d`
-- 📥 **同步資料:** `./scripts/setup_database_for_teammates.sh`
-- 📤 **上傳資料:** `./scripts/crawler_upload_helper.sh`
-- 🔍 **查看資料:** DBeaver 連接 `localhost:3306/outfit_db`
-- 🧪 **測試帳號:** admin / admin123
+### 📋 必需工具清單
+
+#### 本機全域安裝
+- **Docker Desktop**: 容器化平台
+- **Git**: 版本控制工具
+- **VS Code**: 程式碼編輯器（推薦）
+- **Node.js**: 前端開發環境
+- **Python 3.11+**: 後端開發環境
+
+#### macOS 用戶安裝指令
+```bash
+# 安裝 Homebrew（套件管理器）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 設定 Homebrew 環境
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+source ~/.zshrc
+
+# 安裝開發工具
+brew install node git
+brew install --cask docker visual-studio-code postman
+```
+
+#### Windows 用戶安裝
+1. 下載並安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. 下載並安裝 [Git for Windows](https://git-scm.com/download/win)  
+3. 下載並安裝 [Node.js](https://nodejs.org/)
+4. 下載並安裝 [VS Code](https://code.visualstudio.com/)
+
+### 🐍 Python 虛擬環境設置
+
+```bash
+# 1. 建立虛擬環境
+python3 -m venv venv
+
+# 2. 啟動虛擬環境
+# macOS/Linux:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# 3. 安裝 Python 套件
+pip install --upgrade pip
+pip install -r app/requirements.txt
+
+# 4. 驗證安裝
+python -c "import flask, cv2, langchain; print('✅ Python 環境就緒')"
+```
+
+### 🎨 前端開發環境
+
+```bash
+# 1. 初始化 npm 專案（如果沒有 package.json）
+npm init -y
+
+# 2. 安裝前端套件
+npm install bootstrap jquery axios
+npm install --save-dev webpack webpack-cli css-loader style-loader
+
+# 3. 驗證安裝
+npm list --depth=0
+```
+
+### 📱 VS Code 推薦擴展
+
+安裝以下擴展提升開發效率：
+```
+- Python
+- Flask Snippets  
+- Docker
+- Bootstrap IntelliSense
+- Auto Rename Tag
+- Prettier - Code formatter
+- GitLens
+- Thunder Client (API 測試)
+```
+
+### 🔧 API Key 設定
+
+1. **取得 Google Gemini API Key**:
+   - 前往 [Google AI Studio](https://aistudio.google.com/)
+   - 申請免費 API Key
+   - 複製 API Key
+
+2. **設定環境變數**:
+   ```bash
+   # 複製環境變數範本
+   cp .env.example .env
+   
+   # 編輯 .env 檔案
+   # 將 your_gemini_api_key_here 替換為您的實際 API Key
+   ```
+
+### 🧪 環境驗證
+
+```bash
+# 1. 檢查 Docker
+docker --version
+docker compose --version
+
+# 2. 檢查 Python 環境  
+source venv/bin/activate  # macOS/Linux
+python --version
+pip list | grep flask
+
+# 3. 檢查 Node.js 環境
+node --version
+npm --version
+
+# 4. 啟動完整服務
+docker compose up -d
+curl http://localhost:5001/ping  # 應該返回 JSON
+
+# 5. 測試 AI 功能
+curl -X POST http://localhost:5001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"message":"測試穿搭建議","session_id":"test"}'
+```
+
+---
+
+## �🔧 常用指令
+
+### Docker 管理
+```bash
+docker compose up -d --build    # 啟動服務
+docker compose down             # 停止服務
+docker compose restart flask    # 重啟 Flask
+docker compose logs -f flask    # 查看日誌
+docker compose ps               # 檢查狀態
+```
+
+### 測試 API
+```bash
+# 健康檢查
+curl http://localhost:5001/ping
+
+# 測試 AI 推薦
+curl -X POST http://localhost:5001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"message":"約會穿搭建議","user_id":1}'
+```
+
+---
+
+## ⚙️ 關鍵配置
+
+### 環境變數 (.env)
+```bash
+# AI 配置 - 請設定您的 API Key
+LLM_API_KEY=your_gemini_api_key_here
+GOOGLE_GENAI_API_VERSION=v1
+
+# 資料庫 (Docker 模式,不要改)
+DB_HOST=mysql          # ⚠️ 必須用 "mysql" 不是 localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASS=rootpassword
+DB_NAME=outfit_db
+```
+
+### AI 模型設定
+```python
+# langchain_agent.py & app.py
+model = "gemini-2.0-flash-lite"  # ⚠️ Lite 版本配額更高
+temperature = 0.5                 # 降低隨機性
+max_output_tokens = 300           # 限制輸出長度
+MIN_REQUEST_INTERVAL = 2          # 速率限制 (秒)
+```
+
+### MySQL 編碼
+```yaml
+# docker-compose.yml
+command:
+  - --character-set-server=utf8mb4      # ⚠️ 避免中文亂碼
+  - --collation-server=utf8mb4_unicode_ci
+```
+
+---
+
+## 🤝 團隊協作
+
+### 當前狀態
+- **分支**: `Jinja` (主開發分支)
+- **Git**: https://github.com/memory9802/AI-project
+- **已修復**: 資料庫亂碼 | AI Rate Limit | 配額優化
+
+### 合併其他組員功能
+```bash
+# 1. 備份當前分支
+git checkout -b backup-$(date +%Y%m%d)
+
+# 2. 合併組員分支
+git checkout Jinja
+git merge origin/feature/your-teammate-branch
+
+# 3. 解決衝突並測試
+docker compose down
+docker compose up -d --build
+
+# 4. 測試功能
+curl http://localhost:5001/ping
+
+# 5. 推送
+git push origin Jinja
+```
+
+### Commit 規範
+```bash
+feat: 新增功能
+fix: 修復 Bug
+docs: 更新文件
+refactor: 重構程式碼
+style: 格式調整
+```
+
+> **📘 詳細流程**: [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md) 有完整的合併指南
+
+---
+
+## 🐛 常見問題
+
+### Q1: 容器無法啟動?
+```bash
+# 確認 Docker Desktop 運行中
+# 清理並重啟
+docker compose down -v
+docker system prune -f
+docker compose up -d --build
+```
+
+### Q2: AI 回應 "服務無法使用"?
+```bash
+# 檢查日誌
+docker compose logs flask --tail 50
+
+# 確認 API Key
+cat .env | grep LLM_API_KEY
+
+# 確認模型設定
+grep GEMINI_MODEL app.py
+# 應該是: gemini-2.0-flash-lite
+```
+
+### Q3: 資料庫中文亂碼?
+```bash
+# 檢查編碼
+docker exec outfit-mysql mysql -u root -prootpassword \
+  -e "SHOW VARIABLES LIKE 'char%';"
+# 應該全部是 utf8mb4
+
+# 如果不是,重建容器
+docker compose down -v
+docker compose up -d --build
+```
+
+### Q4: 端口被佔用?
+```bash
+# Windows
+netstat -ano | findstr "5001 3306 8080"
+
+# macOS
+lsof -i :5001 -i :3306 -i :8080
+
+# 修改端口 (docker-compose.yml)
+ports:
+  - "5002:5000"  # 改用 5002
+```
+
+### Q5: 合併衝突怎麼辦?
+**保留以下設定**:
+- `GEMINI_MODEL = "gemini-2.0-flash-lite"`
+- `DB_HOST = "mysql"`
+- `charset = "utf8mb4"`
+- `MIN_REQUEST_INTERVAL = 2`
+
+> **📘 更多問題**: 查看 [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md) 的常見問題章節
+
+---
+
+## 📊 效能指標
+
+### 正常運行
+| 指標 | 值 |
+|------|---|
+| 啟動時間 | 10-15 秒 |
+| API 回應時間 | 2-4 秒 |
+| 回應長度 | 200-400 字 |
+| Token 消耗 | ~500/請求 |
+| 錯誤率 | 0% |
+| 配額消耗 | 減少 85% |
+
+### 異常狀態
+- 啟動 > 30 秒 → Docker 有問題
+- API > 10 秒 → Rate Limit
+- 回應 < 50 字 → AI 配置錯誤
+- 錯誤率 > 10% → 嚴重問題
+
+---
+
+## 📚 開發指南
+
+### 本地開發 (不使用 Docker)
+```bash
+# 1. 安裝 Python 3.11
+# 2. 建立虛擬環境
+python -m venv venv
+source venv/bin/activate  # macOS
+venv\Scripts\activate     # Windows
+
+# 3. 安裝依賴
+pip install -r requirements.txt
+
+# 4. 啟動 MySQL (需另外安裝)
+# 5. 修改 .env
+DB_HOST=localhost  # 本地模式
+
+# 6. 執行
+python app.py
+```
+
+### 資料庫操作
+```bash
+# 進入 MySQL 容器
+docker exec -it outfit-mysql bash
+mysql -u root -prootpassword outfit_db
+
+# 常用 SQL
+SHOW TABLES;
+SELECT * FROM outfits;
+SELECT * FROM items;
+```
+
+### 新增 API 端點
+```python
+# app.py
+@app.route('/your-endpoint', methods=['POST'])
+def your_function():
+    data = request.json
+    # 你的邏輯
+    return jsonify({"result": "success"})
+```
+
+### 修改 AI 回應
+```python
+# langchain_agent.py
+# 修改 system_prompt (line ~100)
+self.system_prompt = """
+你是「搭搭」,一個活潑親切的穿搭顧問。
+[你的提示詞]
+"""
+```
+
+---
+
+## 🔐 安全性
+
+### API Key 管理
+- ✅ `.env` 已加入 `.gitignore`
+- ✅ 使用 `.env.example` 作為範本
+- ⚠️ 不要將 API Key 寫入程式碼
+- ⚠️ 不要提交 `.env` 到 Git
+
+### 資料庫安全
+- ⚠️ 生產環境請修改預設密碼
+- ⚠️ 限制 phpMyAdmin 存取
+- ⚠️ 使用 SSL 連線
+
+---
+
+## 🚢 部署指南
+
+### Docker Compose (推薦)
+```bash
+# 生產環境設定
+docker compose -f docker-compose.prod.yml up -d
+
+# 使用環境變數
+export DB_PASS=your-secure-password
+docker compose up -d
+```
+
+### 雲端部署
+- **Azure**: Azure Container Instances
+- **AWS**: ECS + RDS
+- **GCP**: Cloud Run + Cloud SQL
+
+---
+
+## 📈 專案狀態
+
+### ✅ 已完成
+- [x] Docker 環境建置
+- [x] MySQL 資料庫 (UTF-8mb4)
+- [x] AI 聊天機器人 (Gemini 2.0 Lite)
+- [x] 對話記憶功能
+- [x] API 配額優化 (減少 85%)
+- [x] 速率限制實施
+- [x] 跨平台支援 (Windows/macOS)
+
+### 🚧 進行中
+- [ ] 前端 UI 美化
+- [ ] 用戶登入系統
+- [ ] 衣櫃管理功能
+
+### 📋 規劃中
+- [ ] 圖片辨識
+- [ ] 社群分享
+- [ ] 合作商品推薦
+
+---
+
+## 🎓 技術重點說明
+
+### 為什麼使用 gemini-2.0-flash-lite?
+1. ✅ **配額更高**: 免費額度比 2.0-flash 多
+2. ✅ **回應快**: 延遲更低
+3. ✅ **支援好**: 團隊 API key 完全支援
+4. ✅ **已優化**: 實施速率限制 + Token 優化
+
+### 為什麼 DB_HOST 要用 "mysql"?
+- Docker 容器內部使用**服務名稱**通訊
+- `localhost` 在容器內指向容器自己
+- `mysql` 會自動解析到 MySQL 容器 IP
+
+### 為什麼要用 utf8mb4?
+- `utf8` 在 MySQL 中只支援 3 bytes
+- `utf8mb4` 完整支援 4 bytes (包含 emoji)
+- 避免中文、emoji 出現亂碼
+
+### 為什麼端口是 5001?
+- macOS 的 5000 被 AirPlay 佔用
+- 改用 5001 避免衝突
+- Windows 無此問題但統一使用 5001
+
+---
+
+## 🤖 給 AI 助手的提示
+
+> 如果你是組員的 Copilot AI,請記住:
+
+### 核心配置 (不要建議修改)
+```python
+model = "gemini-2.0-flash-lite"  # 不是 2.0-flash 或 1.5-flash
+DB_HOST = "mysql"                 # 不是 localhost
+charset = "utf8mb4"               # 不是 utf8
+port = 5001                       # 不是 5000
+MIN_REQUEST_INTERVAL = 2          # 速率限制
+max_output_tokens = 300           # Token 限制
+```
+
+### 避免的錯誤
+- ❌ 建議使用 `localhost` 連接資料庫
+- ❌ 建議修改 AI 模型為其他版本
+- ❌ 建議移除速率限制
+- ❌ 建議增加 max_tokens 到 1000+
+- ❌ 建議使用本地 Python 而非 Docker
 
 ---
 
 ## 📞 需要幫助?
 
-如果遇到問題:
-1. 📖 先查看 [常見問題](#常見問題)
-2. 📚 閱讀 `docs/` 相關文檔
-3. 💬 詢問組員或助教
+### 文件資源
+- **團隊協作**: [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md) - 詳細設定指南
+- **GitHub**: https://github.com/memory9802/AI-project
+- **Issues**: 在 GitHub 提問
+
+### 檢查清單
+```bash
+# 環境檢查
+docker compose ps                # 3 個容器都要 Up
+curl http://localhost:5001/ping  # 返回 JSON
+
+# 資料庫檢查
+docker exec outfit-mysql mysql -u root -prootpassword -e "SELECT 1"
+
+# AI 檢查
+curl -X POST http://localhost:5001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"message":"測試","user_id":1}'
+```
 
 ---
 
-## 📝 更新紀錄
+## 👥 團隊開發
 
-- **2025-11-26** - 建立完整的資料庫共享機制
-  - 新增 50 個測試用戶 (bcrypt 加密)
-  - 匯入 49,707 筆商品資料
-  - 建立自動化上傳/下載腳本
-  - 完成所有文檔
+### 分工建議
+- **後端開發** - Flask API、資料庫設計
+- **前端開發** - UI/UX、JavaScript 互動  
+- **AI 整合** - LangChain、模型優化
+- **DevOps** - Docker、部署、CI/CD
+- **測試** - 功能測試、文件撰寫
+
+### 開發注意事項
+- ✅ 遵循 Git Flow 工作流程
+- ✅ 提交前先執行本地測試
+- ✅ API Key 不要提交到 Git
+- ✅ 保持代碼風格一致
+- ✅ 及時更新文件和註釋
 
 ---
 
-**專案成員:** liaoyiting  
-**資料庫版本:** outfit_db v1.0  
-**最後更新:** 2025-11-26
+## 📄 授權
 
-🎉 **祝開發順利!**
-# Config
+本專案僅供學習使用。
 
-# Build
+---
+
+## 🙏 致謝
+
+- [Google Gemini](https://ai.google.dev/) - AI 模型
+- [LangChain](https://www.langchain.com/) - AI 框架
+- [Flask](https://flask.palletsprojects.com/) - Web 框架
+
+---
+
+**⭐ 完整的團隊協作指南請查看 [TEAM_COLLABORATION.md](TEAM_COLLABORATION.md)**
+
+---
+
+**最後更新**: 2025-01-19  
+**版本**: 1.0  
+**維護狀態**: ✅ 活躍維護中

@@ -1,9 +1,7 @@
 services:
-  # 1. MySQL 資料庫服務 (自訂建置)
+  # 1. MySQL 資料庫服務
   mysql:
-    build: 
-      context: .
-      dockerfile: Dockerfile.mysql
+    image: mysql:8.0
     container_name: outfit-mysql
     restart: always
     environment:
@@ -14,8 +12,8 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      # 只保留資料卷，初始化 SQL 已內置到映像
       - mysql_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
     command: 
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
