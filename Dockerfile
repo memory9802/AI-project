@@ -74,10 +74,10 @@ ENV FLASK_ENV=production \
     GUNICORN_WORKER_CONNECTIONS=1000
 
 # 複製依賴檔案
-COPY app/requirements.txt app/requirements-prod.txt ./
+COPY app/requirements.txt ./
 
-# 安裝生產依賴
-RUN pip install --no-cache-dir -r requirements-prod.txt
+# 安裝依賴
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製應用程式碼
 COPY app/ .
