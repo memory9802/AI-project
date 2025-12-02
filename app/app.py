@@ -418,22 +418,60 @@ def generate_recommendation(user_input: str,
         return fallback, outfits, keywords
 
 # =======================
-# 🔹 首頁（page1.html，外層頁面）
+# 🔹 首頁(home.html,新版中文頁面)
 # =======================
 @app.route('/')
 @app.route('/home')
-@app.route('/page1')
-def page1():
+def home():
     """
-    首頁：使用 page1.html
-    建議在 page1.html 的 iframe 裡使用：
-      src="{{ url_for('recommend_page') }}"
-    讓內嵌視窗載入真正的穿搭機器人頁面。
+    首頁:使用新的中文版 home.html
+    內含浮動 AI 對話框,會載入 /recommend_page 作為 iframe
     """
-    return render_template('page1.html')
+    return render_template('home.html')
 
 # =======================
-# 👕 Jinja 版 AI 穿搭頁面（index.html）
+# 🗂️ 衣櫃頁面
+# =======================
+@app.route('/wardrobe')
+def wardrobe():
+    """
+    我的衣櫃頁面:上傳和管理衣物
+    """
+    return render_template('wardrobe.html')
+
+# =======================
+# 🤝 分享互動頁面
+# =======================
+@app.route('/share')
+def share():
+    """
+    分享 & 互動頁面:展示穿搭作品
+    """
+    return render_template('share.html')
+
+# =======================
+# 🔐 登入頁面
+# =======================
+@app.route('/login')
+def login():
+    """
+    登入/註冊頁面
+    """
+    return render_template('login.html')
+
+# =======================
+# 💡 穿搭推薦頁面(獨立頁面版本)
+# =======================
+@app.route('/recommendation')
+def recommendation():
+    """
+    穿搭推薦頁面:聊天式 AI 推薦介面
+    這是獨立的完整頁面版本
+    """
+    return render_template('recommendation.html')
+
+# =======================
+# 👕 Jinja 版 AI 穿搭頁面(index.html)
 # =======================
 @app.route('/recommend_page', methods=['GET', 'POST'])
 def recommend_page():
