@@ -417,30 +417,52 @@ def generate_recommendation(user_input: str,
         
         return fallback, outfits, keywords
 
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/recommendation')
+def recommendation():
+    return render_template('recommendation.html')
+
+@app.route('/share')
+def share():
+    return render_template('share.html')
+
+@app.route('/wardrobe')
+def wardrobe():
+    return render_template('wardrobe.html')
+
+
+
+
+
 # =======================
-# 🔹 首頁（page1.html，外層頁面）
+# 🔹 首頁（home.html，外層頁面）
 # =======================
 @app.route('/')
+def homepage():
+    return render_template('home.html')
 @app.route('/home')
-@app.route('/page1')
-def page1():
+@app.route('/home')
+def home():
     """
-    首頁：使用 page1.html
-    建議在 page1.html 的 iframe 裡使用：
+    首頁：使用 home.html
+    建議在 home.html 的 iframe 裡使用：
       src="{{ url_for('recommend_page') }}"
     讓內嵌視窗載入真正的穿搭機器人頁面。
     """
-    return render_template('page1.html')
-
+    return render_template('home.html')
 # =======================
-# 👕 Jinja 版 AI 穿搭頁面（index.html）
+# 👕 Jinja 版 AI 穿搭頁面（aichat.html）
 # =======================
 @app.route('/recommend_page', methods=['GET', 'POST'])
 def recommend_page():
     """
     這個路由用來呈現 Jinja 版的穿搭機器人頁面：
     - GET：顯示空白表單
-    - POST：接收表單資料，呼叫 generate_recommendation()，再把結果 render 回 index.html
+    - POST：接收表單資料，呼叫 generate_recommendation()，再把結果 render 回 aichat.html
     """
     ai_response = None
     outfits = []
@@ -460,7 +482,7 @@ def recommend_page():
         )
 
     return render_template(
-        'index.html',  # Jinja 版的穿搭機器人頁面
+        'aichat.html',  # Jinja 版的穿搭機器人頁面
         ai_response=ai_response,
         outfits=outfits,
         keywords=keywords,
