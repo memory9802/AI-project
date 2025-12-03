@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
@@ -19,231 +19,122 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.08);
       padding: 16px 24px;
     }
-    h1 {
-      margin-top: 0;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      margin-top: 0;
-      margin-bottom: 20px;
-      color: #555;
-      font-size: 14px;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    label {
-      font-weight: 600;
-      font-size: 14px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: 10px;
-      font-size: 15px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      resize: vertical;
-      box-sizing: border-box;
-    }
-    select, button {
-      padding: 10px 14px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #da7f9d;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      position: relative;
-    }
-    button:hover {
-      background-color: #cb5770;
-    }
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    
-    /* 載入動畫 */
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 20px;
-      color: #666;
-    }
-    .loading.active {
-      display: block;
-    }
-    .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #4285f4;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 10px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    /* 錯誤提示 */
-    .error-message {
-      background-color: #fee;
-      border-left: 4px solid #f44;
-      padding: 12px;
-      border-radius: 4px;
-      margin: 10px 0;
-      color: #c33;
-      display: none;
-    }
-    .error-message.active {
-      display: block;
-    }
-    
-    /* 成功提示 */
-    .success-message {
-      background-color: #efe;
-      border-left: 4px solid #4c4;
-      padding: 12px;
-      border-radius: 4px;
-      margin: 10px 0;
-      color: #363;
-    }
-    .section {
-      margin-bottom: 24px;
-    }
-    .section h2 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
-    .keywords {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .keyword-tag {
-      padding: 4px 10px;
-      border-radius: 999px;
-      background-color: #e9f0ff;
-      font-size: 13px;
-    }
-    pre {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      background: #f7f7f9;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      margin: 0;
-    }
-    .outfit-card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    .outfit-image {
-      width: 120px;
-      min-width: 120px;
-      height: 120px;
-      border-radius: 8px;
-      object-fit: cover;
-      background-color: #f4f4f4;
-      display: block;
-    }
-    .outfit-image-placeholder {
-      width: 120px;
-      min-width: 120px;
-      height: 120px;
-      border-radius: 8px;
-      background: repeating-linear-gradient(
-        45deg,
-        #f4f4f4,
-        #f4f4f4 10px,
-        #e4e4e4 10px,
-        #e4e4e4 20px
-      );
-    }
-    .outfit-info h3 {
-      margin: 0 0 4px 0;
-      font-size: 16px;
-    }
-    .outfit-meta {
-      margin: 0 0 8px 0;
-      font-size: 13px;
-      color: #777;
-    }
-    .outfit-desc {
-      margin: 0 0 6px 0;
-      font-size: 14px;
-    }
-    .items-list {
-      margin-top: 4px;
-      padding-left: 18px;
-      font-size: 14px;
-    }
-    .items-list li {
-      margin-bottom: 2px;
-    }
-    .empty-tip {
-      font-size: 14px;
-      color: #777;
-    }
+    h1 { margin: 0 0 8px 0; }
+    .subtitle { margin: 0 0 20px 0; color: #555; font-size: 14px; }
+    form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .input-note { margin: 4px 0 0 0; font-size: 12px; color: #777; }
+    label { font-weight: 600; font-size: 14px; }
+    textarea { width: 100%; min-height: 80px; padding: 10px; font-size: 15px; border-radius: 8px; border: 1px solid #ddd; resize: vertical; box-sizing: border-box; }
+    select, button { padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+    button { background-color: #4285f4; color: #fff; border: none; cursor: pointer; font-weight: 600; position: relative; }
+    button:hover { background-color: #3367d6; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
 
-    /* 在小視窗 / iframe 裡也能好看一點 */
+    .loading { display: none; text-align: center; padding: 20px; color: #666; }
+    .loading.active { display: block; }
+    .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #4285f4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .error-message { background-color: #fee; border-left: 4px solid #f44; padding: 12px; border-radius: 4px; margin: 10px 0; color: #c33; display: none; }
+    .error-message.active { display: block; }
+
+    .success-message { background-color: #efe; border-left: 4px solid #4c4; padding: 12px; border-radius: 4px; margin: 10px 0; color: #363; }
+    .section { margin-bottom: 24px; }
+    .section h2 { margin: 0 0 10px 0; font-size: 18px; }
+    .keywords { display: flex; flex-wrap: wrap; gap: 8px; }
+    .keyword-tag { padding: 4px 10px; border-radius: 999px; background-color: #e9f0ff; font-size: 13px; }
+    .prompt-preview { background-color: #eef3ff; border: 1px dashed #b6c7ff; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #24304f; white-space: pre-wrap; word-break: break-word; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f9; padding: 12px; border-radius: 8px; font-size: 14px; margin: 0; }
+
+    .outfit-card { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start; }
+    .outfit-image { width: 120px; min-width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background-color: #f4f4f4; display: block; }
+    .outfit-image-placeholder { width: 120px; min-width: 120px; height: 120px; border-radius: 8px; background: repeating-linear-gradient(45deg, #f4f4f4, #f4f4f4 10px, #e4e4e4 10px, #e4e4e4 20px); }
+    .outfit-info h3 { margin: 0 0 4px 0; font-size: 16px; }
+    .outfit-meta { margin: 0 0 8px 0; font-size: 13px; color: #777; }
+    .outfit-desc { margin: 0 0 6px 0; font-size: 14px; }
+    .items-list { margin-top: 4px; padding-left: 18px; font-size: 14px; }
+    .items-list li { margin-bottom: 2px; }
+    .empty-tip { font-size: 14px; color: #777; }
+
     @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-      .container {
-        padding: 16px;
-      }
-      .outfit-card {
-        flex-direction: column;
-        align-items: stretch;
-      }
+      body { padding: 10px; }
+      .container { padding: 16px; }
+      .outfit-card { flex-direction: column; align-items: stretch; }
       .outfit-image,
-      .outfit-image-placeholder {
-        width: 100%;
-        height: 180px;
-      }
+      .outfit-image-placeholder { width: 100%; height: 180px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>👗 Outfit AI 穿搭推薦</h1>
+    <h1>Outfit AI 穿搭推薦</h1>
     <p class="subtitle">
-      請描述你的穿搭需求，例如：「今天要去約會，但有點冷」，或「明天要去上班簡報」。
+      先用下拉選單選擇天氣、時間、場合，再在下方補充想要的風格；AI 會幫你整理成更精準的需求。
     </p>
 
-    <!-- 🔹 查詢表單：POST 回到 /recommend_page -->
     <form method="POST" id="recommendForm">
-      <div>
-        <label for="message">你的需求：</label>
-        <textarea
-          id="message"
-          name="message"
-          placeholder="輸入你今天的場合、風格或天氣描述..."
-          required
-        >{{ user_input or '' }}</textarea>
+      <div class="section">
+        <h2>快速挑選條件</h2>
+        <div class="filter-grid">
+          <div class="field">
+            <label for="weather">天氣</label>
+            <select id="weather" name="weather">
+              <option value="">請選擇</option>
+              <option value="晴朗" {% if form_state and form_state.weather == '晴朗' %}selected{% endif %}>晴朗 / 陽光</option>
+              <option value="陰天" {% if form_state and form_state.weather == '陰天' %}selected{% endif %}>陰天</option>
+              <option value="下雨" {% if form_state and form_state.weather == '下雨' %}selected{% endif %}>下雨</option>
+              <option value="潮濕" {% if form_state and form_state.weather == '潮濕' %}selected{% endif %}>潮濕 / 悶熱</option>
+              <option value="寒冷" {% if form_state and form_state.weather == '寒冷' %}selected{% endif %}>寒冷 / 冷風</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="time_of_day">時間</label>
+            <select id="time_of_day" name="time_of_day">
+              <option value="">請選擇</option>
+              <option value="早上" {% if form_state and form_state.time_of_day == '早上' %}selected{% endif %}>早上</option>
+              <option value="下午" {% if form_state and form_state.time_of_day == '下午' %}selected{% endif %}>下午</option>
+              <option value="晚上" {% if form_state and form_state.time_of_day == '晚上' %}selected{% endif %}>晚上</option>
+              <option value="全天" {% if form_state and form_state.time_of_day == '全天' %}selected{% endif %}>全天 / 彈性</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="temperature">溫度感受</label>
+            <select id="temperature" name="temperature">
+              <option value="">請選擇</option>
+              <option value="偏冷（15°C 以下）" {% if form_state and form_state.temperature == '偏冷（15°C 以下）' %}selected{% endif %}>偏冷（15°C 以下）</option>
+              <option value="舒適（16-22°C）" {% if form_state and form_state.temperature == '舒適（16-22°C）' %}selected{% endif %}>舒適（16-22°C）</option>
+              <option value="微熱（23-28°C）" {% if form_state and form_state.temperature == '微熱（23-28°C）' %}selected{% endif %}>微熱（23-28°C）</option>
+              <option value="炎熱（29°C 以上）" {% if form_state and form_state.temperature == '炎熱（29°C 以上）' %}selected{% endif %}>炎熱（29°C 以上）</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="occasion">場合</label>
+            <select id="occasion" name="occasion">
+              <option value="">請選擇</option>
+              <option value="約會" {% if form_state and form_state.occasion == '約會' %}selected{% endif %}>約會</option>
+              <option value="上班" {% if form_state and form_state.occasion == '上班' %}selected{% endif %}>上班 / 商務</option>
+              <option value="休閒" {% if form_state and form_state.occasion == '休閒' %}selected{% endif %}>休閒 / 逛街</option>
+              <option value="運動" {% if form_state and form_state.occasion == '運動' %}selected{% endif %}>運動 / 戶外</option>
+              <option value="派對" {% if form_state and form_state.occasion == '派對' %}selected{% endif %}>派對 / 聚會</option>
+              <option value="旅遊" {% if form_state and form_state.occasion == '旅遊' %}selected{% endif %}>旅遊 / 出遊</option>
+            </select>
+          </div>
+        </div>
+        <p class="input-note">先用下拉選單鎖定需求，再用下方欄位補充細節，AI 會整合成更精準的提示。</p>
       </div>
 
-      <div>
+      <div class="field">
+        <label for="message">其他補充（選填）</label>
+        <textarea id="message" name="message" placeholder="例如：想要遮陽、不想穿裙子、要方便行動、走路很多等...">{{ user_input or '' }}</textarea>
+        <p class="input-note">不想打字也可以只選上面的條件，再按下送出。</p>
+      </div>
+
+      <div class="field">
         <label for="model">選擇模型（可選）：</label>
         <select id="model" name="model">
           <option value="auto" {% if selected_model == 'auto' %}selected{% endif %}>自動選擇</option>
@@ -253,22 +144,26 @@
         </select>
       </div>
 
+      {% if structured_input %}
+      <div class="prompt-preview">
+        <div style="font-weight:600;margin-bottom:4px;">送給 AI 的結構化輸入 (JSON)</div>
+        <pre style="margin:0;">{{ structured_input }}</pre>
+      </div>
+      {% endif %}
+
       <button type="submit" id="submitBtn">送出查詢</button>
     </form>
 
-    <!-- 載入動畫 -->
     <div class="loading" id="loadingDiv">
       <div class="spinner"></div>
-      <p>🤖 AI 正在思考穿搭建議，請稍候...</p>
+      <p>AI 正在思考穿搭建議，請稍候...</p>
     </div>
 
-    <!-- 錯誤訊息 -->
     <div class="error-message" id="errorDiv"></div>
 
-    <!-- 🔍 關鍵字區塊 -->
     {% if keywords %}
     <div class="section">
-      <h2>🔍 偵測到的關鍵字</h2>
+      <h2>偵測到的關鍵字</h2>
       <div class="keywords">
         {% for kw in keywords %}
         <span class="keyword-tag">{{ kw }}</span>
@@ -277,109 +172,97 @@
     </div>
     {% endif %}
 
-    <!-- 💬 AI 文字回覆 -->
     {% if ai_response %}
     <div class="section">
-      <h2>💬 AI 推薦說明</h2>
+      <h2>AI 推薦說明</h2>
       <pre>{{ ai_response }}</pre>
     </div>
     {% elif user_input %}
-    <!-- 有輸入但沒有回覆（理論上不太會發生），給個提示 -->
     <div class="section">
-      <h2>💬 AI 推薦說明</h2>
+      <h2>AI 推薦說明</h2>
       <p class="empty-tip">已收到你的輸入，但目前沒有可顯示的 AI 回應。</p>
     </div>
     {% endif %}
 
-    <!-- 🧥 推薦穿搭 / 搜尋結果 -->
     {% if outfits %}
     <div class="section">
-      <h2>🧥 推薦穿搭組合</h2>
+      <h2>推薦穿搭組合</h2>
 
       {% for outfit in outfits %}
       <div class="outfit-card">
-        <!-- 穿搭圖片：如果 DB 有 image_url 就顯示，沒有就用 placeholder -->
         {% if outfit._image %}
-          <img
-            src="{{ outfit._image }}"
-            alt="{{ outfit._title }}"
-            class="outfit-image"
-          />
+          <img src="{{ outfit._image }}" alt="{{ outfit._title }}" class="outfit-image" />
         {% else %}
           <div class="outfit-image-placeholder"></div>
         {% endif %}
 
         <div class="outfit-info">
           <h3>{{ outfit._title }}</h3>
-
           {% if outfit._occasion %}
           <p class="outfit-meta">場合：{{ outfit._occasion }}</p>
           {% endif %}
-
           {% if outfit._description %}
           <p class="outfit-desc">{{ outfit._description }}</p>
           {% endif %}
 
           {% if outfit['items'] %}
-           <ul class="items-list">
+          <ul class="items-list">
             {% for item in outfit['items'] %}
             <li>
-             {{ item.name }}
-             {% if item.color %} - {{ item.color }}{% endif %}
-             {% if item.category %}（{{ item.category }}）{% endif %}
+              {{ item.name }}
+              {% if item.color %} - {{ item.color }}{% endif %}
+              {% if item.category %}（{{ item.category }}）{% endif %}
             </li>
-           {% endfor %}
+            {% endfor %}
           </ul>
-{% endif %}
-
+          {% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
     {% elif ai_response %}
-    <!-- 有 AI 回覆但沒有 outfits（理論上比較少），也提示一下 -->
     <div class="section">
-      <h2>🧥 推薦穿搭組合</h2>
+      <h2>推薦穿搭組合</h2>
       <p class="empty-tip">目前沒有額外的穿搭組合可以顯示。</p>
     </div>
     {% endif %}
   </div>
 
-  <script>
-    // 表單提交處理
+    <script>
     const form = document.getElementById('recommendForm');
     const submitBtn = document.getElementById('submitBtn');
     const loadingDiv = document.getElementById('loadingDiv');
     const errorDiv = document.getElementById('errorDiv');
 
-    // 檢查是否有 AI 回應錯誤
-    {% if ai_response and ('❌' in ai_response or '錯誤' in ai_response or '失敗' in ai_response or '無法' in ai_response) %}
-    errorDiv.textContent = '⚠️ AI 服務回應異常，可能是 API 配額不足或連線問題。請稍後再試或切換其他模型。';
-    errorDiv.classList.add('active');
-    {% endif %}
-
     form.addEventListener('submit', function(e) {
       const message = document.getElementById('message').value.trim();
-      if (!message) {
+      const weather = document.getElementById('weather').value.trim();
+      const timeOfDay = document.getElementById('time_of_day').value.trim();
+      const temperature = document.getElementById('temperature').value.trim();
+      const occasion = document.getElementById('occasion').value.trim();
+
+      if (![message, weather, timeOfDay, temperature, occasion].some(Boolean)) {
         e.preventDefault();
-        errorDiv.textContent = '⚠️ 請輸入您的穿搭需求';
+        errorDiv.textContent = '請至少選擇一個條件或填寫補充後再送出。';
         errorDiv.classList.add('active');
         return;
       }
 
-      // 顯示載入動畫
       loadingDiv.classList.add('active');
       submitBtn.disabled = true;
       submitBtn.textContent = '處理中...';
       errorDiv.classList.remove('active');
-      
-      // 表單會自動提交，頁面重新載入後會顯示結果
     });
 
-    // 如果有 AI 回應，隱藏載入動畫
-    {% if ai_response %}
-    loadingDiv.classList.remove('active');
-    {% endif %}
+    const hasAiResponse = {{ 'true' if ai_response else 'false' }};
+    if (hasAiResponse) {
+      window.addEventListener('DOMContentLoaded', () => {
+        loadingDiv.classList.remove('active');
+      });
+    }
   </script>
 </body>
 </html>
+
+
+
