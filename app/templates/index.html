@@ -291,18 +291,18 @@
     </div>
     {% endif %}
 
-    <!-- 🧥 推薦穿搭 / 搜尋結果 -->
-    {% if outfits %}
+    <!-- 🧥 推薦商品 / 搜尋結果 -->
+    {% if items %}
     <div class="section">
-      <h2>🧥 推薦穿搭組合</h2>
+      <h2>🧥 推薦商品</h2>
 
-      {% for outfit in outfits %}
+      {% for item in items %}
       <div class="outfit-card">
-        <!-- 穿搭圖片：如果 DB 有 image_url 就顯示，沒有就用 placeholder -->
-        {% if outfit._image %}
+        <!-- 商品圖片 -->
+        {% if item.image_url %}
           <img
-            src="{{ outfit._image }}"
-            alt="{{ outfit._title }}"
+            src="{{ item.image_url }}"
+            alt="{{ item.name }}"
             class="outfit-image"
           />
         {% else %}
@@ -310,37 +310,37 @@
         {% endif %}
 
         <div class="outfit-info">
-          <h3>{{ outfit._title }}</h3>
+          <h3>{{ item.name }}</h3>
 
-          {% if outfit._occasion %}
-          <p class="outfit-meta">場合：{{ outfit._occasion }}</p>
+          {% if item.category %}
+          <p class="outfit-meta">類別：{{ item.category }}</p>
           {% endif %}
 
-          {% if outfit._description %}
-          <p class="outfit-desc">{{ outfit._description }}</p>
+          {% if item.color %}
+          <p class="outfit-meta">顏色：{{ item.color }}</p>
           {% endif %}
 
-          {% if outfit['items'] %}
-           <ul class="items-list">
-            {% for item in outfit['items'] %}
-            <li>
-             {{ item.name }}
-             {% if item.color %} - {{ item.color }}{% endif %}
-             {% if item.category %}（{{ item.category }}）{% endif %}
-            </li>
-           {% endfor %}
-          </ul>
-{% endif %}
+          {% if item.gender %}
+          <p class="outfit-meta">性別：{{ item.gender }}</p>
+          {% endif %}
+
+          {% if item.price %}
+          <p class="outfit-meta">價格：${{ item.price }}</p>
+          {% endif %}
+
+          {% if item.description %}
+          <p class="outfit-desc">{{ item.description }}</p>
+          {% endif %}
 
         </div>
       </div>
       {% endfor %}
     </div>
     {% elif ai_response %}
-    <!-- 有 AI 回覆但沒有 outfits（理論上比較少），也提示一下 -->
+    <!-- 有 AI 回覆但沒有 items -->
     <div class="section">
-      <h2>🧥 推薦穿搭組合</h2>
-      <p class="empty-tip">目前沒有額外的穿搭組合可以顯示。</p>
+      <h2>🧥 推薦商品</h2>
+      <p class="empty-tip">目前沒有額外的商品可以顯示。</p>
     </div>
     {% endif %}
   </div>
