@@ -13,7 +13,6 @@ Jinja2==3.1.4
 itsdangerous==2.2.0
 click==8.1.8
 blinker==1.9.0
-Flask-Session==0.8.0
 
 # ====================================
 # WSGI 服務器 (生產環境)

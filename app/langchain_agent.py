@@ -175,7 +175,7 @@ class OutfitAIAgent:
         Args:
             session_id: 對話 session ID
             user_input: 用戶輸入
-            db_outfits: 資料庫檢索的商品資料 (items 表格)
+            db_outfits: 資料庫檢索的穿搭資料
             preferred_model: 偏好模型 ("auto", "gemini", "groq", "deepseek")
         """
         # ⏱️ 速率限制: 確保請求之間有最小間隔
@@ -194,13 +194,13 @@ class OutfitAIAgent:
         # 🎯 建立精簡對話上下文 - 減少 token 消耗
         context = ""
         if db_outfits and len(db_outfits) > 0:
-            # 只用前2件商品，只顯示名稱和類別
+            # 只用前2組穿搭,只顯示名稱和場合
             simplified = []
-            for item in db_outfits[:2]:
-                name = item.get('name', '未命名')
-                category = item.get('category', '')
-                simplified.append(f"{name}({category})")
-            context = f"\n資料庫商品: {', '.join(simplified)}"
+            for outfit in db_outfits[:2]:
+                name = outfit.get('name', '未命名')
+                occasion = outfit.get('occasion', '')
+                simplified.append(f"{name}({occasion})")
+            context = f"\n資料庫: {', '.join(simplified)}"
         
         # 只保留最近1輪對話 (大幅減少 token)
         history_text = ""
@@ -215,7 +215,7 @@ class OutfitAIAgent:
         import sys
         print(f"\n{'='*50}", flush=True, file=sys.stderr)
         print(f"📝 用戶輸入: {user_input}", flush=True, file=sys.stderr)
-        print(f"📦 資料庫商品數量: {len(db_outfits) if db_outfits else 0}", flush=True, file=sys.stderr)
+        print(f"📦 資料庫穿搭數量: {len(db_outfits) if db_outfits else 0}", flush=True, file=sys.stderr)
         print(f"{'='*50}\n", flush=True, file=sys.stderr)
         
         # 根據用戶選擇決定使用哪些模型
