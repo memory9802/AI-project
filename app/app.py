@@ -6,6 +6,8 @@ from datetime import datetime
 from decimal import Decimal
 import bcrypt
 from functools import wraps
+import subprocess
+import threading
 
 # 確保 Python 使用 UTF-8 編碼
 sys.stdout.reconfigure(encoding='utf-8')
@@ -386,6 +388,18 @@ def api_register():
             session['user_id'] = user_id
             session['username'] = username
             session['email'] = email
+            
+            # 🔄 註冊成功後，在背景執行同步腳本
+            def sync_to_sql():
+                try:
+                    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts', 'sync_users_to_sql.py')
+                    subprocess.run(['python', script_path], check=False, capture_output=True)
+                    print(f"✅ 用戶資料已同步到 SQL 檔案 (User ID: {user_id})", flush=True)
+                except Exception as e:
+                    print(f"⚠️ SQL 同步失敗: {e}", flush=True)
+            
+            # 在背景執行同步，不阻塞回應
+            threading.Thread(target=sync_to_sql, daemon=True).start()
             
             return jsonify({
                 "success": True,
