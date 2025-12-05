@@ -291,6 +291,7 @@
     </div>
     {% endif %}
 
+<<<<<<< HEAD
     <!-- 🧥 推薦商品 / 搜尋結果 -->
     {% if items %}
     <div class="section">
@@ -303,6 +304,20 @@
           <img
             src="{{ item.image_url }}"
             alt="{{ item.name }}"
+=======
+    <!-- 🧥 推薦穿搭 / 搜尋結果 -->
+    {% if outfits %}
+    <div class="section">
+      <h2>🧥 推薦穿搭組合</h2>
+
+      {% for outfit in outfits %}
+      <div class="outfit-card">
+        <!-- 穿搭圖片：如果 DB 有 image_url 就顯示，沒有就用 placeholder -->
+        {% if outfit._image %}
+          <img
+            src="{{ outfit._image }}"
+            alt="{{ outfit._title }}"
+>>>>>>> memory9802/blueprints-success
             class="outfit-image"
           />
         {% else %}
@@ -310,6 +325,7 @@
         {% endif %}
 
         <div class="outfit-info">
+<<<<<<< HEAD
           <h3>{{ item.name }}</h3>
 
           {% if item.category %}
@@ -331,16 +347,46 @@
           {% if item.description %}
           <p class="outfit-desc">{{ item.description }}</p>
           {% endif %}
+=======
+          <h3>{{ outfit._title }}</h3>
+
+          {% if outfit._occasion %}
+          <p class="outfit-meta">場合：{{ outfit._occasion }}</p>
+          {% endif %}
+
+          {% if outfit._description %}
+          <p class="outfit-desc">{{ outfit._description }}</p>
+          {% endif %}
+
+          {% if outfit['items'] %}
+           <ul class="items-list">
+            {% for item in outfit['items'] %}
+            <li>
+             {{ item.name }}
+             {% if item.color %} - {{ item.color }}{% endif %}
+             {% if item.category %}（{{ item.category }}）{% endif %}
+            </li>
+           {% endfor %}
+          </ul>
+{% endif %}
+>>>>>>> memory9802/blueprints-success
 
         </div>
       </div>
       {% endfor %}
     </div>
     {% elif ai_response %}
+<<<<<<< HEAD
     <!-- 有 AI 回覆但沒有 items -->
     <div class="section">
       <h2>🧥 推薦商品</h2>
       <p class="empty-tip">目前沒有額外的商品可以顯示。</p>
+=======
+    <!-- 有 AI 回覆但沒有 outfits（理論上比較少），也提示一下 -->
+    <div class="section">
+      <h2>🧥 推薦穿搭組合</h2>
+      <p class="empty-tip">目前沒有額外的穿搭組合可以顯示。</p>
+>>>>>>> memory9802/blueprints-success
     </div>
     {% endif %}
   </div>

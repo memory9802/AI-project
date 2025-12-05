@@ -573,8 +573,6 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 **最後更新:** 2025-11-26
 
 🎉 **祝開發順利!**
+# Config
 
-# 更新日期: 2025年11月27日 星期四 15時09分12秒 CST
-# Config updated
-
-# Build optimized
+# Build
