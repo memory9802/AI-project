@@ -105,7 +105,7 @@
                                 </div>
 
                                 <!-- Login Form -->
-                                <form id="login-form" action="/login" class="space-y-6" method="POST">
+                                <form id="login-form" class="space-y-6">
                                     <div class="space-y-4">
                                         <label class="flex flex-col min-w-40 flex-1">
                                             <p
@@ -201,7 +201,7 @@
                                 </form>
 
                                 <!-- Register Form -->
-                                <form id="register-form" action="/register" class="space-y-6 hidden" method="POST">
+                                <form id="register-form" class="space-y-6 hidden">
                                     <div class="space-y-4">
                                         <label class="flex flex-col min-w-40 flex-1">
                                             <p
@@ -338,6 +338,15 @@
             field.type = field.type === 'password' ? 'text' : 'password';
         }
 
+        // Show message function
+        function showMessage(message, isError = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'} text-white z-50`;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            setTimeout(() => messageDiv.remove(), 3000);
+        }
+
         // Tab switching
         const loginTab = document.getElementById('login-tab');
         const registerTab = document.getElementById('register-tab');
@@ -374,6 +383,65 @@
             loginTab.classList.add('text-subtle-light', 'dark:text-subtle-dark');
             registerTab.classList.remove('border-b-primary', 'text-primary');
             registerTab.classList.add('text-subtle-light', 'dark:text-subtle-dark');
+        });
+
+        // Handle login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginForm.querySelector('input[type="email"]').value;
+            const password = loginForm.querySelector('input[type="password"]').value;
+
+            try {
+                const response = await fetch('/login/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('登入成功！正在跳转...');
+                    setTimeout(() => window.location.href = data.redirect || '/', 1000);
+                } else {
+                    showMessage(data.message || '登入失败', true);
+                }
+            } catch (error) {
+                showMessage('系統錯誤，請稍後再試', true);
+            }
+        });
+
+        // Handle register form submission
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = registerForm.querySelector('input[name="email"]').value;
+            const password = registerForm.querySelector('#register-password').value;
+            const confirmPassword = registerForm.querySelector('#confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showMessage('兩次輸入的密碼不一致', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/login/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, username: email.split('@')[0] })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('註冊成功！請登入');
+                    setTimeout(() => {
+                        registerForm.reset();
+                        loginTab.click();
+                    }, 1500);
+                } else {
+                    showMessage(data.message || '註冊失败', true);
+                }
+            } catch (error) {
+                showMessage('系統錯誤，請稍後再試', true);
+            }
         });
     </script>
 </body>
