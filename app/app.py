@@ -10,6 +10,7 @@ def create_app():
     app.config['JSON_AS_ASCII'] = False
     app.config['JSON_SORT_KEYS'] = False
     app.json.ensure_ascii = False
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
     # 從環境變數加載設定 (如果需要)
     # app.config.from_envvar('YOUR_APP_SETTINGS', silent=True)

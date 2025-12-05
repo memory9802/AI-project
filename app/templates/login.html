@@ -107,23 +107,6 @@
                                     </div>
                                 </div>
 
-                                <div id="logged-in-panel"
-                                    class="hidden rounded-lg border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark p-5 space-y-4 shadow-sm">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="text-sm text-subtle-light dark:text-subtle-dark">目前登入帳號</p>
-                                            <p id="logged-in-email"
-                                                class="text-lg font-semibold text-text-light dark:text-text-dark"></p>
-                                        </div>
-                                        <span class="material-symbols-outlined text-primary">check_circle</span>
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <button id="logout-button"
-                                            class="flex-1 rounded-lg border border-secondary-light dark:border-secondary-dark px-4 py-3 text-sm font-semibold text-text-light dark:text-text-dark hover:bg-secondary-light/50 dark:hover:bg-secondary-dark/70 transition-colors">登出</button>
-                                        <a href="{{ url_for('home.index') }}"
-                                            class="flex-1 rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold text-white hover:bg-primary/90 transition-colors">返回首頁</a>
-                                    </div>
-                                </div>
                                 <!-- Login Form -->
                                 <form id="login-form" action="/login" class="space-y-6 min-h-[520px]" method="POST"
                                     novalidate>
@@ -186,49 +169,30 @@
                                             <span class="truncate">登入</span>
                                         </button>
                                     </div>
-                                    <div class="relative flex py-3 items-center">
-                                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
-                                        <span
-                                            class="flex-shrink mx-4 text-sm text-gray-400 dark:text-gray-500">或透過下列方式登入</span>
-                                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
-                                    </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <a class="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-[#3c4053] bg-white dark:bg-[#1c1e26] h-14 px-5 text-gray-800 dark:text-white text-base font-medium leading-normal hover:bg-gray-50 dark:hover:bg-white/5"
-                                            href="/login/google">
-                                            <svg class="h-6 w-6" viewBox="0 0 260 260"
-                                                xmlns="http://www.w3.org/2000/svg">
-                                                <path
-                                                    d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
-                                                    fill="#4285F4" />
-                                                <path
-                                                    d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
-                                                    fill="#34A853" />
-                                                <path
-                                                    d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
-                                                    fill="#FBBC05" />
-                                                <path
-                                                    d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
-                                                    fill="#EB4335" />
-                                            </svg>
-                                            <span>Google 登入</span>
-                                        </a>
-                                        <a class="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-[#3c4053] bg-white dark:bg-[#1c1e26] h-14 px-5 text-gray-800 dark:text-white text-base font-medium leading-normal hover:bg-gray-50 dark:hover:bg-white/5"
-                                            href="/login/facebook">
-                                            <svg class="h-6 w-6" fill="#1877F2" viewBox="0 0 24 24"
-                                                xmlns="http://www.w3.org/2000/svg">
-                                                <path
-                                                    d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.35C0 23.407.593 24 1.325 24H12.82v-9.29H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.732 0 1.325-.593 1.325-1.325V1.325C24 .593 23.407 0 22.675 0z">
-                                                </path>
-                                            </svg>
-                                            <span>Facebook 登入</span>
-                                        </a>
-                                    </div>
                                 </form>
 
                                 <!-- Register Form -->
                                 <form id="register-form" action="/register" class="space-y-6 hidden min-h-[520px]"
                                     method="POST" novalidate>
                                     <div class="space-y-4">
+                                        <label class="flex flex-col min-w-40 flex-1">
+                                            <p
+                                                class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
+                                                用戶名稱</p>
+                                            <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                                <div
+                                                    class="text-subtle-light dark:text-subtle-dark flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pl-[15px] rounded-l-lg border-r-0">
+                                                    <span class="material-symbols-outlined"
+                                                        style="font-size: 20px;">person</span>
+                                                </div>
+                                                <input
+                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
+                                                    placeholder="請輸入用戶名稱" required type="text" name="username" />
+                                                <div
+                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0">
+                                                </div>
+                                            </div>
+                                        </label>
                                         <label class="flex flex-col min-w-40 flex-1">
                                             <p
                                                 class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
@@ -286,6 +250,48 @@
                                                     onclick="togglePasswordVisibility('confirm-password')">
                                                     <span class="material-symbols-outlined"
                                                         style="font-size: 20px;">visibility</span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="flex flex-col min-w-40 flex-1">
+                                            <p
+                                                class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
+                                                偏好風格</p>
+                                            <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                                <div
+                                                    class="text-subtle-light dark:text-subtle-dark flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pl-[15px] rounded-l-lg border-r-0">
+                                                    <span class="material-symbols-outlined"
+                                                        style="font-size: 20px;">style</span>
+                                                </div>
+                                                <select
+                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
+                                                    name="favoriteStyle">
+                                                    <option value="">請選擇您的偏好風格</option>
+                                                    <option value="休閒">休閒</option>
+                                                    <option value="正式">正式</option>
+                                                    <option value="運動">運動</option>
+                                                    <option value="街頭">街頭</option>
+                                                    <option value="韓風">韓風</option>
+                                                    <option value="日系">日系</option>
+                                                    <option value="歐美">歐美</option>
+                                                    <option value="甜美">甜美</option>
+                                                    <option value="優雅">優雅</option>
+                                                    <option value="文青">文青</option>
+                                                    <option value="時尚">時尚</option>
+                                                    <option value="復古">復古</option>
+                                                    <option value="波希米亞">波希米亞</option>
+                                                    <option value="森林系">森林系</option>
+                                                    <option value="工裝">工裝</option>
+                                                    <option value="龐克">龐克</option>
+                                                    <option value="搖滾">搖滾</option>
+                                                    <option value="中性">中性</option>
+                                                    <option value="學院風">學院風</option>
+                                                    <option value="帥氣">帥氣</option>
+                                                    <option value="美式">美式</option>
+                                                    <option value="嘻哈">嘻哈</option>
+                                                </select>
+                                                <div
+                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0">
                                                 </div>
                                             </div>
                                         </label>
@@ -377,10 +383,6 @@
         const forgotPasswordLink = document.getElementById('forgot-password-link');
         const backToLogin = document.getElementById('back-to-login');
         const authMessage = document.getElementById('auth-message');
-        const loggedInPanel = document.getElementById('logged-in-panel');
-        const loggedInEmail = document.getElementById('logged-in-email');
-        const logoutButton = document.getElementById('logout-button');
-        const rememberMe = document.getElementById('remember-me');
         const stateKey = 'styleRecAuthState';
         const tabBar = document.getElementById('tab-bar');
         const authTitle = document.getElementById('auth-title');
@@ -430,7 +432,6 @@
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
                 recoveryForm.classList.add('hidden');
-                loggedInPanel.classList.add('hidden');
                 setTabState('login');
                 setCopy('welcome');
                 tabBar.classList.remove('invisible', 'h-0');
@@ -440,7 +441,6 @@
                 loginForm.classList.add('hidden');
                 registerForm.classList.remove('hidden');
                 recoveryForm.classList.add('hidden');
-                loggedInPanel.classList.add('hidden');
                 setTabState('register');
                 setCopy('welcome');
                 tabBar.classList.remove('invisible', 'h-0');
@@ -450,48 +450,11 @@
                 loginForm.classList.add('hidden');
                 registerForm.classList.add('hidden');
                 recoveryForm.classList.remove('hidden');
-                loggedInPanel.classList.add('hidden');
                 setTabState('none');
                 setCopy('recovery');
                 tabBar.classList.add('invisible', 'h-0');
                 hideMessage();
-            },
-            showLoggedIn(email) {
-                loginForm.classList.add('hidden');
-                registerForm.classList.add('hidden');
-                recoveryForm.classList.add('hidden');
-                loggedInPanel.classList.remove('hidden');
-                setTabState('none');
-                setCopy('welcome');
-                loggedInEmail.textContent = email;
-                hideMessage();
             }
-        };
-
-        const persistState = (email) => {
-            const payload = { email, timestamp: Date.now(), remember: rememberMe.checked };
-            if (payload.remember) {
-                localStorage.setItem(stateKey, JSON.stringify(payload));
-                sessionStorage.removeItem(stateKey);
-            } else {
-                sessionStorage.setItem(stateKey, JSON.stringify(payload));
-                localStorage.removeItem(stateKey);
-            }
-        };
-
-        const readState = () => {
-            const raw = localStorage.getItem(stateKey) || sessionStorage.getItem(stateKey);
-            if (!raw) return null;
-            try {
-                return JSON.parse(raw);
-            } catch {
-                return null;
-            }
-        };
-
-        const clearState = () => {
-            localStorage.removeItem(stateKey);
-            sessionStorage.removeItem(stateKey);
         };
 
         const showMessage = (text, type = 'info') => {
@@ -510,7 +473,7 @@
         forgotPasswordLink.addEventListener('click', tabs.showRecovery);
         backToLogin.addEventListener('click', tabs.showLogin);
 
-        loginForm.addEventListener('submit', (event) => {
+        loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const email = loginForm.email.value.trim();
             const password = loginForm.password.value.trim();
@@ -522,18 +485,36 @@
                 showMessage('密碼至少需要 6 碼。', 'error');
                 return;
             }
-            persistState(email);
-            showMessage('登入成功，正在導向您的空間。');
-            setTimeout(() => tabs.showLoggedIn(email), 400);
+            
+            try {
+                const response = await fetch('/login/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('登入成功，正在導向首頁...');
+                    setTimeout(() => window.location.href = data.redirect || '/home.html', 800);
+                } else {
+                    showMessage(data.message || '登入失敗', 'error');
+                }
+            } catch (error) {
+                showMessage('系統錯誤，請稍後再試', 'error');
+            }
         });
 
-        registerForm.addEventListener('submit', (event) => {
+        registerForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+            const username = registerForm.username.value.trim();
             const email = registerForm.email.value.trim();
             const password = registerForm.password.value.trim();
             const confirmPassword = registerForm.confirmPassword.value.trim();
-            if (!email || !password || !confirmPassword) {
-                showMessage('請完成所有註冊欄位。', 'error');
+            const favoriteStyle = registerForm.favoriteStyle.value;
+            
+            if (!username || !email || !password || !confirmPassword) {
+                showMessage('請完成所有必填欄位。', 'error');
                 return;
             }
             if (password.length < 6) {
@@ -544,9 +525,27 @@
                 showMessage('兩次輸入的密碼不一致。', 'error');
                 return;
             }
-            persistState(email);
-            showMessage('註冊成功，已自動登入。');
-            setTimeout(() => tabs.showLoggedIn(email), 400);
+            
+            try {
+                const response = await fetch('/login/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, favoriteStyle })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('註冊成功！請登入');
+                    setTimeout(() => {
+                        registerForm.reset();
+                        tabs.showLogin();
+                    }, 1500);
+                } else {
+                    showMessage(data.message || '註冊失敗', 'error');
+                }
+            } catch (error) {
+                showMessage('系統錯誤，請稍後再試', 'error');
+            }
         });
 
         recoveryForm.addEventListener('submit', (event) => {
@@ -560,19 +559,8 @@
             setTimeout(() => tabs.showLogin(), 800);
         });
 
-        logoutButton.addEventListener('click', () => {
-            clearState();
-            showMessage('您已登出，下次登入時可勾選保持登入。');
-            tabs.showLogin();
-        });
-
-        const saved = readState();
-        if (saved?.email) {
-            rememberMe.checked = !!saved.remember;
-            tabs.showLoggedIn(saved.email);
-        } else {
-            tabs.showLogin();
-        }
+        // 初始化显示登录表单
+        tabs.showLogin();
     </script>
 </body>
 
