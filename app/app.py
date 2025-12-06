@@ -6,6 +6,9 @@ def create_app():
                 template_folder='templates',
                 static_folder='static')
 
+    # 設定 Session Secret Key
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    
     # 設定環境變數
     app.config['JSON_AS_ASCII'] = False
     app.config['JSON_SORT_KEYS'] = False

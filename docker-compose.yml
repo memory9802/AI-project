@@ -35,8 +35,12 @@ services:
       LLM_API_KEY: ${LLM_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      FLASK_DEBUG: 1                # ✅ 開啟除錯模式，支援熱重載
+      FLASK_ENV: development        # ✅ 設定開發環境
     ports:
       - "5001:5000"
+    volumes:                        # ✅ 建立同步通道，即時反映程式碼變更
+      - ./app:/app                  # 主機的 app/ 目錄 → 容器的 /app
     depends_on:
       - mysql
 
