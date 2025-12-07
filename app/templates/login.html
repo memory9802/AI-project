@@ -382,6 +382,7 @@
         const tabBar = document.getElementById('tab-bar');
         const authTitle = document.getElementById('auth-title');
         const authSubtitle = document.getElementById('auth-subtitle');
+        const nextParam = new URLSearchParams(window.location.search).get('next');
 
         const copy = {
             welcome: {
@@ -482,16 +483,22 @@
             }
             
             try {
-                const response = await fetch('/login/', {
+                const payload = { email, password };
+                if (nextParam) {
+                    payload.next = nextParam;
+                }
+
+                const response = await fetch(nextParam ? `/login/?next=${encodeURIComponent(nextParam)}` : '/login/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify(payload)
                 });
                 const data = await response.json();
                 
                 if (data.success) {
-                    showMessage('登入成功，正在導向首頁...');
-                    setTimeout(() => window.location.href = data.redirect || '/', 800);
+                    const redirectTarget = data.redirect || nextParam || '/';
+                    showMessage('登入成功，正在導向頁面...');
+                    setTimeout(() => window.location.href = redirectTarget, 800);
                 } else {
                     showMessage(data.message || '登入失敗', 'error');
                 }

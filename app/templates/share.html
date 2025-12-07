@@ -52,6 +52,27 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('/login/status', { credentials: 'same-origin' });
+        const data = await res.json();
+        if (!data.authenticated) {
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
+        }
+        window.currentUser = data.user;
+        const userDisplay = document.getElementById('user-display');
+        if (userDisplay && data.user?.username) {
+          userDisplay.textContent = data.user.username;
+          userDisplay.classList.remove('hidden');
+        }
+      } catch (error) {
+        window.location.replace('/login/');
+      }
+    })();
+  </script>
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div class="layout-container flex h-full grow flex-col">
@@ -102,6 +123,7 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
+            <span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span>
             <button
               class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
               ><a href="{{ url_for('login.login') }}">

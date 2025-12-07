@@ -1,5 +1,6 @@
 from flask import Flask
 import os
+from datetime import timedelta
 
 def create_app():
     app = Flask(__name__,
@@ -13,6 +14,7 @@ def create_app():
     app.config['JSON_AS_ASCII'] = False
     app.config['JSON_SORT_KEYS'] = False
     app.json.ensure_ascii = False
+    app.permanent_session_lifetime = timedelta(days=7)
 
     # 從環境變數加載設定 (如果需要)
     # app.config.from_envvar('YOUR_APP_SETTINGS', silent=True)
