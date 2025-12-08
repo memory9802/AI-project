@@ -115,13 +115,6 @@ def do_register():
         return jsonify({'success': False, 'message': '系統錯誤'}), 500
 
 
-@login_bp.route('/logout', methods=['POST'])
-def logout():
-    """Log out the current user."""
-    clear_user_session()
-    return jsonify({'success': True, 'message': '已登出'}), 200
-
-
 @login_bp.route('/status', methods=['GET'])
 def status():
     """Return current login status and user payload."""
