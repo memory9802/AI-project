@@ -16,6 +16,13 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Create and use database
+--
+
+CREATE DATABASE IF NOT EXISTS outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE outfit_db;
+
+--
 -- Table structure for table `conversation_history`
 --
 
@@ -24,8 +31,8 @@ CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(100) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE DEFAULT NULL,
-  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',
   favorite_style VARCHAR(50) DEFAULT NULL,
+  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='使用者表 - 使用 bcrypt 加密密碼';
