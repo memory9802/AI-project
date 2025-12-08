@@ -252,42 +252,38 @@
                                             <p
                                                 class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
                                                 偏好風格</p>
-                                            <div class="flex w-full flex-1 items-stretch rounded-lg">
-                                                <div
-                                                    class="text-subtle-light dark:text-subtle-dark flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pl-[15px] rounded-l-lg border-r-0">
-                                                    <span class="material-symbols-outlined"
-                                                        style="font-size: 20px;">style</span>
-                                                </div>
-                                                <select
-                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
-                                                    name="favoriteStyle">
-                                                    <option value="">請選擇您的偏好風格</option>
-                                                    <option value="休閒">休閒</option>
-                                                    <option value="正式">正式</option>
-                                                    <option value="運動">運動</option>
-                                                    <option value="街頭">街頭</option>
-                                                    <option value="韓風">韓風</option>
-                                                    <option value="日系">日系</option>
-                                                    <option value="歐美">歐美</option>
-                                                    <option value="甜美">甜美</option>
-                                                    <option value="優雅">優雅</option>
-                                                    <option value="文青">文青</option>
-                                                    <option value="時尚">時尚</option>
-                                                    <option value="復古">復古</option>
-                                                    <option value="波希米亞">波希米亞</option>
-                                                    <option value="森林系">森林系</option>
-                                                    <option value="工裝">工裝</option>
-                                                    <option value="龐克">龐克</option>
-                                                    <option value="搖滾">搖滾</option>
-                                                    <option value="中性">中性</option>
-                                                    <option value="學院風">學院風</option>
-                                                    <option value="帥氣">帥氣</option>
-                                                    <option value="美式">美式</option>
-                                                    <option value="嘻哈">嘻哈</option>
-                                                </select>
-                                                <div
-                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0">
-                                                </div>
+                                            <div class="grid grid-cols-5 gap-2 p-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark">
+                                                <input type="hidden" id="favorite-style-input" name="favoriteStyle" />
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="休閒">休閒</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="正式">正式</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="運動">運動</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="街頭">街頭</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="韓風">韓風</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="日系">日系</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="歐美">歐美</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="極簡">極簡</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="復古">復古</button>
+                                                <button type="button"
+                                                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                                                    data-style="中性">中性</button>
                                             </div>
                                         </label>
                                     </div>
@@ -468,6 +464,28 @@
         registerTab.addEventListener('click', tabs.showRegister);
         forgotPasswordLink.addEventListener('click', tabs.showRecovery);
         backToLogin.addEventListener('click', tabs.showLogin);
+
+        // Style tag selection for register form (multi-select)
+        let selectedStyles = [];
+        document.querySelectorAll('.style-tag-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const style = btn.dataset.style;
+                
+                if (selectedStyles.includes(style)) {
+                    // Remove style if already selected
+                    selectedStyles = selectedStyles.filter(s => s !== style);
+                    btn.classList.remove('bg-primary/30', 'text-primary');
+                } else {
+                    // Add style to selection
+                    selectedStyles.push(style);
+                    btn.classList.add('bg-primary/30', 'text-primary');
+                }
+                
+                // Update hidden input with comma-separated values
+                document.getElementById('favorite-style-input').value = selectedStyles.join(',');
+            });
+        });
 
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
