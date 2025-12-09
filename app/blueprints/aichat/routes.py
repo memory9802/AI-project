@@ -5,10 +5,14 @@ from . import aichat_bp
 from .services import (
     generate_global_response,
     generate_wardrobe_recommendation,
+    generate_wardrobe_structured,
     agent,
-    get_outfit_fields,
-    standardize_outfit,
+    get_wardrobe_fields,
+    get_item_fields,
+    standardize_wardrobe_item,
+    standardize_item,
     get_db_conn,
+    normalize_category,
 )
 
 
@@ -63,7 +67,7 @@ def chat():
 
 
 # =======================
-# items 查詢 API（直接查 DB）
+# items 查詢 API（直接查 DB，支援中英文類別）
 # =======================
 @aichat_bp.route("/items", methods=["GET"])
 def get_items():
@@ -78,14 +82,20 @@ def get_items():
                 sql += " AND color LIKE %s"
                 params.append(f"%{color}%")
             if category:
+                # 將中文類別轉換為英文
+                normalized_category = normalize_category(category)
                 sql += " AND category=%s"
-                params.append(category)
+                params.append(normalized_category)
             cur.execute(sql, params)
             items = cur.fetchall()
 
             for item in items:
                 if "created_at" in item:
-                    item["created_at"] = item["created_at"].isoformat() if item["created_at"] else None
+                    item["created_at"] = (
+                        item["created_at"].isoformat()
+                        if item["created_at"]
+                        else None
+                    )
                 if "price" in item and isinstance(item["price"], Decimal):
                     item["price"] = float(item["price"])
     finally:
@@ -204,67 +214,82 @@ def ping():
 
 
 # =======================
-# 資料品質檢查（衣櫃 DB）
+# 資料品質檢查（混合 DB: user_wardrobe + items）
 # =======================
 @aichat_bp.route("/data_quality", methods=["GET"])
 def check_data_quality():
-    """檢查 outfits 欄位偵測與資料品質"""
+    """檢查 user_wardrobe 和 items 欄位偵測與資料品質"""
     conn = get_db_conn()
     try:
-        fields = get_outfit_fields()
+        wardrobe_fields = get_wardrobe_fields()
+        item_fields = get_item_fields()
 
         quality_report = {
-            "field_detection": {
-                "primary_key": {"detected": bool(fields["primary_key"]), "field": fields["primary_key"]},
-                "title": {"detected": bool(fields["title"]), "field": fields["title"]},
-                "occasion": {"detected": bool(fields["occasion"]), "field": fields["occasion"]},
-                "image": {"detected": bool(fields["image"]), "field": fields["image"]},
-                "description": {"detected": bool(fields["description"]), "field": fields["description"]},
+            "user_wardrobe": {
+                "field_detection": {
+                    "primary_key": {
+                        "detected": bool(wardrobe_fields.get("primary_key")),
+                        "field": wardrobe_fields.get("primary_key")
+                    },
+                    "title": {
+                        "detected": bool(wardrobe_fields.get("title")),
+                        "field": wardrobe_fields.get("title")
+                    },
+                    "category": {
+                        "detected": bool(wardrobe_fields.get("category")),
+                        "field": wardrobe_fields.get("category")
+                    },
+                },
+                "sample_data": []
             },
-            "detection_rate": 0,
-            "sample_data_quality": [],
+            "items": {
+                "field_detection": {
+                    "primary_key": {
+                        "detected": bool(item_fields.get("primary_key")),
+                        "field": item_fields.get("primary_key")
+                    },
+                    "title": {
+                        "detected": bool(item_fields.get("title")),
+                        "field": item_fields.get("title")
+                    },
+                    "category": {
+                        "detected": bool(item_fields.get("category")),
+                        "field": item_fields.get("category")
+                    },
+                },
+                "sample_data": []
+            }
         }
 
-        detected_count = sum(1 for v in fields.values() if v is not None)
-        quality_report["detection_rate"] = f"{detected_count}/5 ({detected_count*20}%)"
-
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM outfits LIMIT 5")
-            outfits = cur.fetchall()
+            # 檢查 user_wardrobe 樣本
+            cur.execute("SELECT * FROM user_wardrobe LIMIT 3")
+            wardrobe_items = cur.fetchall()
+            for item in wardrobe_items:
+                standardized = standardize_wardrobe_item(item, wardrobe_fields)
+                quality_report["user_wardrobe"]["sample_data"].append({
+                    "id": standardized["_id"],
+                    "title": standardized["_title"],
+                    "source": standardized["_data_quality"]["source"],
+                })
 
-            for outfit in outfits:
-                standardized = standardize_outfit(outfit, fields)
-                quality_info = standardized["_data_quality"]
-                quality_report["sample_data_quality"].append(
-                    {
-                        "id": standardized["_id"],
-                        "title": standardized["_title"],
-                        "quality_source": quality_info["source"],
-                        "warnings": quality_info["warnings"],
-                        "missing_fields": quality_info["missing_fields"],
-                    }
-                )
-
-        all_exact = all(item["quality_source"] == "exact" for item in quality_report["sample_data_quality"])
-        has_fuzzy = any(item["quality_source"] in ["fuzzy", "mixed"] for item in quality_report["sample_data_quality"])
-        has_default = any(item["quality_source"] == "default" for item in quality_report["sample_data_quality"])
-
-        if all_exact:
-            quality_report["overall_health"] = "excellent"
-            quality_report["recommendation"] = "欄位對應精確，資料品質良好。"
-        elif has_default:
-            quality_report["overall_health"] = "poor"
-            quality_report["recommendation"] = "欄位缺失，請檢查 outfits 表結構並補全欄位。"
-        elif has_fuzzy:
-            quality_report["overall_health"] = "fair"
-            quality_report["recommendation"] = "部分欄位以模糊匹配取得，建議統一欄位命名以提升精確度。"
-        else:
-            quality_report["overall_health"] = "unknown"
-            quality_report["recommendation"] = "無法評估資料品質。"
+            # 檢查 items 樣本
+            cur.execute("SELECT * FROM items LIMIT 3")
+            system_items = cur.fetchall()
+            for item in system_items:
+                standardized = standardize_item(item, item_fields)
+                quality_report["items"]["sample_data"].append({
+                    "id": standardized["_id"],
+                    "title": standardized["_title"],
+                    "source": standardized["_data_quality"]["source"],
+                })
 
         return jsonify(quality_report)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass

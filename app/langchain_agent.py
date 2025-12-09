@@ -16,7 +16,6 @@ from typing import Dict, List, Optional
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
-from langchain_openai import ChatOpenAI
 
 # Ensure UTF-8 logging
 if hasattr(sys.stdout, "reconfigure"):
@@ -118,6 +117,9 @@ class OutfitAIAgent:
 
         if deepseek_key:
             try:
+                # 條件式匯入，避免在沒有 API key 時觸發初始化錯誤
+                from langchain_openai import ChatOpenAI
+                
                 self.llms.append(
                     {
                         "name": "DeepSeek",

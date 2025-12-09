@@ -93,4 +93,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 5000
 
 # 生產模式啟動 (Gunicorn + Gevent)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--access-logfile", "-", "--error-logfile", "-", "app:create_app()"]
+# 使用 Factory Pattern: 'module:function_call()'
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--access-logfile", "-", "--error-logfile", "-", "--preload", "app:create_app()"]

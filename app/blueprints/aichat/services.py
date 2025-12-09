@@ -333,9 +333,57 @@ def get_db_conn():
     )
 
 
+# 中英文類別對照表
+CATEGORY_MAPPING = {
+    # 中文 -> 英文
+    "上衣": "top",
+    "T恤": "top",
+    "襯衫": "top",
+    "外套": "top",
+    "下身": "bottom",
+    "褲子": "bottom",
+    "裙子": "bottom",
+    "洋裝": "dress",
+    "連身裙": "dress",
+    "鞋子": "shoes",
+    "包包": "bags",
+    "配件": "accessories",
+    "飾品": "accessories",
+    "內衣": "underwear",
+    "美妝": "beauty",
+    "其他": "other",
+    # 英文保持不變
+    "top": "top",
+    "bottom": "bottom",
+    "dress": "dress",
+    "shoes": "shoes",
+    "bags": "bags",
+    "accessories": "accessories",
+    "underwear": "underwear",
+    "beauty": "beauty",
+    "other": "other",
+}
+
+
+def normalize_category(category: str) -> str:
+    """
+    將中文類別轉換為資料庫的英文類別
+    如果找不到對應,回傳原始值
+    """
+    if not category:
+        return ""
+    
+    # 轉小寫並去空白
+    category = category.strip().lower()
+    
+    # 查找對照表
+    return CATEGORY_MAPPING.get(category, category)
+
+
 def extract_keywords(text: str):
     """
     關鍵字完全交給 LangChain Agent 判斷（約會/運動/上班/休閒/派對/旅遊）。
+    回傳的關鍵字會自動轉換為資料庫的英文類別。
     無 agent 或解析失敗則回空，後續 SQL 會抓全部。
     """
     if not text:
@@ -343,9 +391,15 @@ def extract_keywords(text: str):
 
     if agent:
         try:
-            kw = agent.classify_keywords(text)
-            if kw:
-                return kw
+            raw_keywords = agent.classify_keywords(text)
+            if raw_keywords:
+                # 將關鍵字標準化為資料庫的英文類別
+                normalized = []
+                for kw in raw_keywords:
+                    normalized_kw = normalize_category(kw)
+                    if normalized_kw:
+                        normalized.append(normalized_kw)
+                return normalized
         except Exception as e:
             print(f"[AI] 關鍵字判斷失敗: {e}", file=sys.stderr)
 
