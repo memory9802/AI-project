@@ -80,5 +80,4 @@ update_*.py
 visual_*.py
 
 # 大型 SQL 檔案 (超過 5MB 不上傳到 GitHub)
-init/*_with_data*.sql
 init/archived/*.sql
