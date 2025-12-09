@@ -497,6 +497,8 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 | 文檔 | 說明 | 適合對象 |
 |------|------|---------|
 | [GIT_GUIDE.md](GIT_GUIDE.md) | Git 版本控制完整指南 ⭐ | 所有人必讀! |
+| [GIT_QUICK_REFERENCE.md](docs/GIT_QUICK_REFERENCE.md) | Git 安全操作速查表 🚀 | 日常開發必備! |
+| [GIT_SAFE_OPERATIONS.md](docs/GIT_SAFE_OPERATIONS.md) | Git 安全操作詳細指南 📚 | 深入學習 |
 | [GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) | Git 工作流程規範 🔐 | AI 助手/開發者 |
 | [VERSION_PROTECTION_POLICY.md](docs/VERSION_PROTECTION_POLICY.md) | 版本變動防護政策 🛡️ | AI 助手/開發者 |
 | [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | 資料庫管理完整指南 ⭐ | 所有人必讀! |
@@ -507,6 +509,7 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 ### 📋 參考資料
 | 文檔 | 說明 |
 |------|------|
+| [COPILOT_PERMISSION_REVOKE.md](docs/COPILOT_PERMISSION_REVOKE.md) | Copilot 授權撤回記錄 |
 | [RATING_SYSTEM_COMPLETE_GUIDE.md](docs/RATING_SYSTEM_COMPLETE_GUIDE.md) | 評分系統完整指南 |
 | [RATING_WEIGHT_SYSTEM_DESIGN.md](docs/RATING_WEIGHT_SYSTEM_DESIGN.md) | 評分權重系統設計文檔 |
 | [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 |
