@@ -5,6 +5,9 @@
 **遠端倉庫**: `origin` (https://github.com/RosyL666/stylerec.git)  
 **最後更新**: 2025-12-09
 
+> 💡 **重要:** 本文檔與 [VERSION_PROTECTION_POLICY.md](./VERSION_PROTECTION_POLICY.md) 配套使用。  
+> 任何會改變檔案版本的操作,必須先取得 Rosy 的明確同意。
+
 ---
 
 ## 🎯 核心原則
@@ -325,6 +328,13 @@ AI: ⚠️ 警告:檢測到本地和遠端歷史不一致
 2. 每次完成工作後立即推送
 3. 團隊約定: develop 分支由主要開發者維護
 4. 其他成員從 develop 分支創建 feature 分支
+
+---
+
+## 🔗 相關文檔
+
+- [VERSION_PROTECTION_POLICY.md](./VERSION_PROTECTION_POLICY.md) - 版本變動防護政策
+- [DATABASE_MANAGEMENT_POLICY.md](./DATABASE_MANAGEMENT_POLICY.md) - 資料庫管理原則
 
 ---
 

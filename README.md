@@ -497,13 +497,18 @@ docker exec -i outfit-mysql mysql -uroot -prootpassword outfit_db < init/outfit_
 | 文檔 | 說明 | 適合對象 |
 |------|------|---------|
 | [GIT_GUIDE.md](GIT_GUIDE.md) | Git 版本控制完整指南 ⭐ | 所有人必讀! |
+| [GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) | Git 工作流程規範 🔐 | AI 助手/開發者 |
+| [VERSION_PROTECTION_POLICY.md](docs/VERSION_PROTECTION_POLICY.md) | 版本變動防護政策 🛡️ | AI 助手/開發者 |
 | [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | 資料庫管理完整指南 ⭐ | 所有人必讀! |
+| [DATABASE_MANAGEMENT_POLICY.md](docs/DATABASE_MANAGEMENT_POLICY.md) | 資料庫管理原則 📋 | 開發者 |
 | [CRAWLER_GUIDE.md](docs/CRAWLER_GUIDE.md) | 爬蟲開發完整指南 | 爬蟲組 ⭐ |
 | [TEAM_GUIDE.md](docs/TEAM_GUIDE.md) | 團隊協作完整指南 | 所有人 |
 
 ### 📋 參考資料
 | 文檔 | 說明 |
 |------|------|
+| [RATING_SYSTEM_COMPLETE_GUIDE.md](docs/RATING_SYSTEM_COMPLETE_GUIDE.md) | 評分系統完整指南 |
+| [RATING_WEIGHT_SYSTEM_DESIGN.md](docs/RATING_WEIGHT_SYSTEM_DESIGN.md) | 評分權重系統設計文檔 |
 | [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md) | 完整測試帳號列表 |
 | [USER_GENERATION_REPORT.md](docs/USER_GENERATION_REPORT.md) | 用戶生成與登入實作 |
 | [TECHNICAL_SETUP.md](docs/TECHNICAL_SETUP.md) | 技術規格與環境設定 (進階) |
