@@ -1,153 +1,644 @@
--- ========================================
--- 穿搭資料庫初始化腳本 (僅結構定義 - 無測試資料)
--- ========================================
--- 
--- 📋 此檔案用途:建立資料庫結構 (不含任何資料)
--- 
--- ⚠️ 重要提醒:
+-- ============================================================-- ========================================
+
+-- 資料庫結構定義檔 (僅結構,不含測試資料)-- 穿搭資料庫初始化腳本 (僅結構定義 - 無測試資料)
+
+-- ============================================================-- ========================================
+
+-- 用途: 供團隊成員參考資料庫結構-- 
+
+-- 重要: 此檔案僅供參考,實際使用請執行 00_init_with_data.sql-- 📋 此檔案用途:建立資料庫結構 (不含任何資料)
+
+-- 最後更新: 2025-12-09 (統整評分系統擴展)-- 
+
+-- ============================================================-- ⚠️ 重要提醒:
+
 --   - 此檔案不包含任何測試資料或範例資料
---   - 適合用於建立乾淨的資料庫架構
---   - 如需資料,請使用 00_init_with_data.sql
--- 
--- ========================================
 
--- 設定字符集
-SET NAMES utf8mb4;
-SET CHARACTER SET utf8mb4;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;--   - 適合用於建立乾淨的資料庫架構
 
-CREATE DATABASE IF NOT EXISTS outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;--   - 如需資料,請使用 00_init_with_data.sql
+
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;-- 
+
+/*!50503 SET NAMES utf8mb4 */;-- ========================================
+
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+
+/*!40103 SET TIME_ZONE='+00:00' */;-- 設定字符集
+
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;SET NAMES utf8mb4;
+
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;SET CHARACTER SET utf8mb4;
+
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;CREATE DATABASE IF NOT EXISTS outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 USE outfit_db;
 
+--
+
+-- Create and use database-- =============================
+
+---- 刪除表格 (注意順序:先刪除有外鍵約束的表)
+
 -- =============================
--- 刪除表格 (注意順序:先刪除有外鍵約束的表)
--- =============================
-DROP TABLE IF EXISTS rating;
-DROP TABLE IF EXISTS conversation_history;
+
+CREATE DATABASE IF NOT EXISTS outfit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;DROP TABLE IF EXISTS rating;
+
+USE outfit_db;DROP TABLE IF EXISTS conversation_history;
+
 DROP TABLE IF EXISTS user_wardrobe;
-DROP TABLE IF EXISTS partner_products;
-DROP TABLE IF EXISTS items;
-DROP TABLE IF EXISTS users;
 
--- =============================
--- 使用者表 users
--- =============================
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(100) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE DEFAULT NULL,
-  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',
-  favorite_style VARCHAR(50) DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- ============================================================DROP TABLE IF EXISTS partner_products;
+
+-- 表格 1: users (使用者表)DROP TABLE IF EXISTS items;
+
+-- ============================================================DROP TABLE IF EXISTS users;
+
+
+
+DROP TABLE IF EXISTS users;-- =============================
+
+CREATE TABLE users (-- 使用者表 users
+
+  id INT AUTO_INCREMENT PRIMARY KEY,-- =============================
+
+  username VARCHAR(100) UNIQUE NOT NULL,CREATE TABLE users (
+
+  email VARCHAR(255) UNIQUE DEFAULT NULL,  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',  username VARCHAR(100) UNIQUE NOT NULL,
+
+  favorite_style VARCHAR(50) DEFAULT NULL,  email VARCHAR(255) UNIQUE DEFAULT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  password_hash VARCHAR(255) DEFAULT NULL COMMENT 'bcrypt 加密密碼',
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci  favorite_style VARCHAR(50) DEFAULT NULL,
+
+COMMENT='使用者表 - 使用 bcrypt 加密密碼';  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='使用者表 - 使用 bcrypt 加密密碼';
 
--- =============================
+-- ============================================================COMMENT='使用者表 - 使用 bcrypt 加密密碼';
+
+-- 表格 2: items (單品表)
+
+-- ============================================================-- =============================
+
 -- 衣物表 items
--- =============================
-CREATE TABLE items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  category VARCHAR(100) DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',
-  color VARCHAR(50) DEFAULT NULL,
-  image_url VARCHAR(255) DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  sku VARCHAR(50) UNIQUE DEFAULT NULL,
-  gender VARCHAR(20) DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',
-  clothing_type VARCHAR(50) DEFAULT NULL,
-  length VARCHAR(20) DEFAULT NULL COMMENT '短, 長, 中',
-  price DECIMAL(10,2) DEFAULT NULL COMMENT '價格 (台幣)',
-  source VARCHAR(50) DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, malefashion',
-  
-  INDEX idx_category (category),
-  INDEX idx_color (color),
-  INDEX idx_gender (gender),
-  INDEX idx_source (source),
-  INDEX idx_sku (sku)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
-COMMENT='單品表 - 支援多來源資料';
 
--- =============================
--- 使用者衣櫃表 user_wardrobe
--- =============================
+DROP TABLE IF EXISTS items;-- =============================
+
+CREATE TABLE items (CREATE TABLE items (
+
+  id INT AUTO_INCREMENT PRIMARY KEY,  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  name VARCHAR(255) NOT NULL,  name VARCHAR(255) NOT NULL,
+
+  category VARCHAR(100) DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',  category VARCHAR(100) DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',
+
+  color VARCHAR(50) DEFAULT NULL,  color VARCHAR(50) DEFAULT NULL,
+
+  image_url VARCHAR(255) DEFAULT NULL,  image_url VARCHAR(255) DEFAULT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  sku VARCHAR(50) UNIQUE DEFAULT NULL,  sku VARCHAR(50) UNIQUE DEFAULT NULL,
+
+  gender VARCHAR(20) DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',  gender VARCHAR(20) DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',
+
+  clothing_type VARCHAR(50) DEFAULT NULL,  clothing_type VARCHAR(50) DEFAULT NULL,
+
+  length VARCHAR(20) DEFAULT NULL COMMENT '短, 長, 中',  length VARCHAR(20) DEFAULT NULL COMMENT '短, 長, 中',
+
+  price DECIMAL(10,2) DEFAULT NULL COMMENT '價格 (台幣)',  price DECIMAL(10,2) DEFAULT NULL COMMENT '價格 (台幣)',
+
+  source VARCHAR(50) DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, malefashion',  source VARCHAR(50) DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, malefashion',
+
+    
+
+  INDEX idx_category (category),  INDEX idx_category (category),
+
+  INDEX idx_color (color),  INDEX idx_color (color),
+
+  INDEX idx_gender (gender),  INDEX idx_gender (gender),
+
+  INDEX idx_source (source),  INDEX idx_source (source),
+
+  INDEX idx_sku (sku)  INDEX idx_sku (sku)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+
+COMMENT='單品表 - 支援多來源資料';COMMENT='單品表 - 支援多來源資料';
+
+
+
+-- ============================================================-- =============================
+
+-- 表格 3: user_wardrobe (使用者衣櫃表)-- 使用者衣櫃表 user_wardrobe
+
+-- ============================================================-- =============================
+
 DROP TABLE IF EXISTS user_wardrobe;
-CREATE TABLE user_wardrobe (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  item_name VARCHAR(255) NOT NULL,
-  category VARCHAR(100) DEFAULT NULL,
-  color VARCHAR(50) DEFAULT NULL,
-  occasion VARCHAR(100) DEFAULT NULL,
-  tags VARCHAR(255) DEFAULT NULL,
-  image_url VARCHAR(255) DEFAULT NULL,
-  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='使用者個人衣櫃';
 
--- =============================
--- 合作品牌商品表 partner_products
--- =============================
+DROP TABLE IF EXISTS user_wardrobe;CREATE TABLE user_wardrobe (
+
+CREATE TABLE user_wardrobe (  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  id INT AUTO_INCREMENT PRIMARY KEY,  user_id INT NOT NULL,
+
+  user_id INT NOT NULL,  item_name VARCHAR(255) NOT NULL,
+
+  item_name VARCHAR(255) NOT NULL,  category VARCHAR(100) DEFAULT NULL,
+
+  category VARCHAR(100) DEFAULT NULL,  color VARCHAR(50) DEFAULT NULL,
+
+  color VARCHAR(50) DEFAULT NULL,  occasion VARCHAR(100) DEFAULT NULL,
+
+  image_url VARCHAR(255) DEFAULT NULL,  tags VARCHAR(255) DEFAULT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  image_url VARCHAR(255) DEFAULT NULL,
+
+  gender VARCHAR(20) DEFAULT NULL COMMENT '男, 女, 中性',  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  length VARCHAR(20) DEFAULT NULL COMMENT '短, 長, 中',  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,COMMENT='使用者個人衣櫃';
+
+  INDEX idx_user_id (user_id),
+
+  INDEX idx_category (category)-- =============================
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci-- 合作品牌商品表 partner_products
+
+COMMENT='使用者衣櫃表 - 記錄使用者擁有的單品';-- =============================
+
 DROP TABLE IF EXISTS partner_products;
-CREATE TABLE partner_products (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  product_name VARCHAR(255) NOT NULL,
+
+-- ============================================================CREATE TABLE partner_products (
+
+-- 表格 4: partner_products (合作夥伴商品表)  id INT AUTO_INCREMENT PRIMARY KEY,
+
+-- ============================================================  product_name VARCHAR(255) NOT NULL,
+
   category VARCHAR(100) DEFAULT NULL,
-  color VARCHAR(50) DEFAULT NULL,
-  price DECIMAL(10,2) DEFAULT NULL,
-  partner_name VARCHAR(255) DEFAULT NULL,
-  product_url VARCHAR(512) DEFAULT NULL,
-  image_url VARCHAR(512) DEFAULT NULL,
-  description TEXT DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='合作品牌商品資訊';
 
--- =============================
--- AI 對話歷史表 conversation_history
--- =============================
-DROP TABLE IF EXISTS conversation_history;
-CREATE TABLE conversation_history (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT DEFAULT NULL,
-  session_id VARCHAR(100) NOT NULL,
-  message_type ENUM('user', 'assistant', 'system') NOT NULL,
+DROP TABLE IF EXISTS partner_products;  color VARCHAR(50) DEFAULT NULL,
+
+CREATE TABLE partner_products (  price DECIMAL(10,2) DEFAULT NULL,
+
+  id INT AUTO_INCREMENT PRIMARY KEY,  partner_name VARCHAR(255) DEFAULT NULL,
+
+  user_id INT NOT NULL,  product_url VARCHAR(512) DEFAULT NULL,
+
+  platform VARCHAR(50) NOT NULL COMMENT '平台名稱: uniqlo, h&m, zara, etc.',  image_url VARCHAR(512) DEFAULT NULL,
+
+  product_name VARCHAR(255) NOT NULL,  description TEXT DEFAULT NULL,
+
+  category VARCHAR(100) DEFAULT NULL,  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+  color VARCHAR(50) DEFAULT NULL,) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+  price DECIMAL(10,2) DEFAULT NULL,COMMENT='合作品牌商品資訊';
+
+  product_url VARCHAR(500) DEFAULT NULL COMMENT '商品連結',
+
+  image_url VARCHAR(500) DEFAULT NULL,-- =============================
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,-- AI 對話歷史表 conversation_history
+
+  -- =============================
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,DROP TABLE IF EXISTS conversation_history;
+
+  INDEX idx_user_id (user_id),CREATE TABLE conversation_history (
+
+  INDEX idx_platform (platform),  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  INDEX idx_category (category)  user_id INT DEFAULT NULL,
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci  session_id VARCHAR(100) NOT NULL,
+
+COMMENT='合作夥伴商品表 - 記錄來自電商平台的推薦商品';  message_type ENUM('user', 'assistant', 'system') NOT NULL,
+
   content TEXT NOT NULL,
-  metadata JSON DEFAULT NULL COMMENT '額外資訊(如推薦的 outfit_ids, item_ids 等)',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-  INDEX idx_session (session_id),
-  INDEX idx_user (user_id),
-  INDEX idx_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='AI 聊天對話記錄';
 
--- =============================
--- 商品評分表 rating
--- =============================
-DROP TABLE IF EXISTS rating;
-CREATE TABLE rating (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '評分的使用者ID',
-  item_id INT NOT NULL COMMENT '被評分的商品ID',
-  rating_value INT NOT NULL COMMENT '評分值 (建議 1-5 星)',
+-- ============================================================  metadata JSON DEFAULT NULL COMMENT '額外資訊(如推薦的 outfit_ids, item_ids 等)',
+
+-- 表格 5: conversation_history (對話歷史表)  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+-- ============================================================  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+
+  INDEX idx_session (session_id),
+
+DROP TABLE IF EXISTS conversation_history;  INDEX idx_user (user_id),
+
+CREATE TABLE conversation_history (  INDEX idx_created (created_at)
+
+  id INT AUTO_INCREMENT PRIMARY KEY,) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+  user_id INT NOT NULL,COMMENT='AI 聊天對話記錄';
+
+  message TEXT NOT NULL,
+
+  sender ENUM('user', 'assistant') NOT NULL,-- =============================
+
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,-- 商品評分表 rating
+
+  session_id VARCHAR(50) DEFAULT NULL COMMENT '對話 session ID',-- =============================
+
+  metadata JSON DEFAULT NULL COMMENT '額外的對話元資料',DROP TABLE IF EXISTS rating;
+
+  CREATE TABLE rating (
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,  id INT AUTO_INCREMENT PRIMARY KEY,
+
+    user_id INT NOT NULL COMMENT '評分的使用者ID',
+
+  INDEX idx_user_id (user_id),  item_id INT NOT NULL COMMENT '被評分的商品ID',
+
+  INDEX idx_session_id (session_id),  rating_value INT NOT NULL COMMENT '評分值 (建議 1-5 星)',
+
+  INDEX idx_timestamp (timestamp)  review_text TEXT DEFAULT NULL COMMENT '評論內容',
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '評分時間',
+
+COMMENT='對話歷史表 - 記錄使用者與 AI 的對話紀錄';  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間',
+
+  
+
+-- ============================================================  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+-- 表格 6: rating (評分表 - 多態關聯版本)  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+
+-- ============================================================  
+
+  INDEX idx_user_id (user_id),
+
+DROP TABLE IF EXISTS rating;  INDEX idx_item_id (item_id),
+
+CREATE TABLE rating (  INDEX idx_rating_value (rating_value),
+
+  id INT AUTO_INCREMENT PRIMARY KEY,  INDEX idx_created_at (created_at),
+
+  user_id INT NOT NULL COMMENT '評分的使用者ID',  
+
+  item_source ENUM('items', 'user_wardrobe') NOT NULL DEFAULT 'items' COMMENT '評分來源: items=商品庫, user_wardrobe=使用者衣櫃',  UNIQUE KEY unique_user_item (user_id, item_id) COMMENT '同一使用者對同一商品只能評分一次'
+
+  item_id INT NOT NULL COMMENT '被評分的商品ID (泛用,根據 item_source 指向 items.id 或 user_wardrobe.id)',) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+  rating_value INT NOT NULL COMMENT '評分值 (建議 1-5 星)',COMMENT='商品評分表 - 記錄使用者對商品的評分和評論';
+
   review_text TEXT DEFAULT NULL COMMENT '評論內容',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '評分時間',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間',
-  
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-  
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '評分時間',-- =============================
+
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間',-- 完成訊息
+
+  -- =============================
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,SELECT '✅ Database schema created successfully!' AS status;
+
+  SELECT '📝 Note: This is a clean schema without any test data' AS info;
+
   INDEX idx_user_id (user_id),
   INDEX idx_item_id (item_id),
+  INDEX idx_item_source (item_source),
+  INDEX idx_item_source_id (item_source, item_id),
   INDEX idx_rating_value (rating_value),
   INDEX idx_created_at (created_at),
   
-  UNIQUE KEY unique_user_item (user_id, item_id) COMMENT '同一使用者對同一商品只能評分一次'
+  UNIQUE KEY unique_user_source_item (user_id, item_source, item_id) COMMENT '同一使用者對同一來源的同一商品只能評分一次'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='商品評分表 - 記錄使用者對商品的評分和評論';
+COMMENT='商品評分表 (多態關聯版本) - 支援商品庫(items)和使用者衣櫃(user_wardrobe)的評分';
 
--- =============================
--- 完成訊息
--- =============================
-SELECT '✅ Database schema created successfully!' AS status;
-SELECT '📝 Note: This is a clean schema without any test data' AS info;
+-- ============================================================
+-- 表格 7: item_stats (評分統計快取表)
+-- ============================================================
+
+DROP TABLE IF EXISTS item_stats;
+CREATE TABLE item_stats (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_source ENUM('items', 'user_wardrobe') NOT NULL COMMENT '商品來源',
+  item_id INT NOT NULL COMMENT '商品ID',
+  avg_rating DECIMAL(3,2) NOT NULL DEFAULT 0.00 COMMENT '平均評分',
+  rating_count INT NOT NULL DEFAULT 0 COMMENT '評分總數',
+  rating_sum INT NOT NULL DEFAULT 0 COMMENT '評分總和',
+  
+  -- 評分分布
+  rating_5_count INT NOT NULL DEFAULT 0 COMMENT '5星評分數',
+  rating_4_count INT NOT NULL DEFAULT 0 COMMENT '4星評分數',
+  rating_3_count INT NOT NULL DEFAULT 0 COMMENT '3星評分數',
+  rating_2_count INT NOT NULL DEFAULT 0 COMMENT '2星評分數',
+  rating_1_count INT NOT NULL DEFAULT 0 COMMENT '1星評分數',
+  
+  -- 高分統計 (>= 4 星)
+  high_rating_count INT NOT NULL DEFAULT 0 COMMENT '高分(>=4星)數量',
+  high_rating_ratio DECIMAL(5,4) NOT NULL DEFAULT 0.0000 COMMENT '高分比例',
+  
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最後更新時間',
+  
+  UNIQUE KEY unique_source_item (item_source, item_id),
+  INDEX idx_avg_rating (avg_rating),
+  INDEX idx_rating_count (rating_count),
+  INDEX idx_high_rating_ratio (high_rating_ratio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='評分統計快取表 - 加速查詢效能';
+
+-- ============================================================
+-- 視圖 1: v_item_ratings (統一評分統計視圖)
+-- ============================================================
+
+DROP VIEW IF EXISTS v_item_ratings;
+
+CREATE VIEW v_item_ratings AS
+SELECT 
+  item_source,
+  item_id,
+  AVG(rating_value) as avg_rating,
+  COUNT(*) as rating_count,
+  SUM(rating_value) as rating_sum,
+  
+  -- 評分分布
+  SUM(CASE WHEN rating_value = 5 THEN 1 ELSE 0 END) as rating_5_count,
+  SUM(CASE WHEN rating_value = 4 THEN 1 ELSE 0 END) as rating_4_count,
+  SUM(CASE WHEN rating_value = 3 THEN 1 ELSE 0 END) as rating_3_count,
+  SUM(CASE WHEN rating_value = 2 THEN 1 ELSE 0 END) as rating_2_count,
+  SUM(CASE WHEN rating_value = 1 THEN 1 ELSE 0 END) as rating_1_count,
+  
+  -- 高分統計
+  SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END) as high_rating_count,
+  SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END) / COUNT(*) as high_rating_ratio,
+  
+  -- 最新評分時間
+  MAX(created_at) as latest_rating_time,
+  MIN(created_at) as first_rating_time
+  
+FROM rating
+GROUP BY item_source, item_id;
+
+-- ============================================================
+-- 視圖 2: v_items_with_ratings (商品庫帶權重視圖)
+-- ============================================================
+
+DROP VIEW IF EXISTS v_items_with_ratings;
+
+CREATE VIEW v_items_with_ratings AS
+SELECT 
+  i.*,
+  COALESCE(s.avg_rating, 0) as avg_rating,
+  COALESCE(s.rating_count, 0) as rating_count,
+  COALESCE(s.high_rating_count, 0) as high_rating_count,
+  COALESCE(s.high_rating_ratio, 0) as high_rating_ratio,
+  
+  -- 計算評分權重 (0.5 - 1.5)
+  CASE 
+    WHEN s.avg_rating IS NULL THEN 1.0
+    WHEN s.avg_rating >= 4.5 THEN 1.5
+    WHEN s.avg_rating >= 3.5 THEN 1.2
+    WHEN s.avg_rating >= 2.5 THEN 0.9
+    ELSE 0.5
+  END as rating_weight,
+  
+  -- 計算熱度權重 (1.0 - 1.3)
+  CASE 
+    WHEN s.rating_count >= 10 THEN 1.3
+    WHEN s.rating_count >= 5 THEN 1.2
+    WHEN s.rating_count >= 1 THEN 1.1
+    ELSE 1.0
+  END as popularity_weight,
+  
+  -- 計算最終評分 (綜合權重)
+  (CASE 
+    WHEN s.avg_rating IS NULL THEN 1.0
+    WHEN s.avg_rating >= 4.5 THEN 1.5
+    WHEN s.avg_rating >= 3.5 THEN 1.2
+    WHEN s.avg_rating >= 2.5 THEN 0.9
+    ELSE 0.5
+  END * 
+  CASE 
+    WHEN s.rating_count >= 10 THEN 1.3
+    WHEN s.rating_count >= 5 THEN 1.2
+    WHEN s.rating_count >= 1 THEN 1.1
+    ELSE 1.0
+  END) as final_score
+  
+FROM items i
+LEFT JOIN item_stats s ON s.item_source = 'items' AND s.item_id = i.id;
+
+-- ============================================================
+-- 視圖 3: v_wardrobe_with_ratings (使用者衣櫃帶權重視圖)
+-- ============================================================
+
+DROP VIEW IF EXISTS v_wardrobe_with_ratings;
+
+CREATE VIEW v_wardrobe_with_ratings AS
+SELECT 
+  w.*,
+  COALESCE(s.avg_rating, 0) as avg_rating,
+  COALESCE(s.rating_count, 0) as rating_count,
+  COALESCE(s.high_rating_count, 0) as high_rating_count,
+  COALESCE(s.high_rating_ratio, 0) as high_rating_ratio,
+  
+  -- 計算評分權重 (0.5 - 1.5)
+  CASE 
+    WHEN s.avg_rating IS NULL THEN 1.0
+    WHEN s.avg_rating >= 4.5 THEN 1.5
+    WHEN s.avg_rating >= 3.5 THEN 1.2
+    WHEN s.avg_rating >= 2.5 THEN 0.9
+    ELSE 0.5
+  END as rating_weight,
+  
+  -- 計算熱度權重 (1.0 - 1.3)
+  CASE 
+    WHEN s.rating_count >= 10 THEN 1.3
+    WHEN s.rating_count >= 5 THEN 1.2
+    WHEN s.rating_count >= 1 THEN 1.1
+    ELSE 1.0
+  END as popularity_weight,
+  
+  -- 計算最終評分 (綜合權重)
+  (CASE 
+    WHEN s.avg_rating IS NULL THEN 1.0
+    WHEN s.avg_rating >= 4.5 THEN 1.5
+    WHEN s.avg_rating >= 3.5 THEN 1.2
+    WHEN s.avg_rating >= 2.5 THEN 0.9
+    ELSE 0.5
+  END * 
+  CASE 
+    WHEN s.rating_count >= 10 THEN 1.3
+    WHEN s.rating_count >= 5 THEN 1.2
+    WHEN s.rating_count >= 1 THEN 1.1
+    ELSE 1.0
+  END) as final_score
+  
+FROM user_wardrobe w
+LEFT JOIN item_stats s ON s.item_source = 'user_wardrobe' AND s.item_id = w.id;
+
+-- ============================================================
+-- 觸發器 1: after_rating_insert (插入評分時自動更新統計)
+-- ============================================================
+
+DROP TRIGGER IF EXISTS after_rating_insert;
+
+DELIMITER $$
+CREATE TRIGGER after_rating_insert
+AFTER INSERT ON rating
+FOR EACH ROW
+BEGIN
+  -- 更新或插入統計表
+  INSERT INTO item_stats (item_source, item_id, avg_rating, rating_count, rating_sum,
+    rating_5_count, rating_4_count, rating_3_count, rating_2_count, rating_1_count,
+    high_rating_count, high_rating_ratio)
+  SELECT 
+    NEW.item_source,
+    NEW.item_id,
+    AVG(rating_value),
+    COUNT(*),
+    SUM(rating_value),
+    SUM(CASE WHEN rating_value = 5 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 4 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 3 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 2 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 1 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END) / COUNT(*)
+  FROM rating
+  WHERE item_source = NEW.item_source AND item_id = NEW.item_id
+  GROUP BY item_source, item_id
+  ON DUPLICATE KEY UPDATE 
+    avg_rating = VALUES(avg_rating),
+    rating_count = VALUES(rating_count),
+    rating_sum = VALUES(rating_sum),
+    rating_5_count = VALUES(rating_5_count),
+    rating_4_count = VALUES(rating_4_count),
+    rating_3_count = VALUES(rating_3_count),
+    rating_2_count = VALUES(rating_2_count),
+    rating_1_count = VALUES(rating_1_count),
+    high_rating_count = VALUES(high_rating_count),
+    high_rating_ratio = VALUES(high_rating_ratio),
+    last_updated = CURRENT_TIMESTAMP;
+END$$
+DELIMITER ;
+
+-- ============================================================
+-- 觸發器 2: after_rating_update (更新評分時自動更新統計)
+-- ============================================================
+
+DROP TRIGGER IF EXISTS after_rating_update;
+
+DELIMITER $$
+CREATE TRIGGER after_rating_update
+AFTER UPDATE ON rating
+FOR EACH ROW
+BEGIN
+  -- 更新統計表
+  INSERT INTO item_stats (item_source, item_id, avg_rating, rating_count, rating_sum,
+    rating_5_count, rating_4_count, rating_3_count, rating_2_count, rating_1_count,
+    high_rating_count, high_rating_ratio)
+  SELECT 
+    NEW.item_source,
+    NEW.item_id,
+    AVG(rating_value),
+    COUNT(*),
+    SUM(rating_value),
+    SUM(CASE WHEN rating_value = 5 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 4 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 3 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 2 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value = 1 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END),
+    SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END) / COUNT(*)
+  FROM rating
+  WHERE item_source = NEW.item_source AND item_id = NEW.item_id
+  GROUP BY item_source, item_id
+  ON DUPLICATE KEY UPDATE 
+    avg_rating = VALUES(avg_rating),
+    rating_count = VALUES(rating_count),
+    rating_sum = VALUES(rating_sum),
+    rating_5_count = VALUES(rating_5_count),
+    rating_4_count = VALUES(rating_4_count),
+    rating_3_count = VALUES(rating_3_count),
+    rating_2_count = VALUES(rating_2_count),
+    rating_1_count = VALUES(rating_1_count),
+    high_rating_count = VALUES(high_rating_count),
+    high_rating_ratio = VALUES(high_rating_ratio),
+    last_updated = CURRENT_TIMESTAMP;
+END$$
+DELIMITER ;
+
+-- ============================================================
+-- 觸發器 3: after_rating_delete (刪除評分時自動更新統計)
+-- ============================================================
+
+DROP TRIGGER IF EXISTS after_rating_delete;
+
+DELIMITER $$
+CREATE TRIGGER after_rating_delete
+AFTER DELETE ON rating
+FOR EACH ROW
+BEGIN
+  -- 檢查是否還有其他評分
+  IF (SELECT COUNT(*) FROM rating WHERE item_source = OLD.item_source AND item_id = OLD.item_id) = 0 THEN
+    -- 沒有評分了,刪除統計記錄
+    DELETE FROM item_stats WHERE item_source = OLD.item_source AND item_id = OLD.item_id;
+  ELSE
+    -- 還有評分,更新統計
+    INSERT INTO item_stats (item_source, item_id, avg_rating, rating_count, rating_sum,
+      rating_5_count, rating_4_count, rating_3_count, rating_2_count, rating_1_count,
+      high_rating_count, high_rating_ratio)
+    SELECT 
+      OLD.item_source,
+      OLD.item_id,
+      AVG(rating_value),
+      COUNT(*),
+      SUM(rating_value),
+      SUM(CASE WHEN rating_value = 5 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value = 4 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value = 3 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value = 2 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value = 1 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END),
+      SUM(CASE WHEN rating_value >= 4 THEN 1 ELSE 0 END) / COUNT(*)
+    FROM rating
+    WHERE item_source = OLD.item_source AND item_id = OLD.item_id
+    GROUP BY item_source, item_id
+    ON DUPLICATE KEY UPDATE 
+      avg_rating = VALUES(avg_rating),
+      rating_count = VALUES(rating_count),
+      rating_sum = VALUES(rating_sum),
+      rating_5_count = VALUES(rating_5_count),
+      rating_4_count = VALUES(rating_4_count),
+      rating_3_count = VALUES(rating_3_count),
+      rating_2_count = VALUES(rating_2_count),
+      rating_1_count = VALUES(rating_1_count),
+      high_rating_count = VALUES(high_rating_count),
+      high_rating_ratio = VALUES(high_rating_ratio),
+      last_updated = CURRENT_TIMESTAMP;
+  END IF;
+END$$
+DELIMITER ;
+
+-- ============================================================
+-- 恢復系統變數
+-- ============================================================
+
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- ============================================================
+-- 使用說明
+-- ============================================================
+-- 1. 此檔案僅供參考結構,不包含測試資料
+-- 2. 實際部署請使用 00_init_with_data.sql (包含完整資料)
+-- 3. 最後更新: 2025-12-09 (統整評分系統擴展)
+-- ============================================================
