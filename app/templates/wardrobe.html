@@ -157,6 +157,7 @@
                 <input id="itemName" type="text" placeholder="衣物名稱"
                   class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
+                  <option value="" selected>衣物型別</option>
                   <option value="上衣">上衣</option>
                   <option value="下身">下身</option>
                   <option value="鞋子">鞋子</option>
@@ -167,10 +168,6 @@
                   class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <input id="itemImage" type="file" accept="image/*" multiple
                   class="px-2 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
-                <button id="addBtn" type="button"
-                  class="px-2 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
-              </div>
-              <div class="flex flex-col min-w-40 flex-1">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 p-3">
                   <button type="button"
                     class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
@@ -203,10 +200,18 @@
                     class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
                     data-style="中性">中性</button>
                 </div>
+                <button id="addBtn" type="button"
+                  class="px-2 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
               </div>
             </form>
 
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            <div id="delete-bar" class="hidden mt-4 flex justify-center">
+              <button id="deleteBtn"
+                class="px-5 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 transition-colors">
+                刪除已選 (<span id="delete-count">0</span>)
+              </button>
+            </div>
           </section>
 
           <script>
@@ -215,6 +220,7 @@
                 user: null,
                 items: [],
                 selectedStyles: new Set(),
+                selectedIds: new Set(),
               };
 
               const el = {
@@ -226,6 +232,9 @@
                 addBtn: document.getElementById('addBtn'),
                 gallery: document.getElementById('gallery'),
                 userMeta: document.getElementById('user-meta'),
+                deleteBar: document.getElementById('delete-bar'),
+                deleteBtn: document.getElementById('deleteBtn'),
+                deleteCount: document.getElementById('delete-count'),
               };
 
               const styleButtons = Array.from(document.querySelectorAll('.style-tag-btn'));
@@ -276,11 +285,17 @@
                 el.gallery.innerHTML = '';
                 if (!state.items.length) {
                   el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請先上傳。</p>';
+                  updateDeleteButton();
                   return;
                 }
                 state.items.forEach(item => {
-                  const card = document.createElement('div');
-                  card.className = 'bg-white dark:bg-secondary-dark/80 rounded-md p-3 shadow-sm flex flex-col gap-2';
+                  const card = document.createElement('button');
+                  card.type = 'button';
+                  card.dataset.id = item.id;
+                  card.className = 'text-left bg-white dark:bg-secondary-dark/80 rounded-md p-3 shadow-sm flex flex-col gap-2 border border-secondary-light dark:border-secondary-dark transition hover:border-primary/50';
+
+                  const isSelected = state.selectedIds.has(item.id);
+                  applySelectionStyles(card, isSelected);
 
                   const img = document.createElement('img');
                   img.src = item.image_url;
@@ -305,8 +320,10 @@
                   });
 
                   card.append(img, title, meta, tags);
+                  card.addEventListener('click', () => toggleSelect(item.id, card));
                   el.gallery.appendChild(card);
                 });
+                updateDeleteButton();
               }
 
               async function loadItems() {
@@ -319,9 +336,11 @@
                     throw new Error(data.message || '無法取得衣物資料');
                   }
                   state.items = data.items || [];
+                  state.selectedIds.clear();
                   renderGallery();
                 } catch (error) {
                   el.gallery.innerHTML = `<p class="text-sm text-red-500">${error.message || '無法載入衣物'}</p>`;
+                  updateDeleteButton();
                 }
               }
 
@@ -384,6 +403,58 @@
                 }
               }
 
+              function applySelectionStyles(card, isSelected) {
+                card.classList.toggle('ring-2', isSelected);
+                card.classList.toggle('ring-[#cbb6c3]', isSelected);
+                card.classList.toggle('bg-primary/10', isSelected);
+                card.classList.toggle('border-primary', isSelected);
+              }
+
+              function toggleSelect(id, card) {
+                const numericId = Number(id);
+                if (state.selectedIds.has(numericId)) {
+                  state.selectedIds.delete(numericId);
+                  applySelectionStyles(card, false);
+                } else {
+                  state.selectedIds.add(numericId);
+                  applySelectionStyles(card, true);
+                }
+                updateDeleteButton();
+              }
+
+              function updateDeleteButton() {
+                if (!el.deleteBar) return;
+                const count = state.selectedIds.size;
+                if (el.deleteCount) {
+                  el.deleteCount.textContent = count;
+                }
+                el.deleteBar.classList.toggle('hidden', count === 0);
+              }
+
+              async function handleDelete() {
+                if (!state.selectedIds.size) return;
+                const confirmDelete = window.confirm('無法復原，是否確定刪除？');
+                if (!confirmDelete) return;
+                try {
+                  const res = await fetch('/wardrobe/items/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ ids: Array.from(state.selectedIds) }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok || !data.success) {
+                    throw new Error(data.message || '刪除失敗');
+                  }
+                  const deletedSet = new Set(data.deleted_ids || []);
+                  state.items = state.items.filter(item => !deletedSet.has(item.id));
+                  state.selectedIds.clear();
+                  renderGallery();
+                } catch (error) {
+                  alert(error.message || '刪除失敗，請稍後再試');
+                }
+              }
+
               styleButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                   const style = btn.dataset.style;
@@ -399,6 +470,9 @@
               });
 
               el.addBtn.addEventListener('click', handleUpload);
+              if (el.deleteBtn) {
+                el.deleteBtn.addEventListener('click', handleDelete);
+              }
 
               (async function init() {
                 if (window.currentUser) {

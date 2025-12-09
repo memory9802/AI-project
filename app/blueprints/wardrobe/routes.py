@@ -131,3 +131,68 @@ def add_item():
         "items": saved_items,
         "user": user,
     }), 201
+
+
+@wardrobe_bp.route('/items/delete', methods=['POST'])
+@login_required
+def delete_items():
+    """Delete selected wardrobe items for the logged-in user."""
+    user = getattr(g, 'current_user', get_current_user())
+    payload = request.get_json(silent=True) or {}
+    raw_ids = payload.get("ids") or []
+
+    try:
+        item_ids = [int(i) for i in raw_ids if str(i).strip().isdigit()]
+    except Exception:
+        return jsonify({"success": False, "message": "Invalid item ids."}), 400
+
+    if not item_ids:
+        return jsonify({"success": False, "message": "No items selected."}), 400
+
+    placeholders = ",".join(["%s"] * len(item_ids))
+    deleted = []
+    image_paths = []
+
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            f"""
+            SELECT id, image_url
+            FROM user_wardrobe
+            WHERE user_id = %s AND id IN ({placeholders})
+            """,
+            (user['id'], *item_ids),
+        )
+        rows = cursor.fetchall() or []
+        if not rows:
+            return jsonify({"success": False, "message": "No matching items found."}), 404
+
+        cursor.execute(
+            f"DELETE FROM user_wardrobe WHERE user_id = %s AND id IN ({placeholders})",
+            (user['id'], *item_ids),
+        )
+        deleted = [row["id"] for row in rows]
+        for row in rows:
+            image_url = row.get("image_url") or ""
+            static_prefix = current_app.static_url_path.rstrip("/") + "/"
+            if image_url.startswith(static_prefix):
+                rel_path = image_url[len(static_prefix):]
+            elif image_url.startswith("/static/"):
+                rel_path = image_url[len("/static/"):]
+            else:
+                rel_path = None
+
+            if rel_path:
+                image_paths.append(os.path.join(current_app.static_folder, rel_path))
+
+    for path in image_paths:
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True,
+        "deleted_ids": deleted,
+        "message": f"Deleted {len(deleted)} item(s).",
+    }), 200
