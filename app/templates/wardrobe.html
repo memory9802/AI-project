@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html class="light" lang="zh-TW">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>StyleRec - Your Personal Stylist</title>
 
   <!-- Tailwind CDN -->
@@ -10,9 +11,10 @@
 
   <!-- 你的自訂 JS / CSS：記得檔案已經搬到 static/ 底下 -->
   <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet" />
 
   <script id="tailwind-config">
     tailwind.config = {
@@ -53,25 +55,25 @@
 
 <body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
   <script>
-    (async () => {
-      try {
-        const res = await fetch('/login/status', { credentials: 'same-origin' });
-        const data = await res.json();
-        if (!data.authenticated) {
-          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.replace(`/login/?next=${nextUrl}`);
-          return;
+      (async () => {
+        try {
+          const res = await fetch('/login/status', { credentials: 'same-origin' });
+          const data = await res.json();
+          if (!data.authenticated) {
+            const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.replace(`/login/?next=${nextUrl}`);
+            return;
+          }
+          window.currentUser = data.user;
+          const userDisplay = document.getElementById('user-display');
+          if (userDisplay && data.user?.username) {
+            userDisplay.textContent = data.user.username;
+            userDisplay.classList.remove('hidden');
+          }
+        } catch (error) {
+          window.location.replace('/login/');
         }
-        window.currentUser = data.user;
-        const userDisplay = document.getElementById('user-display');
-        if (userDisplay && data.user?.username) {
-          userDisplay.textContent = data.user.username;
-          userDisplay.classList.remove('hidden');
-        }
-      } catch (error) {
-        window.location.replace('/login/');
-      }
-    })();
+      })();
   </script>
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
@@ -92,42 +94,47 @@
           <div class="hidden md:flex items-center gap-9">
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('home.index') }}">首頁</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('home.index') }}">首頁</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享 &amp; 互動</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享
+                &amp; 互動</a>
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
+            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display"
+                class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
             <button
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              ><a href="{{ url_for('login.login') }}">
-              <span class="material-symbols-outlined text-xl">person</span>
+              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"><a
+                href="{{ url_for('login.login') }}">
+                <span class="material-symbols-outlined text-xl">person</span>
             </button>
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
@@ -140,8 +147,8 @@
             <h3 class="text-2xl font-bold mb-4">我的衣櫃 — 上傳衣物</h3>
 
             <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;">
-              <div class="flex flex-wrap gap-3 items-center">
-                <input id="itemName" type="text" placeholder="衣物名稱（選填）"
+              <div class="flex flex-wrap gap-3 items-center justify-between">
+                <input id="itemName" type="text" placeholder="衣物名稱"
                   class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
                   <option value="top">上衣</option>
@@ -153,104 +160,141 @@
                 <button id="addBtn" type="button"
                   class="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
               </div>
+              <label class="flex flex-col min-w-40 flex-1">
+                  
+                  <div
+                    class="grid grid-cols-10 gap-2 p-3">
+                    <input type="hidden" id="item-style-input" name="favoriteStyle" >
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="休閒">休閒</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="正式">正式</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="運動">運動</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="街頭">街頭</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="韓風">韓風</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="日系">日系</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="歐美">歐美</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="極簡">極簡</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="復古">復古</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                      data-style="中性">中性</button>
+                  </div>
+                </label>
             </form>
 
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
           </section>
 
           <script>
-              (function () {
-                const storageKey = 'wardrobeItems_v1';
-                let items = [];
+            (function () {
+              const storageKey = 'wardrobeItems_v1';
+              let items = [];
 
-                const el = {
-                  name: document.getElementById('itemName'),
-                  category: document.getElementById('itemCategory'),
-                  image: document.getElementById('itemImage'),
-                  addBtn: document.getElementById('addBtn'),
-                  gallery: document.getElementById('gallery')
-                };
+              const el = {
+                name: document.getElementById('itemName'),
+                category: document.getElementById('itemCategory'),
+                image: document.getElementById('itemImage'),
+                addBtn: document.getElementById('addBtn'),
+                gallery: document.getElementById('gallery')
+              };
 
-                function loadItems() {
-                  try {
-                    const raw = localStorage.getItem(storageKey);
-                    items = raw ? JSON.parse(raw) : [];
-                  } catch (e) { items = []; }
+              function loadItems() {
+                try {
+                  const raw = localStorage.getItem(storageKey);
+                  items = raw ? JSON.parse(raw) : [];
+                } catch (e) { items = []; }
+              }
+
+              function saveItems() {
+                localStorage.setItem(storageKey, JSON.stringify(items));
+              }
+
+              function render() {
+                el.gallery.innerHTML = '';
+                if (!items.length) {
+                  el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請使用上方表單上傳圖片。</p>';
+                  return;
                 }
-
-                function saveItems() {
-                  localStorage.setItem(storageKey, JSON.stringify(items));
-                }
-
-                function render() {
-                  el.gallery.innerHTML = '';
-                  if (!items.length) {
-                    el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請使用上方表單上傳圖片。</p>';
-                    return;
-                  }
-                  items.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white dark:bg-secondary-dark/80 rounded-md p-2 shadow-sm flex flex-col items-center text-center';
-                    const img = document.createElement('img');
-                    img.src = item.dataUrl;
-                    img.alt = item.name || item.filename || '衣物圖片';
-                    img.className = 'w-full h-36 object-cover rounded-md mb-2';
-                    const title = document.createElement('div');
-                    title.className = 'text-sm font-medium';
-                    title.textContent = item.name || item.filename;
-                    const meta = document.createElement('div');
-                    meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                    meta.textContent = item.category || '';
-                    card.appendChild(img);
-                    card.appendChild(title);
-                    card.appendChild(meta);
-                    el.gallery.appendChild(card);
-                  });
-                }
-
-                function handleFiles(files) {
-                  const fileList = Array.from(files);
-                  if (!fileList.length) return;
-
-                  let remaining = fileList.length;
-                  fileList.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                      const dataUrl = e.target.result;
-                      const entry = {
-                        id: Date.now() + Math.random(),
-                        filename: file.name,
-                        name: el.name.value.trim() || file.name,
-                        category: el.category.value,
-                        dataUrl
-                      };
-                      items.unshift(entry);
-                      remaining -= 1;
-                      if (remaining === 0) {
-                        saveItems();
-                        render();
-                        // reset file input and name
-                        el.image.value = '';
-                        el.name.value = '';
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  });
-                }
-
-                el.addBtn.addEventListener('click', () => {
-                  const files = el.image.files;
-                  if (!files.length) {
-                    alert('請選擇至少一張圖片來上傳。');
-                    return;
-                  }
-                  handleFiles(files);
+                items.forEach(item => {
+                  const card = document.createElement('div');
+                  card.className = 'bg-white dark:bg-secondary-dark/80 rounded-md p-2 shadow-sm flex flex-col items-center text-center';
+                  const img = document.createElement('img');
+                  img.src = item.dataUrl;
+                  img.alt = item.name || item.filename || '衣物圖片';
+                  img.className = 'w-full h-36 object-cover rounded-md mb-2';
+                  const title = document.createElement('div');
+                  title.className = 'text-sm font-medium';
+                  title.textContent = item.name || item.filename;
+                  const meta = document.createElement('div');
+                  meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
+                  meta.textContent = item.category || '';
+                  card.appendChild(img);
+                  card.appendChild(title);
+                  card.appendChild(meta);
+                  el.gallery.appendChild(card);
                 });
+              }
 
-                // init
-                loadItems();
-                render();
-              })();
+              function handleFiles(files) {
+                const fileList = Array.from(files);
+                if (!fileList.length) return;
+
+                let remaining = fileList.length;
+                fileList.forEach(file => {
+                  const reader = new FileReader();
+                  reader.onload = function (e) {
+                    const dataUrl = e.target.result;
+                    const entry = {
+                      id: Date.now() + Math.random(),
+                      filename: file.name,
+                      name: el.name.value.trim() || file.name,
+                      category: el.category.value,
+                      dataUrl
+                    };
+                    items.unshift(entry);
+                    remaining -= 1;
+                    if (remaining === 0) {
+                      saveItems();
+                      render();
+                      // reset file input and name
+                      el.image.value = '';
+                      el.name.value = '';
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                });
+              }
+
+              el.addBtn.addEventListener('click', () => {
+                const files = el.image.files;
+                if (!files.length) {
+                  alert('請選擇至少一張圖片來上傳。');
+                  return;
+                }
+                handleFiles(files);
+              });
+
+              // init
+              loadItems();
+              render();
+            })();
           </script>
         </main>
         <footer
@@ -273,27 +317,6 @@
         </footer>
       </div>
     </div>
-  <div class="dialog-container">
-    <!-- 這顆按鈕的樣式（粉色圓形）在 homecss.css 裡，JS 在 aichat.js 控制開關 -->
-    <button id="toggleBtn">
-      <span class="material-symbols-outlined">forum</span>
-    </button>
-    <div id="dialog">
-      <div class="dialog-header">
-        <h3>AI 穿搭顧問</h3>
-        <button id="closeBtn" class="close-btn">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <iframe
-        src="{{ url_for('aichat.chat') }}"
-        width="100%"
-        height="100%"
-        style="border: none;">
-      </iframe>
-    </div>
-  </div>
-    <script src="{{ url_for('static', filename='aichat.js') }}"></script>
 </body>
 
 </html>
