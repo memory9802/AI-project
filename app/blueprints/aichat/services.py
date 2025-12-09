@@ -80,127 +80,244 @@ def generate_global_response(user_input: str, session_id: str = "global-default"
 
 # =====================================================================
 # 衣櫃搜索（DB + RAG，欄位/關鍵字可交給 LLM）
+# 混合推薦: user_wardrobe (個人衣櫃) + items (系統商品)
 # =====================================================================
 
-def detect_outfit_fields(conn):
+def detect_user_wardrobe_fields(conn):
     """
-    偵測 outfits 欄位：
-    1) DESCRIBE outfits 取得欄位清單
-    2) 優先交給 LLM map_fields 判斷欄位對應
-    3) 若無 agent/解析失敗，回傳全 None（後續降級處理）
+    偵測 user_wardrobe 表格欄位
+    
+    user_wardrobe 表格欄位: 
+    - id, user_id, item_name, category, color, occasion (原material), 
+      tags, image_url, uploaded_at
     """
     try:
         with conn.cursor() as cur:
-            cur.execute("DESCRIBE outfits")
+            cur.execute("DESCRIBE user_wardrobe")
             result = cur.fetchall()
+            columns = [row["Field"] if isinstance(result[0], dict) else row[0] for row in result]
+            
+            # 映射 user_wardrobe 欄位
+            field_map = {
+                "primary_key": "id",
+                "title": "item_name",
+                "category": "category",
+                "occasion": "occasion",  # 更新: material 已改名為 occasion
+                "color": "color",
+                "tags": "tags",
+                "image": "image_url",
+                "user_id": "user_id",
+            }
+            
+            # 驗證欄位是否存在
+            for key, col in field_map.items():
+                if col not in columns:
+                    print(f"[AI] 警告: user_wardrobe 表格缺少欄位 {col}", flush=True, file=sys.stderr)
+                    field_map[key] = None
+            
+            return field_map
+            
     except Exception as e:
-        print(f"[AI] 欄位偵測失敗 (DESCRIBE): {e}", flush=True, file=sys.stderr)
-        # 回傳 None 以便後續直接跳過 DB 篩選
-        return {k: None for k in FIELD_KEYS}
-
-    columns = [row["Field"] if isinstance(result[0], dict) else row[0] for row in result]
-
-    if agent:
-        try:
-            llm_map = agent.map_fields(columns)
-            return llm_map
-        except Exception as e:
-            print(f"[AI] LLM map_fields 失敗: {e}", flush=True, file=sys.stderr)
-
-    # 無 agent 或解析失敗：全部 None，後續邏輯會降級
-    return {k: None for k in FIELD_KEYS}
+        print(f"[AI] user_wardrobe 欄位偵測失敗: {e}", flush=True, file=sys.stderr)
+        return {
+            "primary_key": "id",
+            "title": "item_name",
+            "category": "category",
+            "occasion": "occasion",
+            "color": "color",
+            "tags": "tags",
+            "image": "image_url",
+            "user_id": "user_id",
+        }
 
 
-def standardize_outfit(outfit, fields):
-    """標準化 DB outfit 並附帶資料品質標記"""
+def detect_item_fields(conn):
+    """
+    偵測 items 表格欄位
+    
+    items 表格欄位: id, name, category, color, image_url, gender, clothing_type, 
+                    length, price, source, sku, created_at
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DESCRIBE items")
+            result = cur.fetchall()
+            columns = [row["Field"] if isinstance(result[0], dict) else row[0] for row in result]
+            
+            # 直接映射 items 表格欄位
+            field_map = {
+                "primary_key": "id",
+                "title": "name",
+                "category": "category",
+                "occasion": "category",  # items 用 category 表示場合
+                "image": "image_url",
+                "description": "clothing_type",
+            }
+            
+            # 驗證欄位是否存在
+            for key, col in field_map.items():
+                if col not in columns:
+                    print(f"[AI] 警告: items 表格缺少欄位 {col}", flush=True, file=sys.stderr)
+                    field_map[key] = None
+            
+            return field_map
+            
+    except Exception as e:
+        print(f"[AI] items 欄位偵測失敗: {e}", flush=True, file=sys.stderr)
+        # 回傳預設映射
+        return {
+            "primary_key": "id",
+            "title": "name",
+            "category": "category",
+            "occasion": "category",
+            "image": "image_url",
+            "description": "clothing_type",
+        }
+
+
+def standardize_wardrobe_item(item, fields):
+    """
+    標準化 user_wardrobe 的資料
+    
+    user_wardrobe 表格欄位對應:
+    - id → _id
+    - item_name → _title
+    - category → _category
+    - occasion → _occasion
+    - color → _color
+    - tags → _tags
+    - image_url → _image
+    - _description = f"{occasion} / {tags}"  # 組合欄位
+    - _source = "user_wardrobe"  # 標記來源
+    """
     data_quality = {
-        "source": "unknown",  # exact | fuzzy | mixed | default | unknown
+        "source": "user_wardrobe",
+        "missing_fields": [],
+        "warnings": [],
+    }
+
+    # 組合 description: occasion + tags
+    occasion = item.get("occasion", "")
+    tags = item.get("tags", "")
+    description_parts = []
+    if occasion:
+        description_parts.append(f"場合: {occasion}")
+    if tags:
+        description_parts.append(f"標籤: {tags}")
+    description = " / ".join(description_parts) if description_parts else "暫無描述"
+
+    result = {
+        "_id": item.get("id") if item.get("id") else -1,
+        "_title": item.get("item_name") if item.get("item_name") else "未命名衣物",
+        "_category": item.get("category") if item.get("category") else "未分類",
+        "_occasion": occasion if occasion else "未指定場合",
+        "_color": item.get("color") if item.get("color") else "未指定顏色",
+        "_tags": tags,
+        "_image": item.get("image_url") if item.get("image_url") else "",
+        "_description": description,
+        "_source": "user_wardrobe",  # 標記來源
+        "_user_id": item.get("user_id"),
+    }
+
+    # 記錄缺失欄位
+    if result["_id"] == -1:
+        data_quality["missing_fields"].append("id")
+    if result["_title"] == "未命名衣物":
+        data_quality["missing_fields"].append("item_name")
+    if result["_category"] == "未分類":
+        data_quality["missing_fields"].append("category")
+    if not result["_image"]:
+        data_quality["missing_fields"].append("image_url")
+
+    if data_quality["missing_fields"]:
+        data_quality["source"] = "partial"
+
+    result["_raw"] = item
+    result["_data_quality"] = data_quality
+    result.update(item)  # 保留所有原始欄位
+    return result
+
+
+def standardize_item(item, fields):
+    """
+    標準化 items 表格的資料
+    
+    items 表格欄位對應:
+    - id → _id
+    - name → _title
+    - category → _category, _occasion
+    - color → _color
+    - image_url → _image
+    - clothing_type → _description
+    - _source = "items"  # 標記來源
+    """
+    data_quality = {
+        "source": "items",
         "missing_fields": [],
         "warnings": [],
     }
 
     result = {
-        "_id": outfit.get(fields.get("primary_key")) if fields.get("primary_key") else None,
-        "_title": outfit.get(fields.get("title")) if fields.get("title") else None,
-        "_occasion": outfit.get(fields.get("occasion")) if fields.get("occasion") else None,
-        "_image": outfit.get(fields.get("image")) if fields.get("image") else "",
-        "_description": outfit.get(fields.get("description")) if fields.get("description") else None,
+        "_id": item.get("id") if item.get("id") else -1,
+        "_title": item.get("name") if item.get("name") else "未命名單品",
+        "_category": item.get("category") if item.get("category") else "未分類",
+        "_occasion": item.get("category") if item.get("category") else "未分類",
+        "_color": item.get("color") if item.get("color") else "未指定顏色",
+        "_image": item.get("image_url") if item.get("image_url") else "",
+        "_description": (
+            item.get("clothing_type") if item.get("clothing_type")
+            else "暫無描述"
+        ),
+        "_source": "items",  # 標記來源
     }
 
-    if fields.get("primary_key") and result["_id"]:
-        data_quality["source"] = "exact"
-
-    if not result["_id"]:
-        for key in ["id", "outfit_id", "ID", "uid", "pk"]:
-            if key in outfit and outfit[key]:
-                result["_id"] = outfit[key]
-                data_quality["source"] = "fuzzy"
-                data_quality["warnings"].append(f"ID 使用模糊匹配: {key}")
-                break
-
-    if not result["_title"]:
-        for key in ["name", "title", "outfit_name", "標題", "名稱", "outfit_title", "label"]:
-            if key in outfit and outfit[key]:
-                result["_title"] = outfit[key]
-                data_quality["source"] = "mixed" if data_quality["source"] == "exact" else "fuzzy"
-                data_quality["warnings"].append(f"標題使用模糊匹配: {key}")
-                break
-
-    if not result["_occasion"]:
-        for key in ["occasion", "type", "category", "style", "場合", "類別", "event_type", "scene"]:
-            if key in outfit and outfit[key]:
-                result["_occasion"] = outfit[key]
-                data_quality["source"] = "mixed" if data_quality["source"] == "exact" else "fuzzy"
-                data_quality["warnings"].append(f"場合使用模糊匹配: {key}")
-                break
-
-    if not result["_description"]:
-        for key in ["description", "desc", "details", "notes", "描述", "說明", "memo", "comment"]:
-            if key in outfit and outfit[key]:
-                result["_description"] = outfit[key]
-                data_quality["source"] = "mixed" if data_quality["source"] == "exact" else "fuzzy"
-                data_quality["warnings"].append(f"描述使用模糊匹配: {key}")
-                break
-
-    if not result["_id"]:
-        result["_id"] = -1
+    # 記錄缺失欄位
+    if result["_id"] == -1:
         data_quality["missing_fields"].append("id")
-        data_quality["source"] = "default"
-    if not result["_title"]:
-        result["_title"] = "未命名穿搭"
-        data_quality["missing_fields"].append("title")
-        if data_quality["source"] != "default":
-            data_quality["source"] = "mixed"
-    if not result["_occasion"]:
-        result["_occasion"] = "未分類"
-        data_quality["missing_fields"].append("occasion")
-        if data_quality["source"] != "default":
-            data_quality["source"] = "mixed"
-    if not result["_description"]:
-        result["_description"] = "暫無描述"
-        data_quality["missing_fields"].append("description")
-        if data_quality["source"] != "default":
-            data_quality["source"] = "mixed"
+    if result["_title"] == "未命名單品":
+        data_quality["missing_fields"].append("name")
+    if result["_category"] == "未分類":
+        data_quality["missing_fields"].append("category")
+    if not result["_image"]:
+        data_quality["missing_fields"].append("image_url")
+    if result["_description"] == "暫無描述":
+        data_quality["missing_fields"].append("clothing_type")
 
-    result["_raw"] = outfit
+    if data_quality["missing_fields"]:
+        data_quality["source"] = "partial"
+
+    result["_raw"] = item
     result["_data_quality"] = data_quality
-    result.update(outfit)
+    result.update(item)  # 保留所有原始欄位
     return result
 
 
-_outfit_fields_cache = None
+_wardrobe_fields_cache = None
+_item_fields_cache = None
 
 
-def get_outfit_fields():
-    """快取欄位偵測結果"""
-    global _outfit_fields_cache
-    if _outfit_fields_cache is None:
+def get_wardrobe_fields():
+    """快取 user_wardrobe 欄位偵測結果"""
+    global _wardrobe_fields_cache
+    if _wardrobe_fields_cache is None:
         conn = get_db_conn()
         try:
-            _outfit_fields_cache = detect_outfit_fields(conn)
+            _wardrobe_fields_cache = detect_user_wardrobe_fields(conn)
         finally:
             conn.close()
-    return _outfit_fields_cache
+    return _wardrobe_fields_cache
+
+
+def get_item_fields():
+    """快取 items 欄位偵測結果"""
+    global _item_fields_cache
+    if _item_fields_cache is None:
+        conn = get_db_conn()
+        try:
+            _item_fields_cache = detect_item_fields(conn)
+        finally:
+            conn.close()
+    return _item_fields_cache
 
 
 def get_db_conn():
@@ -236,172 +353,338 @@ def extract_keywords(text: str):
 
 
 def generate_wardrobe_recommendation(
-    user_input: str, session_id: str = "wardrobe-default", preferred_model: str = "auto"
+    user_input: str,
+    user_id: int = None,
+    session_id: str = "wardrobe-default",
+    preferred_model: str = "auto"
 ):
-    """衣櫃搜索：DB + RAG + LLM（容錯：表/欄位缺失則降級或回空）"""
+    """
+    混合推薦: user_wardrobe (個人衣櫃) + items (系統商品)
+    
+    查詢邏輯:
+    1. 如果有 user_id, 優先查詢 user_wardrobe
+    2. 補充查詢 items 表格
+    3. 混合兩者結果,確保至少有推薦內容
+    
+    Args:
+        user_input: 使用者輸入
+        user_id: 使用者ID (可選, 如果提供則查詢個人衣櫃)
+        session_id: 對話 session ID
+        preferred_model: 偏好的 AI 模型
+        
+    Returns:
+        (ai_response, mixed_items, keywords)
+    """
     if not user_input:
         return "請輸入內容", [], []
 
     keywords = extract_keywords(user_input)
-    fields = get_outfit_fields()
+    wardrobe_fields = get_wardrobe_fields()
+    item_fields = get_item_fields()
 
-    # 若無法偵測欄位，直接回空結果，避免 SQL 報錯
-    if not fields or all(v is None for v in fields.values()):
-        return "資料庫未找到 outfits 表或欄位偵測失敗，僅提供全球建議。", [], keywords
-
-    outfits = []
+    # 混合結果容器
+    wardrobe_items = []  # 用戶個人衣櫃
+    system_items = []    # 系統商品
+    
     try:
         conn = get_db_conn()
     except Exception as e:
         print(f"[AI] DB 連線失敗: {e}", file=sys.stderr)
-        return "無法連線資料庫，僅提供全球建議。", outfits, keywords
+        return "無法連線資料庫，僅提供全球建議。", [], keywords
 
     try:
         with conn.cursor() as cur:
-            if keywords and fields.get("occasion"):
-                placeholders = ",".join(["%s"] * len(keywords))
-                sql = f"SELECT * FROM outfits WHERE {fields['occasion']} IN ({placeholders}) LIMIT 5"
+            # === 1. 查詢 user_wardrobe (個人衣櫃) ===
+            if user_id:
                 try:
-                    cur.execute(sql, keywords)
-                    outfits = cur.fetchall()
-                except Exception as e:
-                    print(f"[AI] 關鍵字篩選失敗，改抓全部: {e}", file=sys.stderr)
-                cur.execute("SELECT * FROM outfits LIMIT 3")
-                outfits = cur.fetchall()
-            else:
-                cur.execute("SELECT * FROM outfits LIMIT 3")
-                outfits = cur.fetchall()
-
-            outfits = [standardize_outfit(o, fields) for o in outfits]
-
-            for o in outfits:
-                try:
-                    cur.execute(
+                    if keywords:
+                        # 根據關鍵字篩選
+                        placeholders = ",".join(["%s"] * len(keywords))
+                        sql = f"""
+                        SELECT * FROM user_wardrobe 
+                        WHERE user_id = %s 
+                        AND (category IN ({placeholders}) 
+                             OR occasion IN ({placeholders}))
+                        LIMIT 5
                         """
-                        SELECT i.* FROM items i
-                        JOIN outfit_items oi ON i.id = oi.item_id
-                        WHERE oi.outfit_id=%s
-                        """,
-                        (o["_id"],),
+                        params = [user_id] + keywords + keywords
+                        cur.execute(sql, params)
+                    else:
+                        # 無關鍵字則抓該用戶所有衣物
+                        sql = """
+                        SELECT * FROM user_wardrobe 
+                        WHERE user_id = %s 
+                        LIMIT 5
+                        """
+                        cur.execute(sql, (user_id,))
+                    
+                    wardrobe_items = cur.fetchall()
+                    wardrobe_items = [
+                        standardize_wardrobe_item(item, wardrobe_fields)
+                        for item in wardrobe_items
+                    ]
+                    
+                    print(
+                        f"[AI] 找到 {len(wardrobe_items)} 件個人衣物",
+                        flush=True
                     )
-                    o["items"] = cur.fetchall()
+                    
                 except Exception as e:
-                    print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
-                    o["items"] = []
+                    print(
+                        f"[AI] user_wardrobe 查詢失敗: {e}",
+                        file=sys.stderr
+                    )
+            
+            # === 2. 查詢 items (系統商品) - 補充推薦 ===
+            # 計算還需要多少推薦 (目標總共 10 件)
+            needed = max(10 - len(wardrobe_items), 5)
+            
+            try:
+                if keywords:
+                    placeholders = ",".join(["%s"] * len(keywords))
+                    sql = f"""
+                    SELECT * FROM items 
+                    WHERE category IN ({placeholders}) 
+                    LIMIT {needed}
+                    """
+                    cur.execute(sql, keywords)
+                else:
+                    sql = f"SELECT * FROM items ORDER BY RAND() LIMIT {needed}"
+                    cur.execute(sql)
+                
+                system_items = cur.fetchall()
+                system_items = [
+                    standardize_item(item, item_fields)
+                    for item in system_items
+                ]
+                
+                print(f"[AI] 找到 {len(system_items)} 件系統商品", flush=True)
+                
+            except Exception as e:
+                print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
 
-                if "created_at" in o:
-                    o["created_at"] = o["created_at"].isoformat() if o["created_at"] else None
-                for item in o["items"]:
-                    if "created_at" in item:
-                        item["created_at"] = item["created_at"].isoformat() if item["created_at"] else None
-                    if "price" in item and isinstance(item["price"], Decimal):
-                        item["price"] = float(item["price"])
+            # === 3. 混合結果 ===
+            mixed_items = wardrobe_items + system_items
+            
+            # 處理時間戳記和價格
+            for item in mixed_items:
+                # 處理時間欄位
+                if "created_at" in item and item["created_at"]:
+                    item["created_at"] = item["created_at"].isoformat()
+                if "uploaded_at" in item and item["uploaded_at"]:
+                    item["uploaded_at"] = item["uploaded_at"].isoformat()
+                    
+                # 處理價格 (只有 items 有 price)
+                if "price" in item and isinstance(item["price"], Decimal):
+                    item["price"] = float(item["price"])
+
     except Exception as e:
-        print(f"[AI] 衣櫃查詢失敗: {e}", file=sys.stderr)
-        return "查詢衣櫃資料時發生錯誤，僅提供全球建議。", [], keywords
+        print(f"[AI] 混合查詢失敗: {e}", file=sys.stderr)
+        return "查詢資料時發生錯誤，僅提供全球建議。", [], keywords
     finally:
         try:
             conn.close()
         except Exception:
             pass
 
+    # === 4. 回傳結果 ===
+    if not mixed_items:
+        return "資料庫中尚無相關資料，請嘗試其他關鍵字。", [], keywords
+    
     if not agent:
-        text = "AI 尚未啟用，以下為資料庫推薦：\n"
-        for idx, outfit in enumerate(outfits[:3], 1):
-            text += f"\n推薦 {idx}：{outfit.get('_title', '')}（場合：{outfit.get('_occasion', '')}）\n"
-            text += f"描述：{outfit.get('_description', '')}\n"
-        return text, outfits, keywords
+        # 無 AI 時的文字回覆
+        text = "以下為推薦內容：\n"
+        
+        if wardrobe_items:
+            text += f"\n📦 您的衣櫃 ({len(wardrobe_items)} 件):\n"
+            for idx, item in enumerate(wardrobe_items, 1):
+                text += (
+                    f"{idx}. {item.get('_title', '')} "
+                    f"({item.get('_category', '')}) - "
+                    f"{item.get('_color', '')}\n"
+                )
+        
+        if system_items:
+            text += f"\n🛍️ 推薦商品 ({len(system_items)} 件):\n"
+            for idx, item in enumerate(system_items, 1):
+                text += (
+                    f"{idx}. {item.get('_title', '')} "
+                    f"({item.get('_category', '')}) - "
+                    f"{item.get('_color', '')}"
+                )
+                if item.get('price'):
+                    text += f" - NT$ {item.get('price', 0):.0f}"
+                text += "\n"
+        
+        return text, mixed_items, keywords
 
+    # === 5. 使用 AI 生成推薦 ===
     try:
+        # 構建 RAG context
         rag_context = ""
+        if wardrobe_items:
+            rag_context += (
+                f"\n\n✅ 已找到用戶個人衣櫃: {len(wardrobe_items)} 件"
+            )
+        if system_items:
+            rag_context += f"\n✅ 已找到系統推薦商品: {len(system_items)} 件"
         if keywords:
-            rag_context = f"\n\n偵測到關鍵詞：{', '.join(keywords)}，已從 DB 擷取 {len(outfits)} 組穿搭。"
+            rag_context += f"\n🔍 關鍵詞: {', '.join(keywords)}"
 
         ai_response = agent.chat(
             session_id=session_id,
             user_input=user_input + rag_context,
-            db_outfits=outfits,
+            db_outfits=mixed_items,
             preferred_model=preferred_model,
         )
-        return ai_response, outfits, keywords
+        return ai_response, mixed_items, keywords
 
     except Exception as e:
         error_msg = str(e)
-        print(f"[AI] 衣櫃搜索失敗: {error_msg}", flush=True, file=sys.stderr)
+        print(f"[AI] AI 推薦失敗: {error_msg}", flush=True, file=sys.stderr)
 
-        fallback = f"暫時無法使用 AI（{error_msg[:80]}）。以下是資料庫推薦："
-        for idx, outfit in enumerate(outfits[:3], 1):
-            fallback += f"\n\n推薦 {idx}：{outfit.get('_title', '')}（場合：{outfit.get('_occasion', '')}）"
-            fallback += f"\n描述：{outfit.get('_description', '')}"
-        return fallback, outfits, keywords
+        # Fallback 文字回覆
+        fallback = f"暫時無法使用 AI。以下是資料庫推薦:\n"
+        
+        if wardrobe_items:
+            fallback += f"\n📦 您的衣櫃 ({len(wardrobe_items)} 件):\n"
+            for idx, item in enumerate(wardrobe_items[:3], 1):
+                fallback += (
+                    f"{idx}. {item.get('_title', '')} - "
+                    f"{item.get('_description', '')}\n"
+                )
+        
+        if system_items:
+            fallback += f"\n🛍️ 推薦商品 ({len(system_items)} 件):\n"
+            for idx, item in enumerate(system_items[:3], 1):
+                fallback += (
+                    f"{idx}. {item.get('_title', '')} - "
+                    f"{item.get('_description', '')}"
+                )
+                if item.get('price'):
+                    fallback += f" - NT$ {item.get('price', 0):.0f}"
+                fallback += "\n"
+        
+        return fallback, mixed_items, keywords
 
 
 def generate_wardrobe_structured(
-    user_input: str, session_id: str = "wardrobe-structured", preferred_model: str = "auto"
+    user_input: str,
+    user_id: int = None,
+    session_id: str = "wardrobe-structured",
+    preferred_model: str = "auto"
 ):
     """
-    衣櫃結構化輸出：DB + RAG + LLM dual_recommendation
-    回傳 (parsed, raw, outfits, keywords)
+    混合推薦 (結構化輸出): user_wardrobe + items
+    
+    回傳 (result_dict, mixed_items, keywords)
+    result_dict 包含: {"parsed": ..., "raw": ..., "error": ...}
+    
+    Args:
+        user_input: 使用者輸入
+        user_id: 使用者ID (可選)
+        session_id: 對話 session ID
+        preferred_model: 偏好的 AI 模型
     """
     if not user_input:
         return {"error": "請輸入內容", "parsed": None, "raw": ""}, [], []
 
     keywords = extract_keywords(user_input)
-    fields = get_outfit_fields()
+    wardrobe_fields = get_wardrobe_fields()
+    item_fields = get_item_fields()
 
-    if not fields or all(v is None for v in fields.values()):
-        return {"error": "資料庫未找到 outfits 表或欄位偵測失敗，僅提供全球建議。", "parsed": None, "raw": ""}, [], keywords
+    wardrobe_items = []
+    system_items = []
 
-    outfits = []
     try:
         conn = get_db_conn()
     except Exception as e:
         print(f"[AI] DB 連線失敗: {e}", file=sys.stderr)
-        return {"error": "無法連線資料庫，僅提供全球建議。", "parsed": None, "raw": ""}, outfits, keywords
+        error_result = {
+            "error": "無法連線資料庫，僅提供全球建議。",
+            "parsed": None,
+            "raw": ""
+        }
+        return error_result, [], keywords
 
     try:
         with conn.cursor() as cur:
-            if keywords and fields.get("occasion"):
-                placeholders = ",".join(["%s"] * len(keywords))
-                sql = f"SELECT * FROM outfits WHERE {fields['occasion']} IN ({placeholders}) LIMIT 5"
+            # 查詢 user_wardrobe
+            if user_id:
                 try:
-                    cur.execute(sql, keywords)
-                    outfits = cur.fetchall()
-                except Exception as e:
-                    print(f"[AI] 關鍵字篩選失敗，改抓全部: {e}", file=sys.stderr)
-                cur.execute("SELECT * FROM outfits LIMIT 3")
-                outfits = cur.fetchall()
-            else:
-                cur.execute("SELECT * FROM outfits LIMIT 3")
-                outfits = cur.fetchall()
-
-            outfits = [standardize_outfit(o, fields) for o in outfits]
-
-            for o in outfits:
-                try:
-                    cur.execute(
+                    if keywords:
+                        placeholders = ",".join(["%s"] * len(keywords))
+                        sql = f"""
+                        SELECT * FROM user_wardrobe
+                        WHERE user_id = %s
+                        AND (category IN ({placeholders})
+                             OR occasion IN ({placeholders}))
+                        LIMIT 5
                         """
-                        SELECT i.* FROM items i
-                        JOIN outfit_items oi ON i.id = oi.item_id
-                        WHERE oi.outfit_id=%s
-                        """,
-                        (o["_id"],),
-                    )
-                    o["items"] = cur.fetchall()
-                except Exception as e:
-                    print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
-                    o["items"] = []
+                        params = [user_id] + keywords + keywords
+                        cur.execute(sql, params)
+                    else:
+                        sql = """
+                        SELECT * FROM user_wardrobe
+                        WHERE user_id = %s
+                        LIMIT 5
+                        """
+                        cur.execute(sql, (user_id,))
 
-                if "created_at" in o:
-                    o["created_at"] = o["created_at"].isoformat() if o["created_at"] else None
-                for item in o["items"]:
-                    if "created_at" in item:
-                        item["created_at"] = item["created_at"].isoformat() if item["created_at"] else None
-                    if "price" in item and isinstance(item["price"], Decimal):
-                        item["price"] = float(item["price"])
+                    wardrobe_items = cur.fetchall()
+                    wardrobe_items = [
+                        standardize_wardrobe_item(item, wardrobe_fields)
+                        for item in wardrobe_items
+                    ]
+                except Exception as e:
+                    print(
+                        f"[AI] user_wardrobe 查詢失敗: {e}",
+                        file=sys.stderr
+                    )
+
+            # 查詢 items
+            needed = max(10 - len(wardrobe_items), 5)
+            try:
+                if keywords:
+                    placeholders = ",".join(["%s"] * len(keywords))
+                    sql = f"""
+                    SELECT * FROM items
+                    WHERE category IN ({placeholders})
+                    LIMIT {needed}
+                    """
+                    cur.execute(sql, keywords)
+                else:
+                    sql = f"SELECT * FROM items ORDER BY RAND() LIMIT {needed}"
+                    cur.execute(sql)
+
+                system_items = cur.fetchall()
+                system_items = [
+                    standardize_item(item, item_fields)
+                    for item in system_items
+                ]
+            except Exception as e:
+                print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
+
+            # 混合結果
+            mixed_items = wardrobe_items + system_items
+
+            # 處理時間和價格
+            for item in mixed_items:
+                if "created_at" in item and item["created_at"]:
+                    item["created_at"] = item["created_at"].isoformat()
+                if "uploaded_at" in item and item["uploaded_at"]:
+                    item["uploaded_at"] = item["uploaded_at"].isoformat()
+                if "price" in item and isinstance(item["price"], Decimal):
+                    item["price"] = float(item["price"])
+
     except Exception as e:
-        print(f"[AI] 衣櫃查詢失敗: {e}", file=sys.stderr)
-        return {"error": "查詢衣櫃資料時發生錯誤，僅提供全球建議。", "parsed": None, "raw": ""}, [], keywords
+        print(f"[AI] 混合查詢失敗: {e}", file=sys.stderr)
+        error_result = {
+            "error": "查詢資料時發生錯誤，僅提供全球建議。",
+            "parsed": None,
+            "raw": ""
+        }
+        return error_result, [], keywords
     finally:
         try:
             conn.close()
@@ -413,17 +696,24 @@ def generate_wardrobe_structured(
             "error": "AI 尚未啟用",
             "parsed": None,
             "raw": "AI 尚未啟用，請檢查 LLM_API_KEY。",
-        }, outfits, keywords
+        }, mixed_items, keywords
 
     try:
         result = agent.dual_recommendation(
             session_id=session_id,
             user_input=user_input,
-            db_outfits=outfits,
+            db_outfits=mixed_items,
             preferred_model=preferred_model,
         )
-        return result, outfits, keywords
+        return result, mixed_items, keywords
     except Exception as e:
         error_msg = str(e)
-        print(f"[AI] 衣櫃結構化失敗: {error_msg}", file=sys.stderr)
-        return {"error": error_msg, "parsed": None, "raw": ""}, outfits, keywords
+        print(
+            f"[AI] 結構化推薦失敗: {error_msg}",
+            file=sys.stderr
+        )
+        return {
+            "error": error_msg,
+            "parsed": None,
+            "raw": ""
+        }, mixed_items, keywords

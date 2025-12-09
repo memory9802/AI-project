@@ -2,10 +2,17 @@
 """
 填補 items 表格剩餘空值
 =======================
+⚠️  重要: 此腳本應該在其他腳本之後執行!
+
+執行順序:
+1. fill_category_from_clothing_type.py (先執行)
+2. fill_gender_from_name.py            (第二執行)
+3. fill_remaining_nulls.py             (本腳本,最後執行)
+
 處理欄位:
-1. category (11,132 筆) → 'other'
-2. color (80 筆) → '未分類'
-3. gender (141 筆) → '中性'
+1. category 剩餘空值 → 'other'
+2. color 剩餘空值    → '未分類'
+3. gender 剩餘空值   → '中性'
 """
 
 import mysql.connector
@@ -23,6 +30,70 @@ DB_CONFIG = {
 def connect_db():
     """連接資料庫"""
     return mysql.connector.connect(**DB_CONFIG)
+
+
+def check_prerequisites():
+    """檢查前置條件 - 確保前面的腳本已執行"""
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # 檢查 category 是否大部分已填補
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN category IS NULL OR category = '' THEN 1 ELSE 0 END) as null_count
+        FROM items
+    """)
+    total, cat_null = cursor.fetchone()
+    cat_percentage = (cat_null / total) * 100 if total > 0 else 0
+    
+    # 檢查 gender 是否大部分已填補
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN gender IS NULL OR gender = '' THEN 1 ELSE 0 END) as null_count
+        FROM items
+    """)
+    gen_null = cursor.fetchone()[0]
+    gen_percentage = (gen_null / total) * 100 if total > 0 else 0
+    
+    cursor.close()
+    conn.close()
+    
+    warnings = []
+    
+    # 如果 category 空值超過 20%,建議先執行 fill_category
+    if cat_percentage > 20:
+        warnings.append(
+            f"⚠️  category 空值 {cat_null:,} 筆 ({cat_percentage:.1f}%)\n"
+            f"   建議先執行: fill_category_from_clothing_type.py"
+        )
+    
+    # 如果 gender 空值超過 10%,建議先執行 fill_gender
+    if gen_percentage > 10:
+        warnings.append(
+            f"⚠️  gender 空值 {gen_null:,} 筆 ({gen_percentage:.1f}%)\n"
+            f"   建議先執行: fill_gender_from_name.py"
+        )
+    
+    if warnings:
+        print("\n" + "=" * 60)
+        print("⚠️  前置檢查警告")
+        print("=" * 60)
+        for warning in warnings:
+            print(warning)
+        print("\n建議執行順序:")
+        print("  1. fill_category_from_clothing_type.py")
+        print("  2. fill_gender_from_name.py")
+        print("  3. fill_remaining_nulls.py (本腳本)")
+        print("=" * 60)
+        
+        response = input("\n是否仍要繼續? [y/N]: ")
+        if response.lower() != 'y':
+            print("❌ 已取消執行")
+            return False
+    
+    return True
+
 
 def analyze_nulls_before():
     """分析填補前的空值情況"""
@@ -197,6 +268,10 @@ def main():
     print("\n" + "🔧" * 30)
     print("開始填補 items 表格空值")
     print("🔧" * 30)
+    
+    # 0. 前置檢查
+    if not check_prerequisites():
+        return
     
     # 1. 分析填補前的情況
     stats_before = analyze_nulls_before()
