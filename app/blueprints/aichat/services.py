@@ -339,7 +339,9 @@ CATEGORY_MAPPING = {
     "上衣": "top",
     "T恤": "top",
     "襯衫": "top",
-    "外套": "top",
+    "外套": "outerwear",
+    "大衣": "outerwear",
+    "風衣": "outerwear",
     "下身": "bottom",
     "褲子": "bottom",
     "裙子": "bottom",
@@ -354,6 +356,9 @@ CATEGORY_MAPPING = {
     "其他": "other",
     # 英文保持不變
     "top": "top",
+    "outerwear": "outerwear",
+    "coat": "outerwear",
+    "jacket": "outerwear",
     "bottom": "bottom",
     "dress": "dress",
     "shoes": "shoes",
@@ -406,6 +411,84 @@ def extract_keywords(text: str):
     return []
 
 
+def expand_keywords_with_llm(user_input: str, base_keywords: list):
+    """
+    使用 agent.classify_keywords 進一步擴充關鍵字，並與基礎關鍵字去重合併。
+    """
+    keywords = list(base_keywords) if base_keywords else []
+    if agent:
+        try:
+            llm_keywords = agent.classify_keywords(user_input) or []
+            if llm_keywords:
+                merged = []
+                seen = set()
+                for kw in list(keywords) + list(llm_keywords):
+                    if not kw:
+                        continue
+                    key = kw.strip().lower()
+                    if key not in seen:
+                        seen.add(key)
+                        merged.append(kw)
+                keywords = merged
+        except Exception as e:
+            print(f"[AI] 關鍵字擴充失敗: {e}", file=sys.stderr)
+    return keywords
+
+
+# 粗略判斷使用者輸入是否提到需要外套/大衣
+def detect_requested_extras(user_input: str):
+    text = (user_input or "").lower()
+    hits = set()
+    signals = ["外套", "大衣", "風衣", "coat", "jacket", "outerwear", "保暖", "冷", "寒冷"]
+    if any(sig in text for sig in signals):
+        hits.add("outerwear")
+    return hits
+
+
+# 檢查清單是否缺少組成穿搭的必要類別
+def detect_missing_categories(items: list):
+    categories = set()
+    for item in items or []:
+        raw = item.get("_category") or item.get("category") or ""
+        cat = normalize_category(raw)
+        if cat:
+            categories.add(cat)
+
+    has_top = any("top" in c or "dress" in c for c in categories)
+    has_bottom = any("bottom" in c for c in categories)
+    has_shoes = any("shoes" in c for c in categories)
+    has_accessories = any("accessories" in c for c in categories)
+
+    missing_labels = []
+    missing_keywords = []
+    if not has_top:
+        missing_labels.append("上身或洋裝")
+        missing_keywords.extend(["top", "dress"])
+    if not has_bottom:
+        missing_labels.append("下身")
+        missing_keywords.append("bottom")
+    # 不強制要求鞋款/配件為缺件，只作為可選搭配
+
+    seen = set()
+    deduped_keywords = []
+    for kw in missing_keywords:
+        if kw and kw not in seen:
+            seen.add(kw)
+            deduped_keywords.append(kw)
+
+    can_form_sets = has_top and (has_bottom or has_shoes or has_accessories)
+    return missing_labels, deduped_keywords, can_form_sets
+
+
+# 針對衣櫃/商品分開的關鍵字管道，避免互相干擾
+def extract_wardrobe_keywords(user_input: str):
+    return expand_keywords_with_llm(user_input, extract_keywords(user_input))
+
+
+def extract_item_keywords(user_input: str):
+    return expand_keywords_with_llm(user_input, extract_keywords(user_input))
+
+
 def generate_wardrobe_recommendation(
     user_input: str,
     user_id: int = None,
@@ -432,7 +515,7 @@ def generate_wardrobe_recommendation(
     if not user_input:
         return "請輸入內容", [], []
 
-    keywords = extract_keywords(user_input)
+    keywords = extract_wardrobe_keywords(user_input)
     wardrobe_fields = get_wardrobe_fields()
     item_fields = get_item_fields()
 
@@ -451,28 +534,34 @@ def generate_wardrobe_recommendation(
             # === 1. 查詢 user_wardrobe (個人衣櫃) ===
             if user_id:
                 try:
+                    # 先用關鍵字篩選，查不到再 fallback 該用戶最新/隨機
                     if keywords:
-                        # 根據關鍵字篩選
                         placeholders = ",".join(["%s"] * len(keywords))
                         sql = f"""
                         SELECT * FROM user_wardrobe 
                         WHERE user_id = %s 
                         AND (category IN ({placeholders}) 
                              OR occasion IN ({placeholders}))
-                        LIMIT 5
+                        LIMIT 20
                         """
                         params = [user_id] + keywords + keywords
                         cur.execute(sql, params)
                     else:
-                        # 無關鍵字則抓該用戶所有衣物
-                        sql = """
-                        SELECT * FROM user_wardrobe 
-                        WHERE user_id = %s 
-                        LIMIT 5
-                        """
-                        cur.execute(sql, (user_id,))
-                    
+                        cur.execute("SELECT 1")  # no-op, 下面會 fallback
+
                     wardrobe_items = cur.fetchall()
+                    if not wardrobe_items:
+                        cur.execute(
+                            """
+                            SELECT * FROM user_wardrobe 
+                            WHERE user_id = %s 
+                            ORDER BY uploaded_at DESC, id DESC
+                            LIMIT 20
+                            """,
+                            (user_id,),
+                        )
+                        wardrobe_items = cur.fetchall()
+
                     wardrobe_items = [
                         standardize_wardrobe_item(item, wardrobe_fields)
                         for item in wardrobe_items
@@ -550,7 +639,7 @@ def generate_wardrobe_recommendation(
         text = "以下為推薦內容：\n"
         
         if wardrobe_items:
-            text += f"\n📦 您的衣櫃 ({len(wardrobe_items)} 件):\n"
+            text += f"\n 您的衣櫃 ({len(wardrobe_items)} 件):\n"
             for idx, item in enumerate(wardrobe_items, 1):
                 text += (
                     f"{idx}. {item.get('_title', '')} "
@@ -559,7 +648,7 @@ def generate_wardrobe_recommendation(
                 )
         
         if system_items:
-            text += f"\n🛍️ 推薦商品 ({len(system_items)} 件):\n"
+            text += f"\n 推薦商品 ({len(system_items)} 件):\n"
             for idx, item in enumerate(system_items, 1):
                 text += (
                     f"{idx}. {item.get('_title', '')} "
@@ -578,16 +667,23 @@ def generate_wardrobe_recommendation(
         rag_context = ""
         if wardrobe_items:
             rag_context += (
-                f"\n\n✅ 已找到用戶個人衣櫃: {len(wardrobe_items)} 件"
+                f"\n\n 已找到用戶個人衣櫃: {len(wardrobe_items)} 件"
             )
         if system_items:
-            rag_context += f"\n✅ 已找到系統推薦商品: {len(system_items)} 件"
+            rag_context += f"\n 已找到系統推薦商品(需購買): {len(system_items)} 件"
+            need_buy = [it.get("_title", "") for it in system_items if it.get("_title")]
+            if need_buy:
+                rag_context += f"\n 需購買單品: {', '.join(need_buy)}"
         if keywords:
-            rag_context += f"\n🔍 關鍵詞: {', '.join(keywords)}"
+            rag_context += f"\n 關鍵詞: {', '.join(keywords)}"
 
+        ai_instruction = (
+            "請輸出 3 套穿搭，使用編號條列，格式包含：套名/場合、主色或風格、單品列表(含顏色/品類/材質)，"
+            "如能估總價可附上；簡短說明。"
+        )
         ai_response = agent.chat(
             session_id=session_id,
-            user_input=user_input + rag_context,
+            user_input=ai_instruction + "\n" + user_input + rag_context,
             db_outfits=mixed_items,
             preferred_model=preferred_model,
         )
@@ -601,7 +697,7 @@ def generate_wardrobe_recommendation(
         fallback = f"暫時無法使用 AI。以下是資料庫推薦:\n"
         
         if wardrobe_items:
-            fallback += f"\n📦 您的衣櫃 ({len(wardrobe_items)} 件):\n"
+            fallback += f"\n 您的衣櫃 ({len(wardrobe_items)} 件):\n"
             for idx, item in enumerate(wardrobe_items[:3], 1):
                 fallback += (
                     f"{idx}. {item.get('_title', '')} - "
@@ -609,7 +705,7 @@ def generate_wardrobe_recommendation(
                 )
         
         if system_items:
-            fallback += f"\n🛍️ 推薦商品 ({len(system_items)} 件):\n"
+            fallback += f"\n 推薦商品 ({len(system_items)} 件):\n"
             for idx, item in enumerate(system_items[:3], 1):
                 fallback += (
                     f"{idx}. {item.get('_title', '')} - "
@@ -643,7 +739,7 @@ def generate_wardrobe_structured(
     if not user_input:
         return {"error": "請輸入內容", "parsed": None, "raw": ""}, [], []
 
-    keywords = extract_keywords(user_input)
+    keywords = extract_wardrobe_keywords(user_input)
     wardrobe_fields = get_wardrobe_fields()
     item_fields = get_item_fields()
 
@@ -673,23 +769,33 @@ def generate_wardrobe_structured(
                         WHERE user_id = %s
                         AND (category IN ({placeholders})
                              OR occasion IN ({placeholders}))
-                        LIMIT 5
+                        LIMIT 20
                         """
                         params = [user_id] + keywords + keywords
                         cur.execute(sql, params)
                     else:
-                        sql = """
-                        SELECT * FROM user_wardrobe
-                        WHERE user_id = %s
-                        LIMIT 5
-                        """
-                        cur.execute(sql, (user_id,))
+                        cur.execute("SELECT 1")  # no-op
 
                     wardrobe_items = cur.fetchall()
-                    wardrobe_items = [
-                        standardize_wardrobe_item(item, wardrobe_fields)
-                        for item in wardrobe_items
-                    ]
+                    if not wardrobe_items:
+                        cur.execute(
+                            """
+                            SELECT * FROM user_wardrobe
+                            WHERE user_id = %s
+                            ORDER BY uploaded_at DESC, id DESC
+                            LIMIT 20
+                            """,
+                            (user_id,),
+                        )
+                        wardrobe_items = [
+                            standardize_wardrobe_item(item, wardrobe_fields)
+                            for item in cur.fetchall()
+                        ]
+                    else:
+                        wardrobe_items = [
+                            standardize_wardrobe_item(item, wardrobe_fields)
+                            for item in wardrobe_items
+                        ]
                 except Exception as e:
                     print(
                         f"[AI] user_wardrobe 查詢失敗: {e}",
@@ -771,3 +877,462 @@ def generate_wardrobe_structured(
             "parsed": None,
             "raw": ""
         }, mixed_items, keywords
+
+
+# =====================================================================
+# 拆分推薦：僅 user_wardrobe / 僅 items / 購買導向 bot
+# =====================================================================
+
+
+def generate_wardrobe_personal(
+    user_input: str,
+    user_id: int = None,
+    session_id: str = "wardrobe-personal",
+    preferred_model: str = "auto",
+    limit: int = 10,
+):
+    """
+    只查詢 user_wardrobe，輸出個人衣櫃推薦。
+    """
+    if not user_input:
+        return "請輸入內容", [], []
+    if not user_id:
+        return "需要 user_id 才能查個人衣櫃", [], []
+
+    keywords = extract_wardrobe_keywords(user_input)
+    if not keywords:
+        return "無法辨識需求，請描述場合/風格/顏色", [], []
+    wardrobe_fields = get_wardrobe_fields()
+    wardrobe_items = []
+
+    try:
+        conn = get_db_conn()
+    except Exception as e:
+        print(f"[AI] DB 連線失敗: {e}", file=sys.stderr)
+        return "無法連線資料庫，請稍後再試", [], keywords
+
+    try:
+        with conn.cursor() as cur:
+            if keywords:
+                placeholders = ",".join(["%s"] * len(keywords))
+                sql = f"""
+                SELECT * FROM user_wardrobe
+                WHERE user_id = %s
+                AND (category IN ({placeholders})
+                     OR occasion IN ({placeholders}))
+                LIMIT %s
+                """
+                params = [user_id] + keywords + keywords + [limit]
+                cur.execute(sql, params)
+            else:
+                cur.execute("SELECT 1")  # no-op
+
+            wardrobe_items = cur.fetchall()
+            if not wardrobe_items:
+                cur.execute(
+                    "SELECT * FROM user_wardrobe WHERE user_id = %s ORDER BY uploaded_at DESC, id DESC LIMIT %s",
+                    (user_id, limit),
+                )
+                wardrobe_items = cur.fetchall()
+
+            wardrobe_items = [standardize_wardrobe_item(item, wardrobe_fields) for item in wardrobe_items]
+    except Exception as e:
+        print(f"[AI] user_wardrobe 查詢失敗: {e}", file=sys.stderr)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    if not wardrobe_items:
+        return "目前沒有找到你的衣櫃項目，試試換關鍵字", [], keywords
+
+    missing_labels, missing_keywords_auto, _ = detect_missing_categories(wardrobe_items)
+
+    if not agent:
+        text = "以下是你的衣櫃推薦：\n"
+        for idx, item in enumerate(wardrobe_items, 1):
+            text += f"{idx}. {item.get('_title','')} ({item.get('_category','')}) - {item.get('_color','')}\n"
+        if missing_labels:
+            text += f"\n衣櫃缺少: {', '.join(missing_labels)}，建議購買補齊。\n"
+        return text, wardrobe_items, keywords
+
+    rag_context = f"\n\n已找到個人衣櫃項目 {len(wardrobe_items)} 件"
+    # 明列衣櫃清單，要求顏色逐字使用
+    item_lines = []
+    for idx, it in enumerate(wardrobe_items, 1):
+        title = it.get("_title") or ""
+        cat = it.get("_category") or ""
+        color = it.get("_color") or ""
+        item_lines.append(f"{idx}. {title} / {cat} / {color}")
+    if item_lines:
+        rag_context += "\n衣櫃清單(請逐項使用，顏色不得更改):\n" + "\n".join(item_lines)
+    # 若使用者有提到額外需求 (如外套) 且衣櫃缺少，也標註缺件
+    requested = detect_requested_extras(user_input)
+    wardrobe_cats = { normalize_category(it.get("_category") or "") for it in wardrobe_items }
+    for req in requested:
+        if req == "outerwear" and "outerwear" not in wardrobe_cats:
+            if "外套/大衣" not in missing_labels:
+                missing_labels.append("外套/大衣")
+    if not missing_labels:
+        missing_labels = missing_labels + []  # keep type
+    if missing_labels:
+        rag_context += f"\n衣櫃缺少: {', '.join(missing_labels)}，請在穿搭中標註(需購買: 類別/顏色)即可，不要列價格或購物清單。"
+    ai_instruction = (
+        "優先使用上方衣櫃清單組穿搭；不得改動其中的顏色/材質/名稱。"
+        "若想要效果更佳的顏色/單品，可標註為(建議購買: 類別/顏色)，但不可當成已擁有，交給購買區處理。"
+        "若現有單品不足，可加入缺件但必須標註為(需購買: 類別/顏色或用途)，"
+        "不可捏造價格或品牌名稱，也不可把缺件當成已擁有。"
+        "若衣櫃單品不足 3 套，最多輸出可組合的套數 (1-3 套)，每套至少包含現有單品。"
+        "輸出格式：套名/場合、主色或風格、單品列表(含顏色/品類/材質，缺件或建議購買均以標註顯示)、簡短說明。"
+    )
+    try:
+        ai_response = agent.chat(
+            session_id=session_id,
+            user_input=ai_instruction + "\n" + user_input + rag_context,
+            db_outfits=wardrobe_items,
+            preferred_model=preferred_model,
+        )
+        return ai_response, wardrobe_items, keywords
+    except Exception as e:
+        print(f"[AI] 個人衣櫃 AI 推薦失敗: {e}", file=sys.stderr)
+        fallback = "AI 暫時不可用，以下為資料庫結果：\n"
+        for idx, item in enumerate(wardrobe_items, 1):
+            fallback += f"{idx}. {item.get('_title','')} - {item.get('_description','')}\n"
+        return fallback, wardrobe_items, keywords
+
+
+def generate_items_only(
+    user_input: str,
+    session_id: str = "items-only",
+    preferred_model: str = "auto",
+    limit: int = 10,
+    extra_keywords: list = None,
+):
+    """
+    只查詢 items，輸出系統商品推薦。
+    """
+    if not user_input:
+        return "請輸入內容", [], []
+
+    keywords = extract_item_keywords(user_input)
+    if extra_keywords:
+        merged = []
+        seen = set()
+        for kw in (keywords or []) + list(extra_keywords):
+            if not kw:
+                continue
+            normalized_kw = normalize_category(kw)
+            if normalized_kw and normalized_kw not in seen:
+                seen.add(normalized_kw)
+                merged.append(normalized_kw)
+        keywords = merged
+    item_fields = get_item_fields()
+    system_items = []
+
+    try:
+        conn = get_db_conn()
+    except Exception as e:
+        print(f"[AI] DB 連線失敗: {e}", file=sys.stderr)
+        return "無法連線資料庫，請稍後再試", [], keywords
+
+    try:
+        with conn.cursor() as cur:
+            if keywords:
+                placeholders = ",".join(["%s"] * len(keywords))
+                like_clauses = " OR ".join(["name LIKE %s" for _ in keywords])
+                sql = f"""
+                SELECT * FROM items
+                WHERE category IN ({placeholders})
+                   OR {like_clauses}
+                LIMIT %s
+                """
+                params = keywords + [f"%{kw}%" for kw in keywords] + [limit]
+                cur.execute(sql, params)
+            else:
+                sql = "SELECT * FROM items ORDER BY RAND() LIMIT %s"
+                cur.execute(sql, (limit,))
+
+            system_items = cur.fetchall()
+            # 若 keyword 查不到資料，改用隨機補滿
+            if keywords and not system_items:
+                cur.execute("SELECT * FROM items ORDER BY RAND() LIMIT %s", (limit,))
+                system_items = cur.fetchall()
+
+            system_items = [standardize_item(item, item_fields) for item in system_items]
+
+            for item in system_items:
+                if "created_at" in item and item["created_at"]:
+                    item["created_at"] = item["created_at"].isoformat()
+                if "price" in item and isinstance(item["price"], Decimal):
+                    item["price"] = float(item["price"])
+    except Exception as e:
+        print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    if not system_items:
+        return "找不到合適的商品，換個描述試試", [], keywords
+
+    # 判斷是否能成套：放寬為至少 2 件，且包含上身或洋裝，再搭配下身/鞋/包任一
+    def can_form_sets(items):
+        if len(items) < 2:
+            return False
+        categories = { (it.get("_category") or "").lower() for it in items }
+        has_top = any("top" in c or "dress" in c for c in categories)
+        has_bottom = any("bottom" in c for c in categories)
+        has_shoes = any("shoes" in c for c in categories)
+        has_bag = any("bags" in c for c in categories)
+        return has_top and (has_bottom or has_shoes or has_bag)
+
+    can_sets = can_form_sets(system_items)
+    payload = {"items": system_items, "can_form_sets": can_sets}
+
+    if not agent:
+        text = "以下是系統商品推薦：\n"
+        for idx, item in enumerate(system_items, 1):
+            line = f"{idx}. {item.get('_title','')} ({item.get('_category','')})"
+            if item.get('price'):
+                line += f" - NT$ {item.get('price',0):.0f}"
+            text += line + "\n"
+        return text, payload, keywords
+
+    rag_context = f"\n\n已找到系統商品 {len(system_items)} 件"
+    try:
+        ai_response = agent.chat(
+            session_id=session_id,
+            user_input=user_input + rag_context,
+            db_outfits=system_items,
+            preferred_model=preferred_model,
+        )
+        return ai_response, payload, keywords
+    except Exception as e:
+        print(f"[AI] items AI 推薦失敗: {e}", file=sys.stderr)
+        fallback = "AI 暫時不可用，以下為資料庫結果：\n"
+        for idx, item in enumerate(system_items, 1):
+            fallback += f"{idx}. {item.get('_title','')} - {item.get('_description','')}\n"
+        return fallback, payload, keywords
+
+
+def generate_purchase_recommendation(
+    user_input: str,
+    session_id: str = "purchase-bot",
+    preferred_model: str = "auto",
+    limit: int = 10,
+    user_id: int = None,
+):
+    """
+    針對 items 的購買導向推薦機器人。
+    """
+
+    def fetch_items_for_categories(categories: list, item_fields: dict, limit_each: int = 3):
+        """依缺少的類別補齊商品清單，用於購買推薦"""
+        if not categories:
+            return []
+        try:
+            conn = get_db_conn()
+        except Exception as e:
+            print(f"[AI] DB 連線失敗(補缺件): {e}", file=sys.stderr)
+            return []
+        items = []
+        try:
+            with conn.cursor() as cur:
+                placeholders = ",".join(["%s"] * len(categories))
+                sql = f"""
+                SELECT * FROM items
+                WHERE category IN ({placeholders})
+                ORDER BY RAND()
+                LIMIT %s
+                """
+                cur.execute(sql, categories + [limit_each * len(categories)])
+                rows = cur.fetchall()
+                items = [standardize_item(row, item_fields) for row in rows]
+                for it in items:
+                    if "created_at" in it and it["created_at"]:
+                        it["created_at"] = it["created_at"].isoformat()
+                    if "price" in it and isinstance(it.get("price"), Decimal):
+                        it["price"] = float(it["price"])
+        except Exception as e:
+            print(f"[AI] items 查詢失敗(補缺件): {e}", file=sys.stderr)
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return items
+
+    missing_labels = []
+    missing_keywords = []
+    if user_id:
+        wardrobe_fields = get_wardrobe_fields()
+        wardrobe_items = []
+        conn = None
+        try:
+            conn = get_db_conn()
+        except Exception as e:
+            print(f"[AI] DB 連線失敗(購買推薦無法讀衣櫃): {e}", file=sys.stderr)
+        if conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT * FROM user_wardrobe
+                        WHERE user_id = %s
+                        ORDER BY uploaded_at DESC, id DESC
+                        LIMIT %s
+                        """,
+                        (user_id, 30),
+                    )
+                    wardrobe_items = cur.fetchall()
+                    wardrobe_items = [
+                        standardize_wardrobe_item(item, wardrobe_fields)
+                        for item in wardrobe_items
+                    ]
+                    missing_labels, missing_keywords, _ = detect_missing_categories(wardrobe_items)
+            except Exception as e:
+                print(f"[AI] 讀取衣櫃以協助購買推薦失敗: {e}", file=sys.stderr)
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    # 如使用者有明說想要外套/保暖，且衣櫃沒有，補充缺件
+    requested = detect_requested_extras(user_input)
+    wardrobe_cats = set()
+    try:
+        for it in wardrobe_items:
+            wardrobe_cats.add(normalize_category(it.get("_category") or ""))
+    except Exception:
+        pass
+    for req in requested:
+        if req == "outerwear" and "outerwear" not in wardrobe_cats:
+            if "外套/大衣" not in missing_labels:
+                missing_labels.append("外套/大衣")
+            for kw in ["outerwear", "coat", "jacket", "top"]:
+                if kw not in missing_keywords:
+                    missing_keywords.append(kw)
+
+    base_text, items_result, keywords = generate_items_only(
+        user_input=user_input,
+        session_id=session_id,
+        preferred_model=preferred_model,
+        limit=limit,
+        extra_keywords=missing_keywords,
+    )
+    combined_keywords = []
+    for kw in (keywords or []) + (missing_keywords or []):
+        if kw and kw not in combined_keywords:
+            combined_keywords.append(kw)
+    keywords = combined_keywords
+
+    # 展開 payload，判斷是否能成套（寬鬆：至少 2 件，含上身/洋裝，搭配下身/鞋/包之一）
+    if isinstance(items_result, dict):
+        items_list = items_result.get("items") or []
+        can_form_sets = items_result.get("can_form_sets", False)
+    else:
+        items_list = items_result
+        categories = { (it.get("_category") or "").lower() for it in (items_list or []) }
+        can_form_sets = len(items_list or []) >= 2 and (
+            (any("top" in c or "dress" in c for c in categories) and any("bottom" in c for c in categories))
+            or (any("top" in c or "dress" in c for c in categories) and any("shoes" in c or "bags" in c for c in categories))
+        )
+
+    # 若衣櫃缺件，補抓缺件類別的商品並加入候選，避免全空
+    gap_items = []
+    if missing_keywords:
+        item_fields = get_item_fields()
+        gap_items = fetch_items_for_categories(missing_keywords, item_fields, limit_each=3)
+        # 簡單去重：以 title+category 為 key
+        seen = set()
+        merged = []
+        for it in items_list + gap_items:
+            key = f"{it.get('_title','')}-{it.get('_category','')}"
+            if key not in seen:
+                seen.add(key)
+                merged.append(it)
+        items_list = merged
+
+    # 若衣櫃已有缺口，優先補齊缺件，改用單品推薦模式
+    if missing_labels:
+        can_form_sets = False
+
+    # 如果沒啟用 agent，直接沿用 items-only 的結果
+    if not agent or not isinstance(items_list, list) or not items_list:
+        return base_text, items_list, keywords
+
+    # 建立價格提示，方便 LLM 計算總價
+    price_lines = []
+    for item in items_list:
+        title = item.get("_title") or item.get("name") or ""
+        price = item.get("price")
+        if price:
+            price_lines.append(f"{title} - NT$ {price:.0f}")
+    price_hint = "\n".join(price_lines)
+    missing_items_hint = ""
+    lines = []
+    if gap_items:
+        for it in gap_items:
+            title = it.get("_title") or it.get("name") or "未命名商品"
+            cat = it.get("_category") or "未分類"
+            color = it.get("_color") or ""
+            price = it.get("price")
+            price_txt = f"NT$ {price:.0f}" if price else "查無價格"
+            part = f"{cat}：{title}（{color}；{price_txt}）"
+            lines.append(part.strip())
+    # 若某缺件類別無對應商品，仍給出占位，避免被忽略
+    if missing_labels:
+        existing_cats = { (it.get("_category") or "").lower() for it in gap_items }
+        for label in missing_labels:
+            norm_label = normalize_category(label).lower()
+            if not norm_label or norm_label in existing_cats:
+                continue
+            lines.append(f"{label}：查無商品（查無價格）")
+    if lines:
+        missing_items_hint = "缺件候選商品:\n" + "\n".join(lines)
+    gap_hint = ""
+    if missing_labels:
+        gap_hint = (
+            "請先列出「缺件補購清單」，每項用提供的商品名稱，格式：品名/類別/顏色/價格(無價請寫查無價格)；"
+            "再列「其他推薦」(3 套穿搭或 3-5 件單品，附單價與總價/小計)。"
+            f" 衣櫃缺少: {', '.join(missing_labels)}。"
+        )
+
+    if can_form_sets:
+        purchase_prompt = (
+            "你是購買推薦機器人，請遵循以下格式：\n"
+            "一、缺件補購清單：必須涵蓋所有穿搭中標註(需購買)的類別，"
+            "條列每項：品名/類別/顏色/價格(無價請寫查無價格)；\n"
+            "二、其他推薦：用下列商品組 3 套穿搭（每套 2-3 件）或補足 3-5 件單品；"
+            "每套請列套名/場合、主色或風格、單品列表(含顏色/品類/材質/單價)，給出該套總價 (NT$，四捨五入)。"
+            "語氣精簡，條列呈現，結尾附購買鼓勵。"
+            f"{' ' + gap_hint if gap_hint else ''}"
+            + (f"\n{missing_items_hint}" if missing_items_hint else "")
+            + f"\n可用商品與價格:\n{price_hint}"
+        )
+    else:
+        purchase_prompt = (
+            "你是購買推薦機器人，請遵循以下格式：\n"
+            "一、缺件補購清單：必須涵蓋所有穿搭中標註(需購買)的類別，"
+            "條列每項：品名/類別/顏色/價格(無價請寫查無價格)；\n"
+            "二、其他推薦：因商品不足以成套，請改推薦 3-5 件單品，"
+            "每件請列：品名/類別/顏色或風格/單價(可省略無價者)、適合的場合或搭配建議。"
+            "條列呈現，語氣精簡，結尾附購買鼓勵。"
+            f"{' ' + gap_hint if gap_hint else ''}"
+            + (f"\n{missing_items_hint}" if missing_items_hint else "")
+            + f"\n可用商品與價格:\n{price_hint}"
+        )
+    try:
+        ai_response = agent.chat(
+            session_id=session_id,
+            user_input=purchase_prompt + "\n\n" + user_input,
+            db_outfits=items_list,
+            preferred_model=preferred_model,
+        )
+        return ai_response, items_list, keywords
+    except Exception as e:
+        print(f"[AI] 購買推薦失敗: {e}", file=sys.stderr)
+        return base_text, items_list, keywords

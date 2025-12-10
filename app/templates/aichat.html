@@ -3,103 +3,169 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 穿搭搜索</title>
+  <title>AI 穿搭搜尋</title>
   <style>
     body { font-family: "Microsoft JhengHei", "Segoe UI", "Noto Sans TC", sans-serif; background: #f4f4f9; margin: 0; padding: 10px 20px; }
-    .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.08); padding: 16px 24px; }
+    .container { max-width: 960px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.08); padding: 18px 24px; }
     h1 { margin: 0 0 8px 0; }
     .subtitle { margin: 0 0 20px 0; color: #555; font-size: 14px; }
-    form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-    label { font-weight: 600; font-size: 14px; }
+    form { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+    label { font-weight: 600; font-size: 14px; display: block; margin-bottom: 4px; }
     textarea { width: 100%; min-height: 80px; padding: 10px; font-size: 15px; border-radius: 8px; border: 1px solid #ddd; resize: vertical; box-sizing: border-box; }
-    select, button { padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+    select, input[type="number"], button { padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
     button { background-color: #da7f9d; color: #fff; border: none; cursor: pointer; font-weight: 600; }
     button:hover { background-color: #cb5770; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
-    .section { margin-bottom: 24px; }
-    .section h2 { margin: 0 0 10px 0; font-size: 18px; }
+    .section { margin-bottom: 20px; }
+    .section h2 { margin: 0 0 8px 0; font-size: 17px; }
     pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f9; padding: 12px; border-radius: 8px; font-size: 14px; margin: 0; }
-    ul { padding-left: 18px; }
-    .loading { display: none; margin-bottom: 16px; color: #555; font-size: 14px; }
+    .loading { display: none; margin-bottom: 8px; color: #555; font-size: 14px; }
     .loading.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     @media (max-width: 600px) { body { padding: 10px; } .container { padding: 16px; } }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>AI 穿搭搜索</h1>
-    <p class="subtitle">描述你的穿搭需求或靈感（全球搜尋，僅用 LLM，不讀資料庫）。例如：「想要週末休閒的牛仔穿搭」。</p>
+    <h1>AI 穿搭搜尋</h1>
+    <p class="subtitle">描述你的需求，一次取得：全球 LLM（純文字）、個人衣櫃推薦、系統商品推薦、購買導向 bot。</p>
 
-    <form method="POST" id="recommendForm">
+    <form id="recommendForm">
       <div>
         <label for="message">你的需求</label>
-        <textarea id="message" name="message" placeholder="輸入今天的場合、心情、風格或任何描述..." required>{{ user_input or '' }}</textarea>
+        <textarea id="message" name="message" placeholder="輸入今天的場景、場合、風格..." required></textarea>
       </div>
       <div>
-        <label for="model">指定模型（可選）</label>
+        <label for="model">偏好模型（可選）</label>
         <select id="model" name="model">
-          <option value="auto" {% if selected_model == 'auto' %}selected{% endif %}>自動</option>
-          <option value="gemini" {% if selected_model == 'gemini' %}selected{% endif %}>Gemini</option>
-          <option value="groq" {% if selected_model == 'groq' %}selected{% endif %}>Groq</option>
-          <option value="deepseek" {% if selected_model == 'deepseek' %}selected{% endif %}>DeepSeek</option>
+          <option value="auto">自動</option>
+          <option value="gemini">Gemini</option>
+          <option value="groq">Groq</option>
+          <option value="deepseek">DeepSeek</option>
         </select>
       </div>
-      <button type="submit" id="submitBtn">送出詢問</button>
-      <div class="loading" id="loadingDiv">正在等待 AI 搭配穿搭，請稍候...</div>
+      <button type="submit" id="submitBtn">送出查詢</button>
+      <div class="loading" id="loadingDiv">AI 準備中，請稍候...</div>
     </form>
 
-    {% if ai_response %}
-    <div class="section">
-      <h2>AI 回覆（全球）</h2>
-      <pre>{{ ai_response }}</pre>
+    <div class="grid">
+      <div class="section">
+        <h2>全球 LLM（不連 DB）</h2>
+        <pre id="globalResult">尚未查詢</pre>
+      </div>
+      <div class="section">
+        <h2>個人衣櫃推薦（user_wardrobe）</h2>
+        <pre id="wardrobeUserResult">尚未查詢</pre>
+      </div>
+      <div class="section">
+        <h2>購買導向推薦 Bot（items）</h2>
+        <pre id="purchaseResult">尚未查詢</pre>
+      </div>
     </div>
-    {% endif %}
-
-    {% if wardrobe_ai %}
-    <div class="section">
-      <h2>衣櫃推薦（資料庫）</h2>
-      <pre>{{ wardrobe_ai }}</pre>
-    </div>
-    {% endif %}
-
-    {% if wardrobe_outfits %}
-    <div class="section">
-      <h2>衣櫃穿搭清單</h2>
-      <ul>
-        {% for outfit in wardrobe_outfits %}
-          <li>
-            {{ outfit._title }}{% if outfit._occasion %}（場合：{{ outfit._occasion }}）{% endif %}
-            {% if outfit.items and outfit.items|length %}
-              <br />單品：{{ outfit.items|map(attribute='name')|join(', ') }}
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
   </div>
 
   <script>
+    // 後端可透過模板注入 USER_ID，沒有則為 null；另外用 /login/status 再確認一次
+    window.USER_ID = {{ (user_id if user_id is defined else None)|tojson }};
     const form = document.getElementById('recommendForm');
     const submitBtn = document.getElementById('submitBtn');
     const loadingDiv = document.getElementById('loadingDiv');
 
-    form.addEventListener('submit', function(e) {
-      // 前端避免空白提交
-      const message = document.getElementById('message').value.trim();
-      if (!message) {
-        e.preventDefault();
-        return;
-      }
-      loadingDiv.classList.add('active');
-      submitBtn.disabled = true;
-      submitBtn.textContent = '思考中...';
-    });
+    const globalResult = document.getElementById('globalResult');
+    const wardrobeUserResult = document.getElementById('wardrobeUserResult');
+    const purchaseResult = document.getElementById('purchaseResult');
 
-    // 若後端已回應，確保 loading 被關閉
-    loadingDiv.classList.remove('active');
-    submitBtn.disabled = false;
-    submitBtn.textContent = '送出詢問';
+    function setLoading(isLoading) {
+      if (isLoading) {
+        loadingDiv.classList.add('active');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '查詢中...';
+      } else {
+        loadingDiv.classList.remove('active');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '送出查詢';
+      }
+    }
+
+    const endpoints = {
+      global: "{{ url_for('aichat.recommend') }}",
+      wardrobeUser: "{{ url_for('aichat.wardrobe_user') }}",
+      purchase: "{{ url_for('aichat.purchase_recommend') }}",
+    };
+
+    async function callApi(url, payload) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function formatDbData(data) {
+      if (!Array.isArray(data) || data.length === 0) return '無資料';
+      return data.map((item, idx) => {
+        const title = item._title || item.title || item.name || '';
+        const cat = item._category || item.category || '';
+        const color = item._color || item.color || '';
+        const price = item.price ? ` NT$${item.price}` : '';
+        return `${idx + 1}. ${title} (${cat}) ${color}${price}`;
+      }).join('\n');
+    }
+
+    async function refreshUserId() {
+      try {
+        const res = await fetch('/login/status', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.authenticated && data.user && data.user.id) {
+          window.USER_ID = data.user.id;
+        } else {
+          window.USER_ID = null;
+        }
+      } catch (e) {
+        window.USER_ID = null;
+      }
+    }
+
+    // 頁面載入時先嘗試取得 user_id
+    refreshUserId();
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const message = document.getElementById('message').value.trim();
+      const model = document.getElementById('model').value;
+      const user_id = typeof window.USER_ID !== 'undefined' ? window.USER_ID : null;
+
+      if (!message) return;
+
+      setLoading(true);
+      globalResult.textContent = '查詢中...';
+      wardrobeUserResult.textContent = '查詢中...';
+      purchaseResult.textContent = '查詢中...';
+
+      const payload = { message, model };
+      try {
+        const globalResp = await callApi(endpoints.global, { ...payload, session_id: 'page-global' });
+        globalResult.textContent = globalResp.response || JSON.stringify(globalResp, null, 2);
+
+        const wardResp = await callApi(endpoints.wardrobeUser, { ...payload, user_id, session_id: 'page-wardrobe-user' });
+        const wardText = wardResp.response || formatDbData(wardResp.db_data);
+        wardrobeUserResult.textContent = wardText;
+
+        const purchaseResp = await callApi(endpoints.purchase, { ...payload, user_id, session_id: 'page-purchase' });
+        const purchaseText = purchaseResp.response || formatDbData(purchaseResp.db_data);
+        purchaseResult.textContent = purchaseText;
+      } catch (err) {
+        const msg = `呼叫失敗：${err.message}`;
+        globalResult.textContent = msg;
+        wardrobeUserResult.textContent = msg;
+        purchaseResult.textContent = msg;
+      } finally {
+        setLoading(false);
+      }
+    });
   </script>
 </body>
 </html>

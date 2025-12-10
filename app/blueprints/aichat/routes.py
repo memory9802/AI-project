@@ -6,6 +6,9 @@ from .services import (
     generate_global_response,
     generate_wardrobe_recommendation,
     generate_wardrobe_structured,
+    generate_wardrobe_personal,
+    generate_items_only,
+    generate_purchase_recommendation,
     agent,
     get_wardrobe_fields,
     get_item_fields,
@@ -14,6 +17,7 @@ from .services import (
     get_db_conn,
     normalize_category,
 )
+from auth import get_current_user
 
 
 def _strip_stars(text):
@@ -37,6 +41,9 @@ def chat():
     user_input = ""
     selected_model = "auto"
 
+    current_user = get_current_user()
+    current_user_id = current_user.get("id") if current_user else None
+
     if request.method == "POST":
         user_input = request.form.get("message", "")
         selected_model = request.form.get("model", "auto")
@@ -47,6 +54,7 @@ def chat():
 
         wardrobe_ai, wardrobe_outfits, wardrobe_keywords = generate_wardrobe_recommendation(
             user_input=user_input,
+            user_id=current_user_id,
             session_id=f"{session_id}-wardrobe",
             preferred_model=selected_model,
         )
@@ -63,6 +71,7 @@ def chat():
         wardrobe_keywords=wardrobe_keywords,
         user_input=user_input,
         selected_model=selected_model,
+        user_id=current_user_id,
     )
 
 
@@ -181,6 +190,118 @@ def wardrobe_structured():
             "result": result,  # 內含 parsed/raw/error
             "session_id": session_id,
             "db_data": outfits,
+            "keywords": keywords,
+            "success": True,
+        }
+    )
+
+
+# =======================
+# 拆分：僅 user_wardrobe 推薦
+# =======================
+@aichat_bp.route("/wardrobe_user", methods=["POST"])
+def wardrobe_user():
+    data = request.json or {}
+    user_input = data.get("message", "")
+    user_id = data.get("user_id")
+    if user_id is None:
+        current_user = get_current_user()
+        if current_user:
+            user_id = current_user.get("id")
+    try:
+        user_id = int(user_id) if user_id is not None else None
+    except (TypeError, ValueError):
+        user_id = None
+    session_id = data.get("session_id", "wardrobe-user")
+    preferred_model = data.get("model", "auto")
+
+    ai_response, outfits, keywords = generate_wardrobe_personal(
+        user_input=user_input,
+        user_id=user_id,
+        session_id=session_id,
+        preferred_model=preferred_model,
+    )
+    try:
+        import sys
+        print(f"[WARDROBE_USER] user_id={user_id} keywords={keywords}", file=sys.stderr)
+    except Exception:
+        pass
+    if isinstance(ai_response, str):
+        ai_response = _strip_stars(ai_response)
+
+    return jsonify(
+        {
+            "response": ai_response,
+            "session_id": session_id,
+            "db_data": outfits,
+            "keywords": keywords,
+            "success": True,
+        }
+    )
+
+
+# =======================
+# 拆分：僅 items 推薦
+# =======================
+@aichat_bp.route("/items_only", methods=["POST"])
+def items_only():
+    data = request.json or {}
+    user_input = data.get("message", "")
+    session_id = data.get("session_id", "items-only")
+    preferred_model = data.get("model", "auto")
+
+    ai_response, items, keywords = generate_items_only(
+        user_input=user_input,
+        session_id=session_id,
+        preferred_model=preferred_model,
+    )
+    if isinstance(ai_response, str):
+        ai_response = _strip_stars(ai_response)
+
+    return jsonify(
+        {
+            "response": ai_response,
+            "session_id": session_id,
+            "db_data": items,
+            "keywords": keywords,
+            "success": True,
+        }
+    )
+
+
+# =======================
+# 購買導向的 items 推薦 Bot
+# =======================
+@aichat_bp.route("/purchase_recommend", methods=["POST"])
+def purchase_recommend():
+    data = request.json or {}
+    user_input = data.get("message", "")
+    session_id = data.get("session_id", "purchase-bot")
+    preferred_model = data.get("model", "auto")
+    user_id = data.get("user_id")
+    if user_id is None:
+        current_user = get_current_user()
+        if current_user:
+            user_id = current_user.get("id")
+    try:
+        user_id = int(user_id) if user_id is not None else None
+    except (TypeError, ValueError):
+        user_id = None
+
+    ai_response, items, keywords = generate_purchase_recommendation(
+        user_input=user_input,
+        session_id=session_id,
+        preferred_model=preferred_model,
+        user_id=user_id,
+    )
+    if isinstance(ai_response, str):
+        ai_response = _strip_stars(ai_response)
+
+    return jsonify(
+        {
+            "response": ai_response,
+            "session_id": session_id,
+            "db_data": items,
             "keywords": keywords,
             "success": True,
         }
