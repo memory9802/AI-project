@@ -158,9 +158,10 @@
                   class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
                   <option value="" selected>衣物型別</option>
-                  <option value="上衣">上衣</option>
-                  <option value="下身">下身</option>
-                  <option value="鞋子">鞋子</option>
+                  <option value="上身">上身</option>
+                  <option value="下著">下著</option>
+                  <option value="鞋類">鞋類</option>
+                  <option value="配件">配件</option>
                 </select>
                 <input id="color" type="text" placeholder="衣物顏色"
                   class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
@@ -205,6 +206,20 @@
               </div>
             </form>
 
+            <div class="mt-4 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <label for="category-filter" class="text-sm text-subtle-light dark:text-subtle-dark">篩選分類</label>
+                <select id="category-filter"
+                  class="px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80 text-sm">
+                  <option value="all">全部</option>
+                  <option value="top">上身</option>
+                  <option value="bottom">下著</option>
+                  <option value="shoes">鞋類</option>
+                  <option value="accessories">配件</option>
+                </select>
+              </div>
+            </div>
+
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
             <div id="delete-bar" class="hidden mt-4 flex justify-center">
               <button id="deleteBtn"
@@ -221,6 +236,7 @@
                 items: [],
                 selectedStyles: new Set(),
                 selectedIds: new Set(),
+                filterCategory: 'all',
               };
 
               const el = {
@@ -235,9 +251,23 @@
                 deleteBar: document.getElementById('delete-bar'),
                 deleteBtn: document.getElementById('deleteBtn'),
                 deleteCount: document.getElementById('delete-count'),
+                filter: document.getElementById('category-filter'),
               };
 
               const styleButtons = Array.from(document.querySelectorAll('.style-tag-btn'));
+
+              const categoryAlias = {
+                top: ['top', '上衣', '上身'],
+                bottom: ['bottom', '下身', '下著', '褲'],
+                shoes: ['shoes', '鞋', '鞋類'],
+                accessories: ['accessories', '配件', '飾品'],
+              };
+
+              function matchesCategory(cat, filter) {
+                if (filter === 'all') return true;
+                const aliases = categoryAlias[filter] || [];
+                return aliases.some(alias => cat.includes(alias.toLowerCase()));
+              }
 
               function setUserContext(user) {
                 if (!user) return;
@@ -283,12 +313,19 @@
 
               function renderGallery() {
                 el.gallery.innerHTML = '';
-                if (!state.items.length) {
+                const filtered = state.filterCategory === 'all'
+                  ? state.items
+                  : state.items.filter(item => {
+                    const cat = (item.category || '').toString().toLowerCase();
+                    return matchesCategory(cat, state.filterCategory);
+                  });
+
+                if (!filtered.length) {
                   el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請先上傳。</p>';
                   updateDeleteButton();
                   return;
                 }
-                state.items.forEach(item => {
+                filtered.forEach(item => {
                   const card = document.createElement('button');
                   card.type = 'button';
                   card.dataset.id = item.id;
@@ -470,6 +507,13 @@
               });
 
               el.addBtn.addEventListener('click', handleUpload);
+              if (el.filter) {
+                el.filter.addEventListener('change', () => {
+                  state.filterCategory = el.filter.value || 'all';
+                  state.selectedIds.clear();
+                  renderGallery();
+                });
+              }
               if (el.deleteBtn) {
                 el.deleteBtn.addEventListener('click', handleDelete);
               }
