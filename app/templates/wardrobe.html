@@ -6,13 +6,9 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>StyleRec - Your Personal Stylist</title>
 
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-  <!-- 你的自訂 JS / CSS：記得檔案已經搬到 static/ 底下 -->
   <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet" />
 
@@ -53,40 +49,47 @@
   </style>
 </head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark"
+  data-user-id="{{ user.id if user else '' }}" data-username="{{ user.username if user else '' }}">
   <script>
-      (async () => {
-        try {
-          const res = await fetch('/login/status', { credentials: 'same-origin' });
-          const data = await res.json();
-          if (!data.authenticated) {
-            const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
-            window.location.replace(`/login/?next=${nextUrl}`);
-            return;
-          }
-          window.currentUser = data.user;
-          const userDisplay = document.getElementById('user-display');
-          if (userDisplay && data.user?.username) {
-            userDisplay.textContent = data.user.username;
-            userDisplay.classList.remove('hidden');
-          }
-        } catch (error) {
-          window.location.replace('/login/');
+    (async () => {
+      try {
+        const res = await fetch('/login/status', { credentials: 'same-origin' });
+        const data = await res.json();
+        if (!data.authenticated) {
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
         }
-      })();
+        window.currentUser = data.user;
+        sessionStorage.setItem('current_user', JSON.stringify(data.user));
+        document.body.dataset.userId = data.user?.id || '';
+        document.body.dataset.username = data.user?.username || '';
+        const userDisplay = document.getElementById('user-display');
+        if (userDisplay && data.user?.username) {
+          userDisplay.textContent = data.user.username;
+          userDisplay.classList.remove('hidden');
+        }
+        const recommendationLink = document.getElementById('recommendation-link');
+        if (recommendationLink && recommendationLink.dataset.base && data.user?.id) {
+          recommendationLink.href = `${recommendationLink.dataset.base}?user_id=${data.user.id}&username=${encodeURIComponent(data.user.username || '')}`;
+        }
+      } catch (error) {
+        const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/login/?next=${nextUrl}`);
+      }
+    })();
   </script>
+
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div class="layout-container flex h-full grow flex-col">
-        <!-- Header -->
         <header
           class="flex items-center justify-between whitespace-nowrap border-b border-solid border-secondary-light dark:border-secondary-dark px-6 md:px-10 lg:px-20 py-4">
           <div class="flex items-center gap-4">
             <div class="size-6 text-primary">
               <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zm0 4h4v2h-4v-2zm-4-4h4v2H6v-2z">
-                </path>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zm0 4h4v2h-4v-2zm-4-4h4v2H6v-2z"></path>
               </svg>
             </div>
             <h2 class="text-xl font-bold tracking-tight">StyleRec</h2>
@@ -115,7 +118,8 @@
                 <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon"
                   width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors"
+              <a id="recommendation-link" class="text-sm font-medium hover:text-primary transition-colors"
+                data-base="{{ url_for('recommendation.recommend') }}"
                 href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
             </li>
             <br>
@@ -131,11 +135,10 @@
           <div class="flex items-center gap-4">
             <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display"
                 class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
-            <button
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"><a
-                href="{{ url_for('login.login') }}">
-                <span class="material-symbols-outlined text-xl">person</span>
-            </button>
+            <a href="{{ url_for('login.login') }}"
+              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
+              <span class="material-symbols-outlined text-xl">person</span>
+            </a>
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -144,160 +147,344 @@
 
         <main class="px-6 md:px-10 lg:px-20 py-8">
           <section class="max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold mb-4">我的衣櫃 — 上傳衣物</h3>
+            <h3 class="text-2xl font-bold mb-2">我的衣櫃 — 上傳衣物</h3>
+            <p id="user-meta" class="text-sm text-subtle-light dark:text-subtle-dark mb-4">
+              {% if user %}登入者：{{ user.username }} (ID: {{ user.id }}){% else %}尚未登入{% endif %}
+            </p>
 
-            <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;">
+            <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;" enctype="multipart/form-data">
               <div class="flex flex-wrap gap-3 items-center justify-between">
                 <input id="itemName" type="text" placeholder="衣物名稱"
                   class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
-                  <option value="top">上衣</option>
-                  <option value="bottom">下身</option>
-                  <option value="shoes">鞋子</option>
+                  <option value="" selected>衣物型別</option>
+                  <option value="上衣">上衣</option>
+                  <option value="下身">下身</option>
+                  <option value="鞋子">鞋子</option>
                 </select>
                 <input id="color" type="text" placeholder="衣物顏色"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
+                  class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <input id="occasion" type="text" placeholder="場合"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" /></br>
+                  class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
                 <input id="itemImage" type="file" accept="image/*" multiple
-                  class="px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                  class="px-2 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 p-3">
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="休閒">休閒</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="正式">正式</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="運動">運動</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="街頭">街頭</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="簡約">簡約</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="文青">文青</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="復古">復古</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="甜美">甜美</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="潮流">潮流</button>
+                  <button type="button"
+                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                    data-style="中性">中性</button>
+                </div>
                 <button id="addBtn" type="button"
-                  class="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
+                  class="px-2 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
               </div>
-              <label class="flex flex-col min-w-40 flex-1">
-                  
-                  <div
-                    class="grid grid-cols-10 gap-2 p-3">
-                    <input type="hidden" id="item-style-input" name="itemstyle" >
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="休閒">休閒</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="正式">正式</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="運動">運動</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="街頭">街頭</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="韓風">韓風</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="日系">日系</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="歐美">歐美</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="極簡">極簡</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="復古">復古</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="中性">中性</button>
-                  </div>
-                </label>
             </form>
 
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            <div id="delete-bar" class="hidden mt-4 flex justify-center">
+              <button id="deleteBtn"
+                class="px-5 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 transition-colors">
+                刪除已選 (<span id="delete-count">0</span>)
+              </button>
+            </div>
           </section>
 
           <script>
             (function () {
-              const storageKey = 'wardrobeItems_v1';
-              let items = [];
+              const state = {
+                user: null,
+                items: [],
+                selectedStyles: new Set(),
+                selectedIds: new Set(),
+              };
 
               const el = {
                 name: document.getElementById('itemName'),
                 category: document.getElementById('itemCategory'),
+                color: document.getElementById('color'),
+                occasion: document.getElementById('occasion'),
                 image: document.getElementById('itemImage'),
                 addBtn: document.getElementById('addBtn'),
-                gallery: document.getElementById('gallery')
+                gallery: document.getElementById('gallery'),
+                userMeta: document.getElementById('user-meta'),
+                deleteBar: document.getElementById('delete-bar'),
+                deleteBtn: document.getElementById('deleteBtn'),
+                deleteCount: document.getElementById('delete-count'),
               };
 
-              function loadItems() {
+              const styleButtons = Array.from(document.querySelectorAll('.style-tag-btn'));
+
+              function setUserContext(user) {
+                if (!user) return;
+                state.user = user;
                 try {
-                  const raw = localStorage.getItem(storageKey);
-                  items = raw ? JSON.parse(raw) : [];
-                } catch (e) { items = []; }
+                  sessionStorage.setItem('current_user', JSON.stringify(user));
+                } catch (e) { /* ignore */ }
+                document.body.dataset.userId = user.id || '';
+                document.body.dataset.username = user.username || '';
+                if (el.userMeta) {
+                  el.userMeta.textContent = `登入者：${user.username || ''} (ID: ${user.id || ''})`;
+                }
+                const recLink = document.getElementById('recommendation-link');
+                if (recLink && recLink.dataset.base && user.id) {
+                  recLink.href = `${recLink.dataset.base}?user_id=${user.id}&username=${encodeURIComponent(user.username || '')}`;
+                }
+                const userDisplay = document.getElementById('user-display');
+                if (userDisplay && user.username) {
+                  userDisplay.textContent = user.username;
+                  userDisplay.classList.remove('hidden');
+                }
               }
 
-              function saveItems() {
-                localStorage.setItem(storageKey, JSON.stringify(items));
+              async function ensureLogin() {
+                if (state.user) return state.user;
+                if (document.body.dataset.userId) {
+                  setUserContext({
+                    id: Number(document.body.dataset.userId),
+                    username: document.body.dataset.username,
+                  });
+                  return state.user;
+                }
+                const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                const res = await fetch('/login/status', { credentials: 'same-origin' });
+                const data = await res.json();
+                if (!data.authenticated) {
+                  window.location.replace(`/login/?next=${nextUrl}`);
+                  return null;
+                }
+                setUserContext(data.user);
+                return data.user;
               }
 
-              function render() {
+              function renderGallery() {
                 el.gallery.innerHTML = '';
-                if (!items.length) {
-                  el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請使用上方表單上傳圖片。</p>';
+                if (!state.items.length) {
+                  el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請先上傳。</p>';
+                  updateDeleteButton();
                   return;
                 }
-                items.forEach(item => {
-                  const card = document.createElement('div');
-                  card.className = 'bg-white dark:bg-secondary-dark/80 rounded-md p-2 shadow-sm flex flex-col items-center text-center';
+                state.items.forEach(item => {
+                  const card = document.createElement('button');
+                  card.type = 'button';
+                  card.dataset.id = item.id;
+                  card.className = 'text-left bg-white dark:bg-secondary-dark/80 rounded-md p-3 shadow-sm flex flex-col gap-2 border border-secondary-light dark:border-secondary-dark transition hover:border-primary/50';
+
+                  const isSelected = state.selectedIds.has(item.id);
+                  applySelectionStyles(card, isSelected);
+
                   const img = document.createElement('img');
-                  img.src = item.dataUrl;
-                  img.alt = item.name || item.filename || '衣物圖片';
-                  img.className = 'w-full h-36 object-cover rounded-md mb-2';
+                  img.src = item.image_url;
+                  img.alt = item.item_name || '衣物';
+                  img.className = 'w-full h-36 object-cover rounded-md';
+
                   const title = document.createElement('div');
                   title.className = 'text-sm font-medium';
-                  title.textContent = item.name || item.filename;
+                  title.textContent = item.item_name || item.category || '衣物';
+
                   const meta = document.createElement('div');
                   meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                  meta.textContent = item.category || '';
-                  card.appendChild(img);
-                  card.appendChild(title);
-                  card.appendChild(meta);
+                  meta.textContent = [item.category, item.color, item.occasion].filter(Boolean).join(' · ');
+
+                  const tags = document.createElement('div');
+                  tags.className = 'flex flex-wrap gap-2 text-[11px] text-primary';
+                  (item.tags || '').split(',').filter(Boolean).forEach(tag => {
+                    const pill = document.createElement('span');
+                    pill.className = 'px-2 py-1 bg-primary/10 rounded-full';
+                    pill.textContent = tag.trim();
+                    tags.appendChild(pill);
+                  });
+
+                  card.append(img, title, meta, tags);
+                  card.addEventListener('click', () => toggleSelect(item.id, card));
                   el.gallery.appendChild(card);
                 });
+                updateDeleteButton();
               }
 
-              function handleFiles(files) {
-                const fileList = Array.from(files);
-                if (!fileList.length) return;
-
-                let remaining = fileList.length;
-                fileList.forEach(file => {
-                  const reader = new FileReader();
-                  reader.onload = function (e) {
-                    const dataUrl = e.target.result;
-                    const entry = {
-                      id: Date.now() + Math.random(),
-                      filename: file.name,
-                      name: el.name.value.trim() || file.name,
-                      category: el.category.value,
-                      dataUrl
-                    };
-                    items.unshift(entry);
-                    remaining -= 1;
-                    if (remaining === 0) {
-                      saveItems();
-                      render();
-                      // reset file input and name
-                      el.image.value = '';
-                      el.name.value = '';
-                    }
-                  };
-                  reader.readAsDataURL(file);
-                });
+              async function loadItems() {
+                const user = await ensureLogin();
+                if (!user) return;
+                try {
+                  const res = await fetch('/wardrobe/items', { credentials: 'same-origin' });
+                  const data = await res.json();
+                  if (!res.ok || !data.success) {
+                    throw new Error(data.message || '無法取得衣物資料');
+                  }
+                  state.items = data.items || [];
+                  state.selectedIds.clear();
+                  renderGallery();
+                } catch (error) {
+                  el.gallery.innerHTML = `<p class="text-sm text-red-500">${error.message || '無法載入衣物'}</p>`;
+                  updateDeleteButton();
+                }
               }
 
-              el.addBtn.addEventListener('click', () => {
-                const files = el.image.files;
-                if (!files.length) {
-                  alert('請選擇至少一張圖片來上傳。');
+              function resetForm() {
+                el.name.value = '';
+                el.color.value = '';
+                el.occasion.value = '';
+                el.category.value = 'top';
+                el.image.value = '';
+                state.selectedStyles.clear();
+                styleButtons.forEach(btn => btn.classList.remove('bg-primary', 'text-white', 'border-primary'));
+              }
+
+              async function handleUpload() {
+                const user = await ensureLogin();
+                if (!user) return;
+
+                const name = el.name.value.trim();
+                const category = el.category.value.trim();
+                const color = el.color.value.trim();
+                const occasion = el.occasion.value.trim();
+                const styles = Array.from(state.selectedStyles);
+                const files = Array.from(el.image.files || []);
+
+                if (!name || !category || !color || !occasion) {
+                  alert('所有欄位都必填');
                   return;
                 }
-                handleFiles(files);
+                if (!styles.length) {
+                  alert('請至少選擇一個風格標籤');
+                  return;
+                }
+                if (!files.length) {
+                  alert('請至少上傳一張圖片');
+                  return;
+                }
+
+                const formData = new FormData();
+                formData.append('item_name', name);
+                formData.append('category', category);
+                formData.append('color', color);
+                formData.append('occasion', occasion);
+                formData.append('tags', styles.join(','));
+                files.forEach(file => formData.append('images', file));
+
+                try {
+                  const res = await fetch('/wardrobe/items', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    body: formData,
+                  });
+                  const data = await res.json();
+                  if (!res.ok || !data.success) {
+                    throw new Error(data.message || '上傳失敗');
+                  }
+                  await loadItems();
+                  resetForm();
+                } catch (error) {
+                  alert(error.message || '上傳失敗，請稍後再試');
+                }
+              }
+
+              function applySelectionStyles(card, isSelected) {
+                card.classList.toggle('ring-2', isSelected);
+                card.classList.toggle('ring-[#cbb6c3]', isSelected);
+                card.classList.toggle('bg-primary/10', isSelected);
+                card.classList.toggle('border-primary', isSelected);
+              }
+
+              function toggleSelect(id, card) {
+                const numericId = Number(id);
+                if (state.selectedIds.has(numericId)) {
+                  state.selectedIds.delete(numericId);
+                  applySelectionStyles(card, false);
+                } else {
+                  state.selectedIds.add(numericId);
+                  applySelectionStyles(card, true);
+                }
+                updateDeleteButton();
+              }
+
+              function updateDeleteButton() {
+                if (!el.deleteBar) return;
+                const count = state.selectedIds.size;
+                if (el.deleteCount) {
+                  el.deleteCount.textContent = count;
+                }
+                el.deleteBar.classList.toggle('hidden', count === 0);
+              }
+
+              async function handleDelete() {
+                if (!state.selectedIds.size) return;
+                const confirmDelete = window.confirm('無法復原，是否確定刪除？');
+                if (!confirmDelete) return;
+                try {
+                  const res = await fetch('/wardrobe/items/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ ids: Array.from(state.selectedIds) }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok || !data.success) {
+                    throw new Error(data.message || '刪除失敗');
+                  }
+                  const deletedSet = new Set(data.deleted_ids || []);
+                  state.items = state.items.filter(item => !deletedSet.has(item.id));
+                  state.selectedIds.clear();
+                  renderGallery();
+                } catch (error) {
+                  alert(error.message || '刪除失敗，請稍後再試');
+                }
+              }
+
+              styleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const style = btn.dataset.style;
+                  if (!style) return;
+                  if (state.selectedStyles.has(style)) {
+                    state.selectedStyles.delete(style);
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+                  } else {
+                    state.selectedStyles.add(style);
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary');
+                  }
+                });
               });
 
-              // init
-              loadItems();
-              render();
+              el.addBtn.addEventListener('click', handleUpload);
+              if (el.deleteBtn) {
+                el.deleteBtn.addEventListener('click', handleDelete);
+              }
+
+              (async function init() {
+                if (window.currentUser) {
+                  setUserContext(window.currentUser);
+                } else if (document.body.dataset.userId) {
+                  setUserContext({
+                    id: Number(document.body.dataset.userId),
+                    username: document.body.dataset.username,
+                  });
+                }
+                await loadItems();
+              })();
             })();
           </script>
         </main>
