@@ -102,10 +102,10 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
+            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
             <button
               class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              >
-              <a href="{{ url_for('login.login') }}">
+              ><a href="{{ url_for('login.login') }}">
               <span class="material-symbols-outlined text-xl">person</span>
             </button>
             <button class="md:hidden flex items-center justify-center h-10 w-10">
