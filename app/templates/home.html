@@ -52,6 +52,43 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('/login/status', { 
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Login status:', data);
+          
+          if (data.authenticated) {
+            // 顯示使用者名稱
+            const userDisplay = document.getElementById('user-display');
+            if (userDisplay && data.user?.username) {
+              userDisplay.textContent = data.user.username;
+              userDisplay.classList.remove('hidden');
+            }
+            
+            // 顯示登出區域
+            const logoutSection = document.getElementById('logout-section');
+            if (logoutSection) {
+              logoutSection.classList.remove('hidden');
+              logoutSection.classList.add('flex');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      }
+    })();
+  </script>
+
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div class="layout-container flex h-full grow flex-col">
@@ -102,15 +139,26 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span>
-            <a href="{{ url_for('home.clear_user_session') }}" class="text-sm font-medium text-subtle-light dark:text-subtle-dark hover:text-red-500 transition-colors" title="登出">
-              登出
-            </a>
-            <a href="{{ url_for('login.login') }}"
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              title="登入">
-              <span class="material-symbols-outlined text-xl">person</span>
-            </a>
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('login.login') }}"
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                title="登入">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </a>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+            
+            <!-- 登出區域 -->
+            <div id="logout-section" class="hidden flex-col items-center gap-1">
+              <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+            
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
