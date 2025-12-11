@@ -78,6 +78,73 @@ def generate_global_response(user_input: str, session_id: str = "global-default"
         return f"暫時無法使用 AI，請稍後再試：{error_msg[:100]}"
 
 
+def handle_recommendation_chat(user_input: str, session_id: str = "recommendation-chat", preferred_model: str = "auto"):
+    """
+    推薦頁面智能對話處理
+    
+    判斷用戶意圖並返回：
+    - 如果是推薦需求：{'is_recommendation': True}
+    - 如果是閒聊：{'is_recommendation': False, 'response': 'AI回應'}
+    """
+    if not user_input:
+        return {"is_recommendation": False, "response": "請先輸入您的需求。"}
+    
+    # 判斷是否為推薦需求的關鍵詞
+    request_keywords = [
+        '推薦', '穿搭', '搭配', '衣服', '服裝', 'outfit', '適合', '場合',
+        '約會', '上班', '休閒', '運動', '正式', '派對', '出遊', '旅行',
+        '春天', '夏天', '秋天', '冬天', '天氣', '風格', '時尚', '帥氣',
+        '可愛', '優雅', '簡約', '韓系', '日系', '美式', '歐美', '西裝',
+        '褲子', '外套', '鞋子', '配件', '包包', '帽子', '圍巾', '裙子',
+        '洋裝', '襯衫', 'T恤', '牛仔褲', '運動鞋', '靴子', '涼鞋'
+    ]
+    greetings = ['你好', '嗨', 'hi', 'hello', '哈囉', '早安', '午安', '晚安', '您好']
+    
+    lower_text = user_input.lower()
+    is_greeting = any(
+        lower_text == g or lower_text == g + '！' or lower_text == g + '!' 
+        for g in greetings
+    ) and len(user_input) < 10
+    
+    has_keywords = any(keyword in user_input for keyword in request_keywords)
+    is_recommendation_request = has_keywords or (len(user_input) > 15 and not is_greeting)
+    
+    if is_recommendation_request:
+        # 這是推薦需求
+        return {"is_recommendation": True}
+    else:
+        # 這是閒聊，使用 AI 回應
+        if not agent:
+            return {
+                "is_recommendation": False,
+                "response": "您好！我是您的穿搭顧問 😊 請告訴我您想要什麼樣的穿搭建議，例如：「適合週末約會的穿搭」、「上班通勤的正式服裝」等。"
+            }
+        
+        try:
+            # 給 AI 一個友善的系統提示
+            prompt = f"""你是一個友善的穿搭顧問助理。用戶剛剛說：「{user_input}」
+
+請用友善、簡短的方式回應（1-2句話），並引導用戶描述他們的穿搭需求。
+如果用戶只是打招呼，就友善回應並說明你可以幫忙推薦穿搭。
+不要直接給穿搭建議，而是鼓勵用戶說明場合、風格等需求。"""
+            
+            ai_response = agent.chat(
+                session_id=session_id,
+                user_input=prompt,
+                db_outfits=None,
+                preferred_model=preferred_model
+            )
+            
+            return {"is_recommendation": False, "response": ai_response}
+            
+        except Exception as e:
+            print(f"[AI] 推薦頁面對話失敗: {e}", flush=True, file=sys.stderr)
+            return {
+                "is_recommendation": False,
+                "response": "您好！很高興為您服務 😊 請告訴我您想要什麼樣的穿搭建議呢？例如：「適合週末約會的穿搭」、「上班通勤的正式服裝」等。"
+            }
+
+
 # =====================================================================
 # 衣櫃搜索（DB + RAG，欄位/關鍵字可交給 LLM）
 # 混合推薦: user_wardrobe (個人衣櫃) + items (系統商品)
@@ -337,20 +404,54 @@ def get_db_conn():
 CATEGORY_MAPPING = {
     # 中文 -> 英文
     "上衣": "top",
+    "上身": "top",
     "T恤": "top",
+    "t恤": "top",
+    "tee": "top",
+    "t-shirt": "top",
+    "短t": "top",
+    "短袖": "top",
     "襯衫": "top",
+    "針織衫": "top",
+    "毛衣": "top",
+    "衛衣": "top",
+    "hoodie": "top",
     "外套": "outerwear",
     "大衣": "outerwear",
     "風衣": "outerwear",
+    "coat": "outerwear",
+    "jacket": "outerwear",
     "下身": "bottom",
+    "下著": "bottom",
+    "下裝": "bottom",
     "褲子": "bottom",
+    "長褲": "bottom",
+    "短褲": "bottom",
+    "牛仔褲": "bottom",
+    "西裝褲": "bottom",
+    "運動褲": "bottom",
+    "慢跑褲": "bottom",
+    "緊身褲": "bottom",
     "裙子": "bottom",
+    "半裙": "bottom",
     "洋裝": "dress",
     "連身裙": "dress",
     "鞋子": "shoes",
+    "鞋類": "shoes",
+    "運動鞋": "shoes",
+    "帆布鞋": "shoes",
+    "球鞋": "shoes",
+    "皮鞋": "shoes",
     "包包": "bags",
+    "包": "bags",
+    "背包": "bags",
+    "手提包": "bags",
+    "斜背包": "bags",
     "配件": "accessories",
     "飾品": "accessories",
+    "圍巾": "accessories",
+    "帽子": "accessories",
+    "腰帶": "accessories",
     "內衣": "underwear",
     "美妝": "beauty",
     "其他": "other",
