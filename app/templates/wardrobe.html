@@ -211,8 +211,6 @@
                     </select>
                     <input id="color" type="text" placeholder="衣物顏色"
                       class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
-                    <input id="occasion" type="text" placeholder="場合"
-                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
                     <input id="itemImage" type="file" accept="image/*" multiple
                       class="px-2 py-2 border rounded-md w-40 sm:w-48 md:w-56 flex-shrink-0 bg-white dark:bg-secondary-dark/80" />
                   </div>
@@ -297,7 +295,6 @@
                 name: document.getElementById('itemName'),
                 category: document.getElementById('itemCategory'),
                 color: document.getElementById('color'),
-                occasion: document.getElementById('occasion'),
                 image: document.getElementById('itemImage'),
                 addBtn: document.getElementById('addBtn'),
                 gallery: document.getElementById('gallery'),
@@ -412,7 +409,7 @@
 
                   const meta = document.createElement('div');
                   meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                  meta.textContent = [item.category, item.color, item.occasion].filter(Boolean).join(' · ');
+                  meta.textContent = [item.category, item.color].filter(Boolean).join(' · ');
 
                   const tags = document.createElement('div');
                   tags.className = 'flex flex-wrap gap-2 text-[11px] text-primary';
@@ -458,7 +455,6 @@
               function resetForm() {
                 el.name.value = '';
                 el.color.value = '';
-                el.occasion.value = '';
                 el.category.value = 'top';
                 el.image.value = '';
                 state.selectedStyles.clear();
@@ -472,11 +468,10 @@
                 const name = el.name.value.trim();
                 const category = el.category.value.trim();
                 const color = el.color.value.trim();
-                const occasion = el.occasion.value.trim();
                 const styles = Array.from(state.selectedStyles);
                 const files = Array.from(el.image.files || []);
 
-                if (!name || !category || !color || !occasion) {
+                if (!name || !category || !color) {
                   alert('所有欄位都必填');
                   return;
                 }
@@ -493,7 +488,6 @@
                 formData.append('item_name', name);
                 formData.append('category', category);
                 formData.append('color', color);
-                formData.append('occasion', occasion);
                 formData.append('tags', styles.join(','));
                 files.forEach(file => formData.append('images', file));
 

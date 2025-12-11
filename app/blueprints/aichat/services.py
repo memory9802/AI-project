@@ -88,7 +88,7 @@ def detect_user_wardrobe_fields(conn):
     偵測 user_wardrobe 表格欄位
     
     user_wardrobe 表格欄位: 
-    - id, user_id, item_name, category, color, occasion (原material), 
+    - id, user_id, item_name, category, color,  
       tags, image_url, uploaded_at
     """
     try:
@@ -102,7 +102,7 @@ def detect_user_wardrobe_fields(conn):
                 "primary_key": "id",
                 "title": "item_name",
                 "category": "category",
-                "occasion": "occasion",  # 更新: material 已改名為 occasion
+
                 "color": "color",
                 "tags": "tags",
                 "image": "image_url",
@@ -123,7 +123,6 @@ def detect_user_wardrobe_fields(conn):
             "primary_key": "id",
             "title": "item_name",
             "category": "category",
-            "occasion": "occasion",
             "color": "color",
             "tags": "tags",
             "image": "image_url",
@@ -200,8 +199,7 @@ def standardize_wardrobe_item(item, fields):
     occasion = item.get("occasion", "")
     tags = item.get("tags", "")
     description_parts = []
-    if occasion:
-        description_parts.append(f"場合: {occasion}")
+
     if tags:
         description_parts.append(f"標籤: {tags}")
     description = " / ".join(description_parts) if description_parts else "暫無描述"
@@ -210,7 +208,7 @@ def standardize_wardrobe_item(item, fields):
         "_id": item.get("id") if item.get("id") else -1,
         "_title": item.get("item_name") if item.get("item_name") else "未命名衣物",
         "_category": item.get("category") if item.get("category") else "未分類",
-        "_occasion": occasion if occasion else "未指定場合",
+
         "_color": item.get("color") if item.get("color") else "未指定顏色",
         "_tags": tags,
         "_image": item.get("image_url") if item.get("image_url") else "",
