@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-TW">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>好康推薦 - StyleRec</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet"/>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#D8A7B1",
+            "background-light": "#F9F9F9",
+            "background-dark": "#1f1f1f",
+            "text-light": "#333333",
+            "text-dark": "#EAEAEA",
+            "secondary-light": "#EAE7DC",
+            "secondary-dark": "#303030",
+            "subtle-light": "#888888",
+            "subtle-dark": "#AAAAAA",
+          },
+          fontFamily: {
+            "display": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+  <script>
+    (function() {
+      fetch('/login/status', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.authenticated) {
+          const currentPath = window.location.pathname + window.location.search;
+          window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
+        }
+      })
+      .catch(error => {
+        console.error('Error checking login status:', error);
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
+      });
+    })();
+  </script>
+
+  <section id="hero-1946">
+    <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+      <div class="layout-container flex h-full grow flex-col">
+        <!-- Header -->
+        <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-secondary-light dark:border-secondary-dark px-6 md:px-10 lg:px-20 py-4">
+          <div class="flex items-center gap-4">
+            <div class="size-6 text-primary">
+              <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zm0 4h4v2h-4v-2zm-4-4h4v2H6v-2z"></path>
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold tracking-tight">StyleRec</h2>
+          </div>
+          <div class="hidden md:flex items-center gap-9">
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('home.index') }}">首頁</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享 &amp; 互動</a>
+          </div>
+          <div class="flex items-center gap-4">
+            <a href="{{ url_for('home.clear_user_session') }}" class="text-sm font-medium text-subtle-light dark:text-subtle-dark hover:text-red-500 transition-colors" title="登出">登出</a>
+            <a href="{{ url_for('login.login') }}" class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors" title="登入">
+              <span class="material-symbols-outlined text-xl">person</span>
+            </a>
+          </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto px-6 md:px-10 lg:px-20 py-8">
+          <div class="max-w-6xl mx-auto">
+            <!-- Page Title -->
+            <div class="text-center mb-8">
+              <h1 class="text-4xl font-bold text-text-light dark:text-text-dark mb-2">好康推薦</h1>
+              <p class="text-lg text-subtle-light dark:text-subtle-dark">精選三套優質穿搭組合，限時優惠中！</p>
+            </div>
+
+            <!-- Outfit 1 -->
+            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
+              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">商務會議</h2>
+                    <p class="text-sm text-subtle-light dark:text-subtle-dark">專業俐落的商務穿搭，展現自信與專業形象</p>
+                  </div>
+                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
+                    <span class="material-symbols-outlined text-primary">star</span>
+                    <span class="font-bold text-lg">95%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1620799140188-3b2a7f3a5a7e?w=400" alt="白色襯衫" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">白色襯衫</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">白色</p>
+                  <p class="text-xs text-primary font-medium">UNIQLO</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400" alt="黑色西裝褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">黑色西裝褲</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
+                  <p class="text-xs text-primary font-medium">ZARA</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400" alt="黑色皮鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">黑色皮鞋</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
+                  <p class="text-xs text-primary font-medium">Clarks</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1611652022419-a9419f74343f?w=400" alt="皮革公事包" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">配件</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">皮革公事包</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">棕色</p>
+                  <p class="text-xs text-primary font-medium">Coach</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Outfit 2 -->
+            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
+              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">週末休閒</h2>
+                    <p class="text-sm text-subtle-light dark:text-subtle-dark">輕鬆自在的週末穿搭，舒適又有型</p>
+                  </div>
+                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
+                    <span class="material-symbols-outlined text-primary">star</span>
+                    <span class="font-bold text-lg">88%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400" alt="卡其色T恤" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">卡其色T恤</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">卡其</p>
+                  <p class="text-xs text-primary font-medium">H&M</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=400" alt="淺藍牛仔褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">淺藍牛仔褲</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">淺藍</p>
+                  <p class="text-xs text-primary font-medium">Levi's</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400" alt="白色球鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">白色球鞋</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">白色</p>
+                  <p class="text-xs text-primary font-medium">Nike</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400" alt="棒球帽" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">配件</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">棒球帽</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
+                  <p class="text-xs text-primary font-medium">New Era</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Outfit 3 -->
+            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
+              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">日常出門</h2>
+                    <p class="text-sm text-subtle-light dark:text-subtle-dark">簡約舒適的日常穿搭，溫暖百搭又實用</p>
+                  </div>
+                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
+                    <span class="material-symbols-outlined text-primary">star</span>
+                    <span class="font-bold text-lg">92%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400" alt="深藍針織衫" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">深藍針織衫</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">深藍</p>
+                  <p class="text-xs text-primary font-medium">MUJI</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400" alt="卡其色休閒褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">卡其色休閒褲</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">卡其</p>
+                  <p class="text-xs text-primary font-medium">GAP</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3">
+                    <img src="https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=400" alt="棕色休閒鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
+                  </div>
+                  <h3 class="font-bold text-sm mb-1">棕色休閒鞋</h3>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">棕色</p>
+                  <p class="text-xs text-primary font-medium">Timberland</p>
+                </div>
+                <div class="outfit-item">
+                  <div class="relative mb-3 border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg h-48 flex items-center justify-center">
+                    <div class="text-center text-subtle-light dark:text-subtle-dark">
+                      <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">checkroom</span>
+                      <p class="text-xs">暫無配件</p>
+                    </div>
+                  </div>
+                  <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">可自由搭配</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- My Wardrobe Button -->
+            <div class="text-center mt-8">
+              <a href="{{ url_for('wardrobe.wardrobe') }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined">checkroom</span>
+                <span>我的衣櫃</span>
+              </a>
+            </div>
+          </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="flex flex-col gap-8 px-5 py-10 text-center bg-secondary-light/50 dark:bg-secondary-dark/50 text-subtle-light dark:text-subtle-dark">
+          <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="#">About Us</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Contact</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="#">FAQ</a>
+            <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Privacy Policy</a>
+          </div>
+          <div class="flex flex-wrap justify-center gap-6">
+            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">photo_camera</span></a>
+            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">campaign</span></a>
+          </div>
+          <p class="text-xs">© 2025 StyleRec. All rights reserved.</p>
+        </footer>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

@@ -210,9 +210,9 @@
               </div>
 
               <!-- Navigation Controls -->
-              <div class="flex justify-between items-center mt-6">
+              <div class="flex justify-between items-center mt-6 relative">
                 <button type="button" id="prev-btn"
-                  class="px-6 py-3 bg-white dark:bg-secondary-dark border-2 border-secondary-light dark:border-secondary-dark text-text-light dark:text-text-dark rounded-lg font-medium hover:border-primary hover:text-primary transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="px-6 py-3 bg-white dark:bg-secondary-dark border-2 border-secondary-light dark:border-secondary-dark text-text-light dark:text-text-dark rounded-lg font-medium hover:border-primary hover:text-primary transition-colors items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed invisible"
                   disabled>
                   <span class="material-symbols-outlined">arrow_back</span>
                   <span>上一套</span>
@@ -226,7 +226,7 @@
 
                 <!-- Shopping Button (hidden initially, shown on last page) -->
                 <button type="button" id="shopping-btn"
-                  class="hidden px-6 py-3 bg-gradient-to-r from-primary to-pink-400 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2">
+                  class="hidden px-6 py-3 bg-gradient-to-r from-primary to-pink-400 text-white rounded-lg font-medium hover:shadow-lg transition-all items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
                   <span class="material-symbols-outlined">shopping_bag</span>
                   <span>好康推薦</span>
                 </button>
@@ -506,12 +506,24 @@
         // Update buttons
         prevBtn.disabled = currentPage === 0;
         
+        // 第一頁時隱藏上一頁按鈕
+        if (currentPage === 0) {
+          prevBtn.classList.remove('flex');
+          prevBtn.classList.add('invisible');
+        } else {
+          prevBtn.classList.remove('invisible');
+          prevBtn.classList.add('flex');
+        }
+        
+        // 最後一頁時隱藏下一頁並顯示好康推薦
         if (currentPage === totalPages - 1) {
           nextBtn.classList.add('hidden');
           shoppingBtn.classList.remove('hidden');
+          shoppingBtn.classList.add('flex');
         } else {
           nextBtn.classList.remove('hidden');
           shoppingBtn.classList.add('hidden');
+          shoppingBtn.classList.remove('flex');
         }
       }
 
@@ -543,8 +555,8 @@
 
       shoppingBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // 導向購物推薦頁面
-        window.open('https://www.uniqlo.com/tw/', '_blank');
+        // 導向好康推薦頁面（新分頁）
+        window.open("{{ url_for('wardrobe.deals') }}", '_blank', 'noopener,noreferrer');
       });
 
       // 鍵盤導航

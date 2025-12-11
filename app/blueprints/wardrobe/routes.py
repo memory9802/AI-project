@@ -37,6 +37,13 @@ def wardrobe():
     return render_template('wardrobe.html', user=user)
 
 
+@wardrobe_bp.route('/deals')
+@login_required
+def deals():
+    user = getattr(g, 'current_user', get_current_user())
+    return render_template('deals.html', user=user)
+
+
 @wardrobe_bp.route('/items', methods=['GET'])
 @login_required
 def list_items():
