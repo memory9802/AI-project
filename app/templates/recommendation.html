@@ -55,13 +55,30 @@
   <script>
     (async () => {
       try {
-        const res = await fetch('/login/status', { credentials: 'same-origin' });
+        const res = await fetch('/login/status', { 
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.error('Status check failed:', res.status);
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
+        }
+        
         const data = await res.json();
+        console.log('Login status:', data);
+        
         if (!data.authenticated) {
           const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
           window.location.replace(`/login/?next=${nextUrl}`);
           return;
         }
+        
         window.currentUser = data.user;
         const userDisplay = document.getElementById('user-display');
         if (userDisplay && data.user?.username) {
@@ -69,7 +86,9 @@
           userDisplay.classList.remove('hidden');
         }
       } catch (error) {
-        window.location.replace('/login/');
+        console.error('Error checking login status:', error);
+        const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/login/?next=${nextUrl}`);
       }
     })();
   </script>
@@ -123,12 +142,15 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
-            <button
+            <span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span>
+            <a href="{{ url_for('home.clear_user_session') }}" class="text-sm font-medium text-subtle-light dark:text-subtle-dark hover:text-red-500 transition-colors" title="登出">
+              登出
+            </a>
+            <a href="{{ url_for('login.login') }}"
               class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              ><a href="{{ url_for('login.login') }}">
+              title="登入">
               <span class="material-symbols-outlined text-xl">person</span>
-            </button>
+            </a>
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -257,6 +279,19 @@
         localStorage.setItem("outfit_ai_session", sessionId);
       }
 
+      // 統一的 API 請求處理函數，自動處理 401 未登入狀態
+      async function handleApiResponse(res) {
+        if (res.status === 401) {
+          const data = await res.json().catch(() => ({}));
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          const redirectUrl = data.redirect || `/login/?next=${nextUrl}`;
+          console.warn('未登入，重定向到:', redirectUrl);
+          window.location.replace(redirectUrl);
+          return null;
+        }
+        return res;
+      }
+
       // 發送訊息給AI
       async function sendMessage() {
         const text = userInput.value.trim();
@@ -280,6 +315,10 @@
               model: "auto"
             })
           });
+          
+          const handled = await handleApiResponse(res);
+          if (!handled) return; // 已重定向
+          
           const data = await res.json();
 
           // 移除「思考中」訊息
@@ -308,9 +347,14 @@
       }
 
       // 事件監聽
-      sendBtn.addEventListener("click", sendMessage);
+      sendBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sendMessage();
+      });
       userInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
+          e.preventDefault();
           sendMessage();
         }
       });
@@ -516,6 +560,13 @@
 
       // 頁面載入時初始化
       window.addEventListener('load', () => {
+        // 全局防護：阻止所有表單的預設提交行為
+        document.addEventListener('submit', (e) => {
+          e.preventDefault();
+          console.log('Form submission prevented');
+          return false;
+        }, true);
+        
         initOutfits();
       });
     </script>
