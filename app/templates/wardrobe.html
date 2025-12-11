@@ -178,10 +178,10 @@
                 <!-- 左側：輸入欄位和風格按鈕 -->
                 <div class="flex flex-col gap-4">
                   <!-- 上方：基本資料輸入欄位 -->
-                  <div class="flex flex-wrap gap-3 items-center">
+                  <div class="flex items-center gap-3 flex-nowrap overflow-x-auto">
                     <input id="itemName" type="text" placeholder="衣物名稱"
-                      class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                    <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
+                      class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
+                    <select id="itemCategory" class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80">
                       <option value="" selected>衣物型別</option>
                       <option value="上身">上身</option>
                       <option value="下著">下著</option>
@@ -189,11 +189,11 @@
                       <option value="配件">配件</option>
                     </select>
                     <input id="color" type="text" placeholder="衣物顏色"
-                      class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
+                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
                     <input id="occasion" type="text" placeholder="場合"
-                      class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
+                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
                     <input id="itemImage" type="file" accept="image/*" multiple
-                      class="px-2 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                      class="px-2 py-2 border rounded-md w-40 sm:w-48 md:w-56 flex-shrink-0 bg-white dark:bg-secondary-dark/80" />
                   </div>
                   
                   <!-- 下方：風格標籤按鈕 (10個一行) -->
@@ -212,19 +212,19 @@
                       data-style="街頭">街頭</button>
                     <button type="button"
                       class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="簡約">簡約</button>
+                      data-style="韓風">韓風</button>
                     <button type="button"
                       class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="文青">文青</button>
+                      data-style="日系">日系</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="歐美">歐美</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="極簡">極簡</button>
                     <button type="button"
                       class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
                       data-style="復古">復古</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="甜美">甜美</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="潮流">潮流</button>
                     <button type="button"
                       class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
                       data-style="中性">中性</button>
