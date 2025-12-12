@@ -170,28 +170,32 @@
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-          <!-- AI Message Area -->
-          <div class="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 px-6 md:px-10 lg:px-20 py-6">
-            <div class="max-w-4xl mx-auto">
-              <div class="flex gap-4 items-start mb-4">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
-                </div>
-                <div class="flex-1">
-                  <div class="bg-white dark:bg-secondary-dark rounded-lg p-4 shadow-sm">
-                    <p id="ai-message" class="text-sm leading-relaxed text-text-light dark:text-text-dark">
-                      根據您的風格偏好，我為您精心挑選了三套穿搭組合。每套都包含上衣、下身、鞋子和配件，讓您展現最佳風采！
-                    </p>
+          <!-- Chat History Area -->
+          <div class="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 px-6 md:px-10 lg:px-20 py-6 flex flex-col" style="height: 40vh; min-height: 300px;">
+            <div class="max-w-4xl mx-auto w-full flex flex-col h-full">
+              <!-- Chat Messages Container -->
+              <div id="chat-history" class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent">
+                <!-- Welcome message -->
+                <div class="flex gap-4 items-start animate-fadeIn">
+                  <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+                  </div>
+                  <div class="flex-1">
+                    <div class="bg-white dark:bg-secondary-dark rounded-lg p-4 shadow-sm">
+                      <p class="text-sm leading-relaxed text-text-light dark:text-text-dark">
+                        請在下方輸入您的穿搭需求（例如：適合週末約會的穿搭），讓我為您推薦三套專屬組合！
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
               
               <!-- Chat Input Area -->
               <div class="flex gap-3">
-                <input id="user-input" type="text" placeholder="想問AI什麼問題嗎？例如：這套適合什麼場合？"
+                <input id="user-input" type="text" placeholder="請描述您的穿搭需求，例如：適合週末約會的穿搭"
                   class="flex-1 px-4 py-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark text-text-light dark:text-text-dark placeholder:text-subtle-light dark:placeholder:text-subtle-dark focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm" />
                 <button type="button" id="send-btn"
-                  class="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors flex items-center gap-2 whitespace-nowrap">
+                  class="sm:px-6 px-3 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors flex items-center justify-center gap-2 whitespace-nowrap sm:min-w-[120px] min-w-[48px]">
                   <span class="material-symbols-outlined text-lg">send</span>
                   <span class="hidden sm:inline">發送</span>
                 </button>
@@ -270,148 +274,177 @@
 
     <script>
       let currentPage = 0;
-      const totalPages = 3;
-      const outfits = [];
+      let outfits = [];
+      let totalPages = 0;
 
       const prevBtn = document.getElementById("prev-btn");
       const nextBtn = document.getElementById("next-btn");
       const shoppingBtn = document.getElementById("shopping-btn");
       const pageNumber = document.getElementById("page-number");
       const outfitSlides = document.getElementById("outfit-slides");
-      const pageDots = document.querySelectorAll(".page-dot");
-      const aiMessage = document.getElementById("ai-message");
+      const pageDotsContainer = document.querySelector(".flex.gap-2");
       const userInput = document.getElementById("user-input");
       const sendBtn = document.getElementById("send-btn");
+      const chatHistory = document.getElementById("chat-history");
 
-      // 生成或讀取 session ID（維持對話記憶）
-      let sessionId = localStorage.getItem("outfit_ai_session");
-      if (!sessionId) {
-        sessionId = "user-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
-        localStorage.setItem("outfit_ai_session", sessionId);
+      function scrollToBottom() {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
       }
 
-      // 統一的 API 請求處理函數，自動處理 401 未登入狀態
-      async function handleApiResponse(res) {
-        if (res.status === 401) {
-          const data = await res.json().catch(() => ({}));
-          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
-          const redirectUrl = data.redirect || `/login/?next=${nextUrl}`;
-          console.warn('未登入，重定向到:', redirectUrl);
-          window.location.replace(redirectUrl);
-          return null;
+      function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex gap-4 items-start animate-fadeIn';
+        
+        if (isUser) {
+          messageDiv.innerHTML = `
+            <div class="flex-1"></div>
+            <div class="flex-1 max-w-[80%]">
+              <div class="bg-primary/10 dark:bg-primary/20 rounded-lg p-4 shadow-sm">
+                <p class="text-sm leading-relaxed text-text-light dark:text-text-dark">${content}</p>
+              </div>
+            </div>
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <span class="material-symbols-outlined text-white text-xl">person</span>
+            </div>
+          `;
+        } else {
+          messageDiv.innerHTML = `
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+            </div>
+            <div class="flex-1">
+              <div class="bg-white dark:bg-secondary-dark rounded-lg p-4 shadow-sm">
+                <p class="text-sm leading-relaxed text-text-light dark:text-text-dark">${content}</p>
+              </div>
+            </div>
+          `;
         }
-        return res;
+        
+        chatHistory.appendChild(messageDiv);
+        setTimeout(scrollToBottom, 100);
       }
 
-      // 發送訊息給AI
       async function sendMessage() {
         const text = userInput.value.trim();
-        if (!text) return;
+        if (!text) {
+          addMessage("請先輸入您的需求。", false);
+          return;
+        }
 
-        // 顯示用戶訊息
-        const userMessageHtml = `<p class="text-sm leading-relaxed text-text-light dark:text-text-dark mb-2"><strong>您：</strong>${text}</p>`;
-        aiMessage.innerHTML += userMessageHtml;
-        userInput.value = "";
+        // 添加用戶訊息到聊天記錄
+        addMessage(text, true);
+        userInput.value = '';
 
-        // 顯示載入中
-        aiMessage.innerHTML += '<p class="text-sm leading-relaxed text-subtle-light dark:text-subtle-dark">AI正在思考中...</p>';
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> 思考中...';
 
         try {
-          const res = await fetch("/recommendation/recommend", {
+          // 先調用聊天 API 判斷意圖
+          const chatRes = await fetch("{{ url_for('recommendation.chat_api') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: text,
-              session_id: sessionId,
-              model: "auto"
-            })
+            body: JSON.stringify({ message: text })
           });
-          
-          const handled = await handleApiResponse(res);
-          if (!handled) return; // 已重定向
-          
-          const data = await res.json();
 
-          // 移除「思考中」訊息
-          const messages = aiMessage.querySelectorAll('p');
-          if (messages.length > 0) {
-            messages[messages.length - 1].remove();
+          if (!chatRes.ok) {
+            throw new Error(`聊天服務錯誤: ${chatRes.status}`);
           }
+          
+          const chatData = await chatRes.json();
 
-          // 顯示AI回覆
-          if (data.response) {
-            const formattedResponse = data.response
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\n/g, '<br>');
-            aiMessage.innerHTML += `<p class="text-sm leading-relaxed text-text-light dark:text-text-dark mt-2"><strong>AI：</strong>${formattedResponse}</p>`;
+          if (chatData.is_recommendation) {
+            // 這是推薦需求，生成穿搭
+            addMessage("正在為您產生個人化推薦，請稍候...", false);
+            outfitSlides.innerHTML = '<div class="w-full h-full flex items-center justify-center text-subtle-light dark:text-subtle-dark"><span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>載入中...</div>';
+            if (pageDotsContainer) pageDotsContainer.innerHTML = '';
+
+            const genRes = await fetch("{{ url_for('recommendation.generate_outfits_api') }}", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: text })
+            });
+
+            if (!genRes.ok) {
+              const errorData = await genRes.json().catch(() => ({ error: '無法解析錯誤訊息' }));
+              throw new Error(errorData.error || `伺服器錯誤: ${genRes.status}`);
+            }
+            
+            const genData = await genRes.json();
+
+            // 移除 "正在產生" 訊息（最後一個訊息）
+            const lastMessage = chatHistory.lastElementChild;
+            if (lastMessage) lastMessage.remove();
+
+            if (genData.success && genData.data.length > 0) {
+              outfits = genData.data;
+              totalPages = outfits.length;
+              addMessage(`為您生成了 ${totalPages} 套「${text}」主題穿搭！`, false);
+              initOutfits();
+            } else {
+              outfits = [];
+              totalPages = 0;
+              addMessage(genData.error || "抱歉，無法根據您的需求生成有效的穿搭建議，請嘗試更換描述。", false);
+              initOutfits();
+            }
           } else {
-            aiMessage.innerHTML += '<p class="text-sm leading-relaxed text-red-500 mt-2">⚠️ 未收到AI回覆，請稍後再試</p>';
+            // 這是閒聊，顯示 AI 回應
+            if (chatData.response) {
+              addMessage(chatData.response, false);
+            }
           }
         } catch (err) {
-          // 移除「思考中」訊息
-          const messages = aiMessage.querySelectorAll('p');
-          if (messages.length > 0) {
-            messages[messages.length - 1].remove();
+          // 移除可能存在的 "正在產生" 訊息
+          const lastMessage = chatHistory.lastElementChild;
+          if (lastMessage && lastMessage.textContent.includes('正在為您產生')) {
+            lastMessage.remove();
           }
-          aiMessage.innerHTML += `<p class="text-sm leading-relaxed text-red-500 mt-2">🚨 錯誤：${err.message}</p>`;
+          
+          addMessage(`🚨 發生錯誤：${err.message}`, false);
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = '<span class="material-symbols-outlined text-lg">send</span><span class="hidden sm:inline">發送</span>';
         }
       }
+      
+      function createItemCard(item, category) {
+        const defaultImage = 'https://via.placeholder.com/300x400.png?text=Image+Not+Found';
+        const image = item && (item.image_url || item.image) ? (item.image_url || item.image) : defaultImage;
+        const name = item ? item.name : '推薦單品';
+        const color = item ? (item.color || '無顏色') : '';
+        const brand = item ? (item.brand || '推薦品牌') : '';
 
-      // 事件監聽
-      sendBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        sendMessage();
-      });
-      userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          sendMessage();
+        if (!item) {
+          return `
+            <div class="outfit-item">
+              <div class="relative mb-3 border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg h-48 flex items-center justify-center">
+                <div class="text-center text-subtle-light dark:text-subtle-dark">
+                  <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">checkroom</span>
+                  <p class="text-xs">暫無${category}</p>
+                </div>
+              </div>
+              <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">可自由搭配</p>
+            </div>
+          `;
         }
-      });
 
-      // 生成推薦數據（實際應該從後端API獲取）
-      function generateOutfits() {
-        return [
-          {
-            id: 1,
-            occasion: '商務會議',
-            description: '專業俐落的商務穿搭，展現自信與專業形象',
-            score: 95,
-            top: { name: '白色襯衫', image: 'https://images.unsplash.com/photo-1620799140188-3b2a7f3a5a7e?w=400', color: '白色', brand: 'UNIQLO' },
-            bottom: { name: '黑色西裝褲', image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400', color: '黑色', brand: 'ZARA' },
-            shoes: { name: '黑色皮鞋', image: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400', color: '黑色', brand: 'Clarks' },
-            accessories: null
-          },
-          {
-            id: 2,
-            occasion: '週末約會',
-            description: '輕鬆休閒的約會穿搭，展現親和力與時尚感',
-            score: 88,
-            top: { name: '卡其色T恤', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400', color: '卡其', brand: 'H&M' },
-            bottom: { name: '淺藍牛仔褲', image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400', color: '淺藍', brand: 'Levi\'s' },
-            shoes: { name: '白色球鞋', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400', color: '白色', brand: 'Nike' },
-            accessories: { name: '棒球帽', image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400', color: '黑色', brand: 'New Era' }
-          },
-          {
-            id: 3,
-            occasion: '日常出門',
-            description: '簡約舒適的日常穿搭，溫暖百搭又實用',
-            score: 92,
-            top: { name: '深藍針織衫', image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400', color: '深藍', brand: 'MUJI' },
-            bottom: { name: '卡其色休閒褲', image: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400', color: '卡其', brand: 'GAP' },
-            shoes: { name: '棕色休閒鞋', image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=400', color: '棕色', brand: 'Timberland' },
-            accessories: null
-          }
-        ];
+        return `
+          <div class="outfit-item">
+            <div class="relative mb-3 group">
+              <img src="${image}" alt="${name}" onerror="this.onerror=null;this.src='${defaultImage}';" class="w-full h-48 object-cover rounded-lg shadow-md" />
+              <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">${category}</div>
+            </div>
+            <h3 class="font-bold text-sm mb-1">${name}</h3>
+            <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${color}</p>
+            <p class="text-xs text-primary font-medium">${brand}</p>
+          </div>
+        `;
       }
-
-      // 創建單套穿搭的HTML
-      function createOutfitSlide(outfit, index) {
+      
+      function createOutfitSlide(outfit) {
+        const items = outfit.items || {};
         return `
           <div class="outfit-slide min-w-full h-full px-4">
             <div class="h-full bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
-              <!-- Header -->
               <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
                 <div class="flex items-center justify-between">
                   <div>
@@ -424,130 +457,74 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Outfit Items Grid -->
               <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 h-[calc(100%-120px)] overflow-y-auto">
-                <!-- Top -->
-                <div class="outfit-item">
-                  <div class="relative mb-3 group">
-                    <img src="${outfit.top.image}" alt="${outfit.top.name}" 
-                      class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">
-                      上衣
-                    </div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">${outfit.top.name}</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${outfit.top.color}</p>
-                  <p class="text-xs text-primary font-medium">${outfit.top.brand}</p>
-                </div>
-
-                <!-- Bottom -->
-                <div class="outfit-item">
-                  <div class="relative mb-3 group">
-                    <img src="${outfit.bottom.image}" alt="${outfit.bottom.name}" 
-                      class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">
-                      下身
-                    </div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">${outfit.bottom.name}</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${outfit.bottom.color}</p>
-                  <p class="text-xs text-primary font-medium">${outfit.bottom.brand}</p>
-                </div>
-
-                <!-- Shoes -->
-                <div class="outfit-item">
-                  <div class="relative mb-3 group">
-                    <img src="${outfit.shoes.image}" alt="${outfit.shoes.name}" 
-                      class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">
-                      鞋子
-                    </div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">${outfit.shoes.name}</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${outfit.shoes.color}</p>
-                  <p class="text-xs text-primary font-medium">${outfit.shoes.brand}</p>
-                </div>
-
-                <!-- Accessories -->
-                <div class="outfit-item">
-                  ${outfit.accessories ? `
-                    <div class="relative mb-3 group">
-                      <img src="${outfit.accessories.image}" alt="${outfit.accessories.name}" 
-                        class="w-full h-48 object-cover rounded-lg shadow-md" />
-                      <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">
-                        配件
-                      </div>
-                    </div>
-                    <h3 class="font-bold text-sm mb-1">${outfit.accessories.name}</h3>
-                    <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${outfit.accessories.color}</p>
-                    <p class="text-xs text-primary font-medium">${outfit.accessories.brand}</p>
-                  ` : `
-                    <div class="relative mb-3 border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg h-48 flex items-center justify-center">
-                      <div class="text-center text-subtle-light dark:text-subtle-dark">
-                        <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">checkroom</span>
-                        <p class="text-xs">暫無配件</p>
-                      </div>
-                    </div>
-                    <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">可自由搭配</p>
-                  `}
-                </div>
+                ${createItemCard(items.top, '上衣')}
+                ${createItemCard(items.bottom, '下身')}
+                ${createItemCard(items.shoes, '鞋子')}
+                ${createItemCard(items.accessories, '配件')}
               </div>
             </div>
           </div>
         `;
       }
 
-      // 更新頁面顯示
       function updatePage() {
+        if (!pageNumber) return;
+        if (outfits.length === 0) {
+            pageNumber.textContent = '0 / 0';
+            prevBtn.classList.add('invisible');
+            nextBtn.classList.add('hidden');
+            shoppingBtn.classList.add('hidden');
+            if (pageDotsContainer) pageDotsContainer.innerHTML = '';
+            return;
+        }
+
         outfitSlides.style.transform = `translateX(-${currentPage * 100}%)`;
         pageNumber.textContent = `${currentPage + 1} / ${totalPages}`;
         
-        // Update dots
+        const pageDots = pageDotsContainer.querySelectorAll(".page-dot");
         pageDots.forEach((dot, index) => {
-          if (index === currentPage) {
-            dot.classList.remove('bg-subtle-light', 'dark:bg-subtle-dark');
-            dot.classList.add('bg-primary');
-          } else {
-            dot.classList.remove('bg-primary');
-            dot.classList.add('bg-subtle-light', 'dark:bg-subtle-dark');
-          }
+          dot.classList.toggle('bg-primary', index === currentPage);
+          dot.classList.toggle('bg-subtle-light', index !== currentPage);
+          dot.classList.toggle('dark:bg-subtle-dark', index !== currentPage);
         });
 
-        // Update buttons
         prevBtn.disabled = currentPage === 0;
+        prevBtn.classList.toggle('invisible', currentPage === 0);
+        prevBtn.classList.toggle('flex', currentPage > 0);
         
-        // 第一頁時隱藏上一頁按鈕
-        if (currentPage === 0) {
-          prevBtn.classList.remove('flex');
-          prevBtn.classList.add('invisible');
-        } else {
-          prevBtn.classList.remove('invisible');
-          prevBtn.classList.add('flex');
-        }
-        
-        // 最後一頁時隱藏下一頁並顯示好康推薦
-        if (currentPage === totalPages - 1) {
-          nextBtn.classList.add('hidden');
-          shoppingBtn.classList.remove('hidden');
-          shoppingBtn.classList.add('flex');
-        } else {
-          nextBtn.classList.remove('hidden');
-          shoppingBtn.classList.add('hidden');
-          shoppingBtn.classList.remove('flex');
-        }
+        const isLastPage = currentPage === totalPages - 1;
+        nextBtn.classList.toggle('hidden', isLastPage);
+        shoppingBtn.classList.toggle('hidden', !isLastPage);
+        shoppingBtn.classList.toggle('flex', isLastPage);
       }
 
-      // 初始化穿搭
       function initOutfits() {
-        const generatedOutfits = generateOutfits();
-        outfitSlides.innerHTML = generatedOutfits.map((outfit, index) => 
-          createOutfitSlide(outfit, index)
-        ).join('');
+        currentPage = 0;
+        if (outfits && outfits.length > 0) {
+            totalPages = outfits.length;
+            let dotsHtml = '';
+            for (let i = 0; i < totalPages; i++) {
+                dotsHtml += `<div class="page-dot w-2 h-2 rounded-full ${i === 0 ? 'bg-primary' : 'bg-subtle-light dark:bg-subtle-dark'}"></div>`;
+            }
+            if (pageDotsContainer) pageDotsContainer.innerHTML = dotsHtml;
+
+            outfitSlides.innerHTML = outfits.map(createOutfitSlide).join('');
+        } else {
+            totalPages = 0;
+            if(pageDotsContainer) pageDotsContainer.innerHTML = '';
+            outfitSlides.innerHTML = '<div class="text-center text-subtle-light dark:text-subtle-dark w-full p-10">請在上方輸入您的需求以開始生成穿搭建議。</div>';
+        }
         updatePage();
       }
 
-      // 事件監聽
+      sendBtn.addEventListener("click", sendMessage);
+      userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
       prevBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (currentPage > 0) {
@@ -555,23 +532,18 @@
           updatePage();
         }
       });
-
       nextBtn.addEventListener('click', (e) => {
-        e.preventDefault();
         if (currentPage < totalPages - 1) {
           currentPage++;
           updatePage();
         }
       });
-
       shoppingBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // 導向好康推薦頁面（新分頁）
         window.open("{{ url_for('wardrobe.deals') }}", '_blank', 'noopener,noreferrer');
       });
-
-      // 鍵盤導航
       document.addEventListener('keydown', (e) => {
+        if (document.activeElement.tagName === 'INPUT') return;
         if (e.key === 'ArrowLeft' && currentPage > 0) {
           currentPage--;
           updatePage();
@@ -581,15 +553,7 @@
         }
       });
 
-      // 頁面載入時初始化
       window.addEventListener('load', () => {
-        // 全局防護：阻止所有表單的預設提交行為
-        document.addEventListener('submit', (e) => {
-          e.preventDefault();
-          console.log('Form submission prevented');
-          return false;
-        }, true);
-        
         initOutfits();
       });
     </script>
