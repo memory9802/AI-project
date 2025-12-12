@@ -78,30 +78,26 @@ def get_comments(outfit_id):
     test_comments = [
         {
             'id': 1,
-            'user_name': 'testuser2',
+            'img_url': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200',
             'rating': 5,
-            'comment_text': '很好看的穿搭！',
             'created_at': '2025-12-10T00:00:00'
         },
         {
             'id': 2,
-            'user_name': 'testuser3',
+            'img_url': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200',
             'rating': 4,
-            'comment_text': '這個配色很棒',
             'created_at': '2025-12-09T00:00:00'
         },
         {
             'id': 3,
-            'user_name': 'testuser4',
+            'img_url': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200',
             'rating': 4,
-            'comment_text': '款式很適合我',
             'created_at': '2025-12-08T00:00:00'
         },
         {
             'id': 4,
-            'user_name': 'testuser5',
+            'img_url': '',
             'rating': 3,
-            'comment_text': '不錯但我會改變配件',
             'created_at': '2025-12-07T00:00:00'
         }
     ]

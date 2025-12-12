@@ -304,15 +304,16 @@ async function loadComments(outfitId) {
     content.innerHTML = comments.map(comment => `
     <div class="mb-4 pb-4 border-b border-secondary-light dark:border-secondary-dark last:border-b-0">
       <div class="flex items-start justify-between mb-2">
-        <div>
-          <p class="font-medium">${comment.user_name || '匿名用戶'}</p>
-          <p class="text-xs text-subtle-light dark:text-subtle-dark">${new Date(comment.created_at).toLocaleDateString('zh-TW')}</p>
+        <div class="flex items-center gap-3">
+          ${comment.img_url ? `<img src="${comment.img_url}" alt="comment image" class="h-10 w-10 rounded-md object-cover">` : `<div class="h-10 w-10 rounded-md bg-secondary-light dark:bg-secondary-dark"></div>`}
+          <div>
+            <p class="text-xs text-subtle-light dark:text-subtle-dark">${new Date(comment.created_at).toLocaleDateString('zh-TW')}</p>
+          </div>
         </div>
         <div class="comment-rating flex items-center gap-1" data-comment-id="${comment.id}" data-comment-rating="${comment.rating}" data-outfit-id="${outfitId}">
-          ${renderStars(comment.rating, 'small', true)}
+          ${renderStars(0, 'small', true)}
         </div>
       </div>
-      <p class="text-sm text-text-light dark:text-text-dark">${comment.comment_text || ''}</p>
     </div>
   `).join('');
 
@@ -333,7 +334,7 @@ function attachCommentStarListeners() {
   document.querySelectorAll('.comment-rating').forEach(container => {
     const commentId = container.dataset.commentId;
     const outfitId = container.dataset.outfitId || currentOutfitId;
-    const initialRating = parseInt(container.dataset.commentRating) || 0;
+    const initialRating = parseInt(container.dataset.commentRating) || 0; // backend rating
     const stars = container.querySelectorAll('.comment-star');
 
     // helper to set visual state according to rating
@@ -347,11 +348,12 @@ function attachCommentStarListeners() {
           s.classList.add('empty');
         }
       });
-      container.dataset.commentRating = rating;
+      // keep backend rating separate; do not overwrite dataset.commentRating
     };
 
-    // initialize visual state
-    setVisual(initialRating);
+    // initialize visual state to 0 (user must click to set rating)
+    setVisual(0);
+    container.dataset.userRating = 0;
 
     // hover behavior
     stars.forEach(s => {
@@ -361,20 +363,16 @@ function attachCommentStarListeners() {
       });
 
       s.addEventListener('mouseout', () => {
-        setVisual(parseInt(container.dataset.commentRating) || initialRating);
+        const userRating = parseInt(container.dataset.userRating) || 0;
+        setVisual(userRating);
       });
 
       s.addEventListener('click', (e) => {
         const r = parseInt(s.dataset.rating);
-        // locally update visual
+        // locally update visual and record user selection
         setVisual(r);
-        container.dataset.commentRating = r;
-        // record change for submission (only if changed from initial)
-        if (r !== initialRating) {
-          changedCommentRatings.set(commentId, r);
-        } else {
-          changedCommentRatings.delete(commentId);
-        }
+        container.dataset.userRating = r;
+        changedCommentRatings.set(commentId, r);
       });
     });
   });
