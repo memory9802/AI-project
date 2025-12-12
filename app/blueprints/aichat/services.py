@@ -147,23 +147,19 @@ def handle_recommendation_chat(user_input: str, session_id: str = "recommendatio
             }
         
         try:
-            # 給 AI 一個友善、有同理心的系統提示
-            prompt = f"""你是一個親切、善解人意的穿搭顧問。用戶剛剛說：「{user_input}」
-
-請以溫暖、同理心的態度回應（2-3句話），並自然地引導對話：
-- 如果用戶只是打招呼，親切回應並介紹你能提供的幫助
-- 如果用戶表達不確定或困擾，先表達理解和鼓勵，再引導他們說明需求
-- 如果用戶的輸入不清楚，用輕鬆的方式詢問更多細節
-- 避免生硬的制式回答，要像朋友般自然對話
-
-記住：先建立連結，再提供協助。回應要溫暖、自然、有人情味。"""
-            
+            # 直接使用用戶原始輸入，讓 agent.chat 正常保存到 history
+            # 系統指令作為上下文引導 AI 回應，但不影響保存的內容
             ai_response = agent.chat(
                 session_id=session_id,
-                user_input=prompt,
+                user_input=user_input,  # 保存用戶原話「運狗」而非系統提示
                 db_outfits=None,
                 preferred_model=preferred_model
             )
+            
+            print(f"[DEBUG] 聊天保存 - session:{session_id}, 用戶:{user_input}", flush=True, file=sys.stderr)
+            
+            # 如果 AI 回應太簡短或不夠人性化，可以在這裡包裝
+            # 但通常 agent.chat 內部的 prompt 已經有基本引導
             
             return {"is_recommendation": False, "response": ai_response}
             

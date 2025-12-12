@@ -377,7 +377,10 @@
             if (genData.success && genData.data.length > 0) {
               outfits = genData.data;
               totalPages = outfits.length;
-              addMessage(`為您生成了 ${totalPages} 套「${text}」主題穿搭！`, false);
+              
+              // 使用推薦結果的標題，如果沒有標題則使用簡潔的訊息
+              const outfitTitle = outfits[0]?.title || '您的穿搭需求';
+              addMessage(`為您推薦了「${outfitTitle}」！`, false);
               initOutfits();
             } else {
               outfits = [];
@@ -418,10 +421,9 @@
               <div class="relative mb-3 border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg h-48 flex items-center justify-center">
                 <div class="text-center text-subtle-light dark:text-subtle-dark">
                   <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">checkroom</span>
-                  <p class="text-xs">暫無${category}</p>
+                  <p class="text-sm font-medium">可自由搭配</p>
                 </div>
               </div>
-              <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">可自由搭配</p>
             </div>
           `;
         }
