@@ -48,6 +48,79 @@
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
+
+    /* Star Rating Styles */
+    .star-rating {
+      display: flex;
+      gap: 0.25rem;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+
+    .star {
+      color: #888888;
+      transition: color 0.2s;
+    }
+
+    .star:hover,
+    .star.active {
+      color: #D8A7B1;
+    }
+
+    /* Outfit Star Rating Styles */
+    .outfit-star {
+      transition: color 0.2s;
+    }
+
+    .outfit-star.empty {
+      color: #888888;
+    }
+
+    .outfit-star.filled {
+      color: #D8A7B1;
+    }
+
+    /* Navigation Item Styles */
+    #hero-1946 .cs-item {
+      text-align: center;
+      list-style: none;
+      margin: 0;
+      box-sizing: border-box;
+      padding: clamp(1.5rem, 3vw, 2rem);
+      background-color: #F7F7F7;
+      border-radius: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+      transition: border-color 0.3s;
+    }
+
+    .dark #hero-1946 .cs-item {
+      background-color: #303030;
+    }
+
+    #hero-1946 .cs-item:hover {
+      border-color: #D8A7B1;
+    }
+
+    #hero-1946 .cs-item:hover .cs-icon {
+      transform: rotateY(360deg);
+    }
+
+    #hero-1946 .cs-icon-picture {
+      margin-bottom: 1.25rem;
+      perspective: 700px;
+      transform-style: preserve-3d;
+    }
+
+    #hero-1946 .cs-icon {
+      width: 2.5rem;
+      height: auto;
+      display: block;
+      transition: transform 0.6s;
+    }
   </style>
 </head>
 
@@ -55,13 +128,30 @@
   <script>
     (async () => {
       try {
-        const res = await fetch('/login/status', { credentials: 'same-origin' });
+        const res = await fetch('/login/status', { 
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.error('Status check failed:', res.status);
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
+        }
+        
         const data = await res.json();
+        console.log('Login status:', data);
+        
         if (!data.authenticated) {
           const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
           window.location.replace(`/login/?next=${nextUrl}`);
           return;
         }
+        
         window.currentUser = data.user;
         const userDisplay = document.getElementById('user-display');
         if (userDisplay && data.user?.username) {
@@ -69,7 +159,9 @@
           userDisplay.classList.remove('hidden');
         }
       } catch (error) {
-        window.location.replace('/login/');
+        console.error('Error checking login status:', error);
+        const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/login/?next=${nextUrl}`);
       }
     })();
   </script>
@@ -123,12 +215,27 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
-            <button
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              ><a href="{{ url_for('login.login') }}">
-              <span class="material-symbols-outlined text-xl">person</span>
-            </button>
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <button
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                onclick="window.location.href='{{ url_for('login.login') }}'"
+                >
+                <span class="material-symbols-outlined text-xl">person</span>
+              </button>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+            
+            <!-- 登出區域 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+            
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -187,19 +294,34 @@
                         <input type="hidden" id="tags-input" />
                         <button type="button"
                           class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="約會">約會</button>
+                          data-tag="休閒">休閒</button>
+                        <button type="button"
+                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                          data-tag="正式">正式</button>
                         <button type="button"
                           class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
                           data-tag="運動">運動</button>
                         <button type="button"
                           class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="上班">上班</button>
+                          data-tag="街頭">街頭</button>
                         <button type="button"
                           class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="休閒">休閒</button>
+                          data-tag="韓風">韓風</button>
                         <button type="button"
                           class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="派對">派對</button>
+                          data-tag="日系">日系</button>
+                        <button type="button"
+                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                          data-tag="歐美">歐美</button>
+                        <button type="button"
+                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                          data-tag="極簡">極簡</button>
+                        <button type="button"
+                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                          data-tag="復古">復古</button>
+                        <button type="button"
+                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                          data-tag="中性">中性</button>
                       </div>
                       <div id="selected-tags" class="flex flex-wrap gap-2"></div>
                     </div>
@@ -434,7 +556,7 @@
         formData.append('tags', selectedTags.join(','));
 
         try {
-          const res = await fetch('/api/outfits', {
+          const res = await fetch('/share/api/outfits', {
             method: 'POST',
             body: formData
           });
@@ -460,7 +582,7 @@
       // ===== Load Outfits =====
       async function loadOutfits() {
         try {
-          const res = await fetch('/api/outfits');
+          const res = await fetch('/share/api/outfits');
           const outfits = await res.json();
 
           const container = document.getElementById('outfits-container');
@@ -502,10 +624,15 @@
                   <span class="material-symbols-outlined">comment</span>
                   <span>評論</span>
                 </button>
-                <button class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg transition-colors like-btn" data-outfit-id="${outfit.id}">
-                  <span class="material-symbols-outlined">favorite</span>
-                  <span>${outfit.like_count || 0}</span>
-                </button>
+                <div class="flex-1 flex items-center justify-center gap-1 py-2">
+                  <div class="outfit-star-rating" data-outfit-id="${outfit.id}" data-current-rating="0">
+                    <span class="outfit-star cursor-pointer text-2xl empty" data-rating="1">☆</span>
+                    <span class="outfit-star cursor-pointer text-2xl empty" data-rating="2">☆</span>
+                    <span class="outfit-star cursor-pointer text-2xl empty" data-rating="3">☆</span>
+                    <span class="outfit-star cursor-pointer text-2xl empty" data-rating="4">☆</span>
+                    <span class="outfit-star cursor-pointer text-2xl empty" data-rating="5">☆</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -521,17 +648,44 @@
             });
           });
 
-          document.querySelectorAll('.like-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const outfitId = btn.dataset.outfitId;
-              try {
-                const res = await fetch(`/api/outfits/${outfitId}/like`, { method: 'POST' });
-                if (res.ok) {
-                  loadOutfits();
+          document.querySelectorAll('.outfit-star-rating').forEach(ratingDiv => {
+            const stars = ratingDiv.querySelectorAll('.outfit-star');
+            const outfitId = ratingDiv.dataset.outfitId;
+            let currentRating = parseInt(ratingDiv.dataset.currentRating) || 0;
+
+            stars.forEach(star => {
+              star.addEventListener('click', async () => {
+                const rating = parseInt(star.dataset.rating);
+                
+                // 立即更新UI
+                currentRating = rating;
+                ratingDiv.dataset.currentRating = rating;
+                stars.forEach((s, idx) => {
+                  if (idx < rating) {
+                    s.classList.remove('empty');
+                    s.classList.add('filled');
+                    s.textContent = '★';
+                  } else {
+                    s.classList.remove('filled');
+                    s.classList.add('empty');
+                    s.textContent = '☆';
+                  }
+                });
+
+                // 嘗試發送到後端（即使失敗也UI已經更新）
+                try {
+                  const res = await fetch(`/share/api/outfits/${outfitId}/rate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rating })
+                  });
+                  if (!res.ok) {
+                    console.log('評分API尚未實現，僅更新前端UI');
+                  }
+                } catch (err) {
+                  console.log('評分API尚未實現，僅更新前端UI');
                 }
-              } catch (err) {
-                console.error('Like failed:', err);
-              }
+              });
             });
           });
         } catch (err) {
@@ -542,7 +696,7 @@
       // ===== Load Comments =====
       async function loadComments(outfitId) {
         try {
-          const res = await fetch(`/api/outfits/${outfitId}/comments`);
+          const res = await fetch(`/share/api/outfits/${outfitId}/comments`);
           const comments = await res.json();
 
           const content = document.getElementById('comments-content');
@@ -586,7 +740,7 @@
         }
 
         try {
-          const res = await fetch(`/api/outfits/${outfitId}/comments`, {
+          const res = await fetch(`/share/api/outfits/${outfitId}/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

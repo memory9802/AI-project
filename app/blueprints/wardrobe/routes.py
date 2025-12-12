@@ -23,7 +23,6 @@ def _serialize_item(row: dict) -> dict:
         "item_name": row.get("item_name"),
         "category": row.get("category"),
         "color": row.get("color"),
-        "occasion": row.get("occasion"),
         "tags": row.get("tags"),
         "image_url": row.get("image_url"),
         "uploaded_at": row.get("uploaded_at").isoformat() if row.get("uploaded_at") else None,
@@ -37,6 +36,13 @@ def wardrobe():
     return render_template('wardrobe.html', user=user)
 
 
+@wardrobe_bp.route('/deals')
+@login_required
+def deals():
+    user = getattr(g, 'current_user', get_current_user())
+    return render_template('deals.html', user=user)
+
+
 @wardrobe_bp.route('/items', methods=['GET'])
 @login_required
 def list_items():
@@ -45,7 +51,7 @@ def list_items():
     with get_db_cursor() as cursor:
         cursor.execute(
             """
-            SELECT id, item_name, category, color, occasion, tags, image_url, uploaded_at
+            SELECT id, item_name, category, color, tags, image_url, uploaded_at
             FROM user_wardrobe
             WHERE user_id = %s
             ORDER BY uploaded_at DESC
@@ -69,13 +75,12 @@ def add_item():
     item_name = (request.form.get('item_name') or "").strip()
     category = (request.form.get('category') or "").strip()
     color = (request.form.get('color') or "").strip()
-    occasion = (request.form.get('occasion') or "").strip()
     tags_raw = (request.form.get('tags') or "").strip()
 
     selected_tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
     images = request.files.getlist('images') or request.files.getlist('image')
 
-    if not item_name or not category or not color or not occasion:
+    if not item_name or not category or not color:
         return jsonify({"success": False, "message": "All fields are required."}), 400
     if not selected_tags:
         return jsonify({"success": False, "message": "Select at least one style tag."}), 400
@@ -101,15 +106,14 @@ def add_item():
             image_url = url_for('static', filename=f"uploads/wardrobe/{unique_name}")
             cursor.execute(
                 """
-                INSERT INTO user_wardrobe (user_id, item_name, category, color, occasion, tags, image_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO user_wardrobe (user_id, item_name, category, color, tags, image_url)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """,
                 (
                     user['id'],
                     item_name,
                     category,
                     color,
-                    occasion,
                     ",".join(selected_tags),
                     image_url,
                 ),
@@ -119,7 +123,6 @@ def add_item():
                 "item_name": item_name,
                 "category": category,
                 "color": color,
-                "occasion": occasion,
                 "tags": ",".join(selected_tags),
                 "image_url": image_url,
                 "uploaded_at": datetime.utcnow().isoformat(),

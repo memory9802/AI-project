@@ -54,27 +54,55 @@
   <script>
     (async () => {
       try {
-        const res = await fetch('/login/status', { credentials: 'same-origin' });
+        const res = await fetch('/login/status', { 
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.error('Status check failed:', res.status);
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
+        }
+        
         const data = await res.json();
+        console.log('Login status:', data);
+        
         if (!data.authenticated) {
           const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
           window.location.replace(`/login/?next=${nextUrl}`);
           return;
         }
+        
         window.currentUser = data.user;
         sessionStorage.setItem('current_user', JSON.stringify(data.user));
         document.body.dataset.userId = data.user?.id || '';
         document.body.dataset.username = data.user?.username || '';
+        
+        // 顯示使用者名稱
         const userDisplay = document.getElementById('user-display');
         if (userDisplay && data.user?.username) {
           userDisplay.textContent = data.user.username;
           userDisplay.classList.remove('hidden');
         }
+        
+        // 顯示登出區域
+        const logoutSection = document.getElementById('logout-section');
+        if (logoutSection) {
+          logoutSection.classList.remove('hidden');
+          logoutSection.classList.add('flex');
+        }
+        
         const recommendationLink = document.getElementById('recommendation-link');
         if (recommendationLink && recommendationLink.dataset.base && data.user?.id) {
           recommendationLink.href = `${recommendationLink.dataset.base}?user_id=${data.user.id}&username=${encodeURIComponent(data.user.username || '')}`;
         }
       } catch (error) {
+        console.error('Error checking login status:', error);
         const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.replace(`/login/?next=${nextUrl}`);
       }
@@ -133,12 +161,26 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display"
-                class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
-            <a href="{{ url_for('login.login') }}"
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
-              <span class="material-symbols-outlined text-xl">person</span>
-            </a>
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('login.login') }}"
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                title="登入">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </a>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+            
+            <!-- 登出區域 -->
+            <div id="logout-section" class="hidden flex-col items-center gap-1">
+              <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+            
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -153,57 +195,82 @@
             </p>
 
             <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;" enctype="multipart/form-data">
-              <div class="flex flex-wrap gap-3 items-center justify-between">
-                <input id="itemName" type="text" placeholder="衣物名稱"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
-                  <option value="" selected>衣物型別</option>
-                  <option value="上衣">上衣</option>
-                  <option value="下身">下身</option>
-                  <option value="鞋子">鞋子</option>
-                </select>
-                <input id="color" type="text" placeholder="衣物顏色"
-                  class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                <input id="occasion" type="text" placeholder="場合"
-                  class="px-2 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                <input id="itemImage" type="file" accept="image/*" multiple
-                  class="px-2 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 p-3">
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="休閒">休閒</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="正式">正式</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="運動">運動</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="街頭">街頭</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="簡約">簡約</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="文青">文青</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="復古">復古</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="甜美">甜美</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="潮流">潮流</button>
-                  <button type="button"
-                    class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                    data-style="中性">中性</button>
+              <div class="grid grid-cols-[1fr_auto] gap-4">
+                <!-- 左側：輸入欄位和風格按鈕 -->
+                <div class="flex flex-col gap-4">
+                  <!-- 上方：基本資料輸入欄位 -->
+                  <div class="flex items-center gap-3 flex-nowrap overflow-x-auto">
+                    <input id="itemName" type="text" placeholder="衣物名稱"
+                      class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
+                    <select id="itemCategory" class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80">
+                      <option value="" selected>衣物型別</option>
+                      <option value="上身">上身</option>
+                      <option value="下著">下著</option>
+                      <option value="鞋類">鞋類</option>
+                      <option value="配件">配件</option>
+                    </select>
+                    <input id="color" type="text" placeholder="衣物顏色"
+                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
+                    <input id="itemImage" type="file" accept="image/*" multiple
+                      class="px-2 py-2 border rounded-md w-40 sm:w-48 md:w-56 flex-shrink-0 bg-white dark:bg-secondary-dark/80" />
+                  </div>
+                  
+                  <!-- 下方：風格標籤按鈕 (10個一行) -->
+                  <div class="grid grid-cols-10 gap-2">
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="休閒">休閒</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="正式">正式</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="運動">運動</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="街頭">街頭</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="韓風">韓風</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="日系">日系</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="歐美">歐美</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="極簡">極簡</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="復古">復古</button>
+                    <button type="button"
+                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
+                      data-style="中性">中性</button>
+                  </div>
                 </div>
-                <button id="addBtn" type="button"
-                  class="px-2 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
+                
+                <!-- 右側：上傳按鈕 (垂直置中) -->
+                <div class="flex items-center justify-center">
+                  <button id="addBtn" type="button"
+                    class="px-6 py-3 bg-primary text-white rounded-md hover:opacity-90 whitespace-nowrap">上傳</button>
+                </div>
               </div>
             </form>
+
+            <div class="mt-4 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <label for="category-filter" class="text-sm text-subtle-light dark:text-subtle-dark">篩選分類</label>
+                <select id="category-filter"
+                  class="px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80 text-sm">
+                  <option value="all">全部</option>
+                  <option value="top">上身</option>
+                  <option value="bottom">下著</option>
+                  <option value="shoes">鞋類</option>
+                  <option value="accessories">配件</option>
+                </select>
+              </div>
+            </div>
 
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
             <div id="delete-bar" class="hidden mt-4 flex justify-center">
@@ -221,13 +288,13 @@
                 items: [],
                 selectedStyles: new Set(),
                 selectedIds: new Set(),
+                filterCategory: 'all',
               };
 
               const el = {
                 name: document.getElementById('itemName'),
                 category: document.getElementById('itemCategory'),
                 color: document.getElementById('color'),
-                occasion: document.getElementById('occasion'),
                 image: document.getElementById('itemImage'),
                 addBtn: document.getElementById('addBtn'),
                 gallery: document.getElementById('gallery'),
@@ -235,9 +302,23 @@
                 deleteBar: document.getElementById('delete-bar'),
                 deleteBtn: document.getElementById('deleteBtn'),
                 deleteCount: document.getElementById('delete-count'),
+                filter: document.getElementById('category-filter'),
               };
 
               const styleButtons = Array.from(document.querySelectorAll('.style-tag-btn'));
+
+              const categoryAlias = {
+                top: ['top', '上衣', '上身'],
+                bottom: ['bottom', '下身', '下著', '褲'],
+                shoes: ['shoes', '鞋', '鞋類'],
+                accessories: ['accessories', '配件', '飾品'],
+              };
+
+              function matchesCategory(cat, filter) {
+                if (filter === 'all') return true;
+                const aliases = categoryAlias[filter] || [];
+                return aliases.some(alias => cat.includes(alias.toLowerCase()));
+              }
 
               function setUserContext(user) {
                 if (!user) return;
@@ -259,6 +340,19 @@
                   userDisplay.textContent = user.username;
                   userDisplay.classList.remove('hidden');
                 }
+              }
+
+              // 統一的 API 請求處理函數，自動處理 401 未登入狀態
+              async function handleApiResponse(res) {
+                if (res.status === 401) {
+                  const data = await res.json().catch(() => ({}));
+                  const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                  const redirectUrl = data.redirect || `/login/?next=${nextUrl}`;
+                  console.warn('未登入，重定向到:', redirectUrl);
+                  window.location.replace(redirectUrl);
+                  return null;
+                }
+                return res;
               }
 
               async function ensureLogin() {
@@ -283,12 +377,19 @@
 
               function renderGallery() {
                 el.gallery.innerHTML = '';
-                if (!state.items.length) {
+                const filtered = state.filterCategory === 'all'
+                  ? state.items
+                  : state.items.filter(item => {
+                    const cat = (item.category || '').toString().toLowerCase();
+                    return matchesCategory(cat, state.filterCategory);
+                  });
+
+                if (!filtered.length) {
                   el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請先上傳。</p>';
                   updateDeleteButton();
                   return;
                 }
-                state.items.forEach(item => {
+                filtered.forEach(item => {
                   const card = document.createElement('button');
                   card.type = 'button';
                   card.dataset.id = item.id;
@@ -308,7 +409,7 @@
 
                   const meta = document.createElement('div');
                   meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                  meta.textContent = [item.category, item.color, item.occasion].filter(Boolean).join(' · ');
+                  meta.textContent = [item.category, item.color].filter(Boolean).join(' · ');
 
                   const tags = document.createElement('div');
                   tags.className = 'flex flex-wrap gap-2 text-[11px] text-primary';
@@ -320,7 +421,11 @@
                   });
 
                   card.append(img, title, meta, tags);
-                  card.addEventListener('click', () => toggleSelect(item.id, card));
+                  card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSelect(item.id, card);
+                  });
                   el.gallery.appendChild(card);
                 });
                 updateDeleteButton();
@@ -331,8 +436,11 @@
                 if (!user) return;
                 try {
                   const res = await fetch('/wardrobe/items', { credentials: 'same-origin' });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
                   const data = await res.json();
-                  if (!res.ok || !data.success) {
+                  if (!data.success) {
                     throw new Error(data.message || '無法取得衣物資料');
                   }
                   state.items = data.items || [];
@@ -347,7 +455,6 @@
               function resetForm() {
                 el.name.value = '';
                 el.color.value = '';
-                el.occasion.value = '';
                 el.category.value = 'top';
                 el.image.value = '';
                 state.selectedStyles.clear();
@@ -361,11 +468,10 @@
                 const name = el.name.value.trim();
                 const category = el.category.value.trim();
                 const color = el.color.value.trim();
-                const occasion = el.occasion.value.trim();
                 const styles = Array.from(state.selectedStyles);
                 const files = Array.from(el.image.files || []);
 
-                if (!name || !category || !color || !occasion) {
+                if (!name || !category || !color) {
                   alert('所有欄位都必填');
                   return;
                 }
@@ -382,7 +488,6 @@
                 formData.append('item_name', name);
                 formData.append('category', category);
                 formData.append('color', color);
-                formData.append('occasion', occasion);
                 formData.append('tags', styles.join(','));
                 files.forEach(file => formData.append('images', file));
 
@@ -392,8 +497,11 @@
                     credentials: 'same-origin',
                     body: formData,
                   });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
                   const data = await res.json();
-                  if (!res.ok || !data.success) {
+                  if (!data.success) {
                     throw new Error(data.message || '上傳失敗');
                   }
                   await loadItems();
@@ -442,8 +550,11 @@
                     credentials: 'same-origin',
                     body: JSON.stringify({ ids: Array.from(state.selectedIds) }),
                   });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
                   const data = await res.json();
-                  if (!res.ok || !data.success) {
+                  if (!data.success) {
                     throw new Error(data.message || '刪除失敗');
                   }
                   const deletedSet = new Set(data.deleted_ids || []);
@@ -461,20 +572,36 @@
                   if (!style) return;
                   if (state.selectedStyles.has(style)) {
                     state.selectedStyles.delete(style);
-                    btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
                   } else {
                     state.selectedStyles.add(style);
-                    btn.classList.add('bg-primary', 'text-white', 'border-primary');
+                    btn.classList.remove('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
                   }
                 });
               });
 
               el.addBtn.addEventListener('click', handleUpload);
+              if (el.filter) {
+                el.filter.addEventListener('change', () => {
+                  state.filterCategory = el.filter.value || 'all';
+                  state.selectedIds.clear();
+                  renderGallery();
+                });
+              }
               if (el.deleteBtn) {
                 el.deleteBtn.addEventListener('click', handleDelete);
               }
 
               (async function init() {
+                // 全局防護：阻止所有表單的預設提交行為
+                document.addEventListener('submit', (e) => {
+                  e.preventDefault();
+                  console.log('Form submission prevented');
+                  return false;
+                }, true);
+
                 if (window.currentUser) {
                   setUserContext(window.currentUser);
                 } else if (document.body.dataset.userId) {
