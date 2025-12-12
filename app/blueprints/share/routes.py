@@ -23,7 +23,7 @@ def get_outfits():
             'tags': '休閒,簡約,舒適',
             'created_at': '2025-12-10T00:00:00',
             'avg_rating': 4.5,
-            'comment_count': 2,
+            'comment_count': 4,
             'like_count': 3
         },
         {
@@ -34,7 +34,7 @@ def get_outfits():
             'tags': '正式,商務,專業',
             'created_at': '2025-12-09T00:00:00',
             'avg_rating': 4.5,
-            'comment_count': 1,
+            'comment_count': 4,
             'like_count': 2
         },
         {
@@ -45,7 +45,7 @@ def get_outfits():
             'tags': '運動,休閒,實用',
             'created_at': '2025-12-08T00:00:00',
             'avg_rating': 4.5,
-            'comment_count': 1,
+            'comment_count': 4,
             'like_count': 3
         }
     ]
@@ -89,6 +89,20 @@ def get_comments(outfit_id):
             'rating': 4,
             'comment_text': '這個配色很棒',
             'created_at': '2025-12-09T00:00:00'
+        },
+        {
+            'id': 3,
+            'user_name': 'testuser4',
+            'rating': 4,
+            'comment_text': '款式很適合我',
+            'created_at': '2025-12-08T00:00:00'
+        },
+        {
+            'id': 4,
+            'user_name': 'testuser5',
+            'rating': 3,
+            'comment_text': '不錯但我會改變配件',
+            'created_at': '2025-12-07T00:00:00'
         }
     ]
     return jsonify(test_comments), 200
@@ -108,3 +122,13 @@ def rate_outfit(outfit_id):
     data = request.get_json()
     rating = data.get('rating', 0)
     return jsonify({'success': True, 'message': f'評分 {rating} 已提交（測試模式）'}), 200
+
+
+@share_bp.route('/api/outfits/<int:outfit_id>/comments/<int:comment_id>/rate', methods=['POST'])
+@login_required
+def rate_comment(outfit_id, comment_id):
+    """為評論按星評分（測試模式）"""
+    data = request.get_json()
+    rating = data.get('rating', 0)
+    # 暫時僅返回成功訊息
+    return jsonify({'success': True, 'message': f'評論 {comment_id} 的評分 {rating} 已提交（測試模式）'}), 200
