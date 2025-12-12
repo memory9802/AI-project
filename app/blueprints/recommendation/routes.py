@@ -422,3 +422,135 @@ def api_get_statistics():
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ===========================
+# 測試端點 (不需要登入)
+# ===========================
+
+@recommendation_bp.route('/api/test/recommendations', methods=['GET'])
+def api_test_recommendations():
+    """
+    測試推薦功能 (不需要登入)
+    專門用於測試權重計算邏輯
+    
+    Query Parameters:
+        - item_source: 商品來源 ('items' 或 'user_wardrobe', 預設 'items')
+        - limit: 返回數量 (預設 10)
+        - user_id: 測試用戶 ID (預設 1)
+    """
+    try:
+        # 使用測試用戶 ID (可從參數傳入)
+        user_id = int(request.args.get('user_id', 1))
+        item_source = request.args.get('item_source', 'items')
+        limit = int(request.args.get('limit', 10))
+        
+        # 調用服務函數
+        recommendations = get_weighted_recommendations(
+            user_id=user_id,
+            item_source=item_source,
+            limit=limit,
+            exclude_rated=False,  # 不排除已評分,方便測試
+            min_rating=None,
+            category=None
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': '測試端點 - 不需要登入',
+            'data': recommendations,
+            'count': len(recommendations),
+            'test_user_id': user_id
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"測試推薦失敗: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@recommendation_bp.route('/api/test/comparison', methods=['GET'])
+def api_test_comparison():
+    """
+    測試推薦比較 (不需要登入)
+    比較無權重 vs 有權重的推薦結果
+    """
+    try:
+        user_id = int(request.args.get('user_id', 1))
+        item_source = request.args.get('item_source', 'items')
+        limit = int(request.args.get('limit', 5))
+        
+        comparison = get_recommendations_comparison(
+            user_id=user_id,
+            item_source=item_source,
+            limit=limit
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': '測試端點 - 權重比較',
+            'data': comparison,
+            'test_user_id': user_id
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"測試比較失敗: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@recommendation_bp.route('/api/test/top-rated', methods=['GET'])
+def api_test_top_rated():
+    """
+    測試高評分商品查詢 (不需要登入)
+    """
+    try:
+        item_source = request.args.get('item_source', 'items')
+        limit = int(request.args.get('limit', 10))
+        min_rating_count = int(request.args.get('min_rating_count', 1))
+        
+        top_items = get_top_rated_items(
+            item_source=item_source,
+            limit=limit,
+            min_rating_count=min_rating_count
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': '測試端點 - 高評分商品',
+            'data': top_items,
+            'count': len(top_items)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"測試高評分商品失敗: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@recommendation_bp.route('/api/test/statistics', methods=['GET'])
+def api_test_statistics():
+    """
+    測試全站統計 (不需要登入)
+    """
+    try:
+        stats = get_rating_statistics()
+        
+        return jsonify({
+            'success': True,
+            'message': '測試端點 - 全站統計',
+            'data': stats
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"測試統計失敗: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

@@ -46,10 +46,11 @@ def get_weighted_recommendations(
             # 根據來源選擇對應的視圖
             if item_source == 'items':
                 view_name = 'v_items_with_ratings'
-                id_column = 'item_id'
             else:
                 view_name = 'v_wardrobe_with_ratings'
-                id_column = 'wardrobe_id'
+            
+            # 視圖中的主鍵列都是 'id'
+            id_column = 'id'
             
             # 基礎查詢
             query = f"""
@@ -122,10 +123,11 @@ def get_recommendations_comparison(
             # 無權重推薦 (純按平均分排序)
             if item_source == 'items':
                 view_name = 'v_items_with_ratings'
-                id_column = 'item_id'
             else:
                 view_name = 'v_wardrobe_with_ratings'
-                id_column = 'wardrobe_id'
+            
+            # 視圖中的主鍵列都是 'id'
+            id_column = 'id'
             
             # 無權重查詢
             query_without = f"""

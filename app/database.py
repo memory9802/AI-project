@@ -1,11 +1,17 @@
 """数据库连接模块"""
 import pymysql
+import os
 from contextlib import contextmanager
 
 def get_db_connection():
     """获取数据库连接"""
+    # 支援兩種模式:
+    # 1. Docker 容器內: host='mysql'
+    # 2. 本機運行: host='localhost' 或 '127.0.0.1'
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    
     return pymysql.connect(
-        host='mysql',
+        host=db_host,
         user='root',
         password='rootpassword',
         database='outfit_db',
