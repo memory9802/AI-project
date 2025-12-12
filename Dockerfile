@@ -40,10 +40,10 @@ ENV FLASK_ENV=development \
     FLASK_RUN_PORT=5000
 
 # 複製依賴檔案 (利用 Docker 層快取)
-COPY app/requirements.txt app/requirements-dev.txt ./
+COPY app/requirements.txt app/requirements-dev.txt 
 
 # 安裝開發依賴
-RUN pip install --no-cache-dir -r requirements-dev.txt
+RUN pip install --no-cache-dir -r app/requirements-dev.txt
 
 # 複製應用程式碼
 COPY app/ .
@@ -59,39 +59,39 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 5000
 
 # 開發模式啟動 (支援熱重載)
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000", "--reload", "--debug"]
 
 # ====================================
 # 生產環境階段
 # ====================================
-FROM base as production
+# FROM base as production
 
-ENV FLASK_ENV=production \
-    FLASK_DEBUG=0 \
-    GUNICORN_BIND=0.0.0.0:5000 \
-    GUNICORN_WORKERS=4 \
-    GUNICORN_WORKER_CLASS=gevent \
-    GUNICORN_WORKER_CONNECTIONS=1000
+# ENV FLASK_ENV=production \
+#     FLASK_DEBUG=0 \
+#     GUNICORN_BIND=0.0.0.0:5000 \
+#     GUNICORN_WORKERS=4 \
+#     GUNICORN_WORKER_CLASS=gevent \
+#     GUNICORN_WORKER_CONNECTIONS=1000
 
-# 複製依賴檔案
-COPY app/requirements.txt ./
+# # 複製依賴檔案
+# COPY app/requirements.txt ./
 
-# 安裝依賴
-RUN pip install --no-cache-dir -r requirements.txt
+# # 安裝依賴
+# RUN pip install --no-cache-dir -r requirements.txt
 
-# 複製應用程式碼
-COPY app/ .
+# # 複製應用程式碼
+# COPY app/ .
 
-# 設定權限
-RUN chown -R appuser:appgroup /app
-USER appuser
+# # 設定權限
+# RUN chown -R appuser:appgroup /app
+# USER appuser
 
-# 健康檢查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/health || exit 1
+# # 健康檢查
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#     CMD curl -f http://localhost:5000/health || exit 1
 
-EXPOSE 5000
+# EXPOSE 5000
 
-# 生產模式啟動 (Gunicorn + Gevent)
-# 使用 Factory Pattern: 'module:function_call()'
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--access-logfile", "-", "--error-logfile", "-", "--preload", "app:create_app()"]
+# # 生產模式啟動 (Gunicorn + Gevent)
+# # 使用 Factory Pattern: 'module:function_call()'
+# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--access-logfile", "-", "--error-logfile", "-", "app:create_app()"]
