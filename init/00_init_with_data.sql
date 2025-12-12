@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主機： mysql
--- 產生時間： 2025 年 12 月 11 日 15:29
+-- 產生時間： 2025 年 12 月 11 日 05:31
 -- 伺服器版本： 8.0.44
 -- PHP 版本： 8.3.28
 
@@ -24,15 +24,47 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- 資料表結構 `users`
+--
+
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bcrypt 加密密碼',
+  `favorite_style` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='使用者表 - 使用 bcrypt 加密密碼';
+
+
+--
+-- 傾印資料表的資料 `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `favorite_style`, `created_at`) VALUES
+(1, 'testuser1', 'test1@example.com', '$2b$12$RVunCSsarUgZtoSJ0A0t8OqJL5TlglrHGpdhGCXAnOMaONUK7DZLO', '休閒', '2025-12-05 13:19:35'),
+(2, 'testuser2', 'test2@example.com', '$2b$12$1dpDFeYyDCjydZbL3J8MhORjqjMRLr3OliM46zSHxmmHESo8Koc..', '正式', '2025-12-05 13:19:35'),
+(3, 'testuser3', 'test3@example.com', '$2b$12$A.1NIvoGh4Ci04wpaL44rOP94unCYTAnjUVxEey9qY4B.ijnklxsi', '運動', '2025-12-05 13:19:35'),
+(4, 'testuser4', 'test4@example.com', '$2b$12$r7zFIWFo704xRtszVJoQp.25BixPF3M1kCgFRqgX8MrWhft2KRM7q', '街頭', '2025-12-05 13:19:35'),
+(5, 'testuser5', 'test5@example.com', '$2b$12$Hd.BToSJEsdNkUPDtPPDRu6G/f8K.MlRNQbWn2kk.4S2Tf86ft1xy', '韓風', '2025-12-05 13:19:35'),
+(6, 'Alice', 'alice1225@gmail.com', '$2b$12$g.Z7CkU9BxF7GLyjSzsdROzaPNhc3ZoDIMOqWLoJLzaiPamPJ8ctK', '休閒', '2025-12-11 06:18:39'),
+(7, 'Bob', 'bob2512@gmail.com', '$2b$12$eUqUBr.m9sIUDBUTkd2tZeDAVwc41OKlBwj10kyBEvGXp31xCqA6q', '休閒,運動', '2025-12-11 06:19:40');
+
+
+--
 -- 資料表結構 `conversation_history`
 --
 
 CREATE TABLE `conversation_history` (
   `id` int NOT NULL,
   `user_id` int DEFAULT NULL,
-  `session_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message_type` enum('user','assistant','system') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message_type` enum('user','assistant','system') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `metadata` json DEFAULT NULL COMMENT '額外資訊(如推薦的 outfit_ids, item_ids 等)',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 聊天對話記錄';
@@ -45,17 +77,17 @@ CREATE TABLE `conversation_history` (
 
 CREATE TABLE `items` (
   `id` int NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',
-  `color` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'top, bottom, shoes, accessories',
+  `color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `sku` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `gender` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',
-  `clothing_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `length` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '短, 長, 中',
+  `sku` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gender` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '男, 女, 中性, 男孩, 女孩',
+  `clothing_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `length` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '短, 長, 中',
   `price` decimal(10,2) DEFAULT NULL COMMENT '價格 (台幣)',
-  `source` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, malefashion'
+  `source` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'manual' COMMENT 'manual, uniqlo, styles_dataset, malefashion'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='單品表 - 支援多來源資料';
 
 --
@@ -44935,7 +44967,7 @@ INSERT INTO `items` (`id`, `name`, `category`, `color`, `image_url`, `created_at
 
 CREATE TABLE `item_stats` (
   `id` int NOT NULL,
-  `item_source` enum('items','user_wardrobe') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商品來源',
+  `item_source` enum('items','user_wardrobe') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商品來源',
   `item_id` int NOT NULL COMMENT '商品ID',
   `avg_rating` decimal(3,2) NOT NULL DEFAULT '0.00' COMMENT '平均評分',
   `rating_count` int NOT NULL DEFAULT '0' COMMENT '評分總數',
@@ -44958,14 +44990,14 @@ CREATE TABLE `item_stats` (
 
 CREATE TABLE `partner_products` (
   `id` int NOT NULL,
-  `product_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `color` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-  `partner_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `product_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `partner_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合作品牌商品資訊';
 
@@ -44978,10 +45010,10 @@ CREATE TABLE `partner_products` (
 CREATE TABLE `rating` (
   `id` int NOT NULL,
   `user_id` int NOT NULL COMMENT '評分的使用者ID',
-  `item_source` enum('items','user_wardrobe') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'items' COMMENT '評分來源: items=商品庫, user_wardrobe=使用者衣櫃',
+  `item_source` enum('items','user_wardrobe') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'items' COMMENT '評分來源: items=商品庫, user_wardrobe=使用者衣櫃',
   `item_id` int NOT NULL COMMENT '被評分的商品ID (泛用,根據 item_source 指向 items.id 或 user_wardrobe.id)',
   `rating_value` int NOT NULL COMMENT '評分值 (建議 1-5 星)',
-  `review_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '評論內容',
+  `review_text` text COLLATE utf8mb4_unicode_ci COMMENT '評論內容',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '評分時間',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品評分表 (多態關聯版本) - 支援商品庫(items)和使用者衣櫃(user_wardrobe)的評分';
@@ -45109,31 +45141,13 @@ DELIMITER ;
 
 -- --------------------------------------------------------
 
---
--- 資料表結構 `users`
---
 
-CREATE TABLE `users` (
-  `id` int NOT NULL,
-  `username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bcrypt 加密密碼',
-  `favorite_style` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='使用者表 - 使用 bcrypt 加密密碼';
 
---
--- 傾印資料表的資料 `users`
---
 
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `favorite_style`, `created_at`) VALUES
-(1, 'testuser1', 'test1@example.com', '$2b$12$RVunCSsarUgZtoSJ0A0t8OqJL5TlglrHGpdhGCXAnOMaONUK7DZLO', '休閒', '2025-12-05 13:19:35'),
-(2, 'testuser2', 'test2@example.com', '$2b$12$1dpDFeYyDCjydZbL3J8MhORjqjMRLr3OliM46zSHxmmHESo8Koc..', '正式', '2025-12-05 13:19:35'),
-(3, 'testuser3', 'test3@example.com', '$2b$12$A.1NIvoGh4Ci04wpaL44rOP94unCYTAnjUVxEey9qY4B.ijnklxsi', '運動', '2025-12-05 13:19:35'),
-(4, 'testuser4', 'test4@example.com', '$2b$12$r7zFIWFo704xRtszVJoQp.25BixPF3M1kCgFRqgX8MrWhft2KRM7q', '街頭', '2025-12-05 13:19:35'),
-(5, 'testuser5', 'test5@example.com', '$2b$12$Hd.BToSJEsdNkUPDtPPDRu6G/f8K.MlRNQbWn2kk.4S2Tf86ft1xy', '韓風', '2025-12-05 13:19:35'),
-(6, 'Alice', 'alice1225@gmail.com', '$2b$12$g.Z7CkU9BxF7GLyjSzsdROzaPNhc3ZoDIMOqWLoJLzaiPamPJ8ctK', '休閒', '2025-12-11 06:18:39'),
-(7, 'Bob', 'bob2512@gmail.com', '$2b$12$eUqUBr.m9sIUDBUTkd2tZeDAVwc41OKlBwj10kyBEvGXp31xCqA6q', '休閒,運動', '2025-12-11 06:19:40');
+
+
+
+
 
 -- --------------------------------------------------------
 
@@ -45142,15 +45156,20 @@ INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `favorite_style
 --
 
 CREATE TABLE `user_wardrobe` (
-  `id` int NOT NULL,
+  `id` int auto_increment NOT NULL,
   `user_id` int NOT NULL,
-  `item_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `color` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='使用者個人衣櫃';
+  `item_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `occasion` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tags` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='使用者個人衣櫃';
 
 --
 -- 傾印資料表的資料 `user_wardrobe`
@@ -45356,6 +45375,22 @@ CREATE TABLE `v_item_ratings` (
 -- (請參考以下實際畫面)
 --
 CREATE TABLE `v_wardrobe_with_ratings` (
+`avg_rating` decimal(3,2)
+,`category` varchar(100)
+,`color` varchar(50)
+,`final_score` decimal(4,2)
+,`high_rating_count` bigint
+,`high_rating_ratio` decimal(5,4)
+,`id` int
+,`image_url` varchar(255)
+,`item_name` varchar(255)
+,`occasion` varchar(100)
+,`popularity_weight` decimal(2,1)
+,`rating_count` bigint
+,`rating_weight` decimal(2,1)
+,`tags` varchar(255)
+,`uploaded_at` timestamp
+,`user_id` int
 );
 
 --
@@ -45412,20 +45447,13 @@ ALTER TABLE `rating`
   ADD KEY `idx_rating_value` (`rating_value`),
   ADD KEY `idx_created_at` (`created_at`);
 
---
--- 資料表索引 `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- 資料表索引 `user_wardrobe`
 --
-ALTER TABLE `user_wardrobe`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+-- ALTER TABLE `user_wardrobe`
+--   ADD PRIMARY KEY (`id`),
+--   ADD KEY `user_id` (`user_id`);
 
 --
 -- 在傾印的資料表使用自動遞增(AUTO_INCREMENT)
@@ -45465,13 +45493,13 @@ ALTER TABLE `rating`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `user_wardrobe`
 --
 ALTER TABLE `user_wardrobe`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 -- --------------------------------------------------------
 
