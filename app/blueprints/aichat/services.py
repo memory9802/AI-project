@@ -89,25 +89,51 @@ def handle_recommendation_chat(user_input: str, session_id: str = "recommendatio
     if not user_input:
         return {"is_recommendation": False, "response": "請先輸入您的需求。"}
     
-    # 判斷是否為推薦需求的關鍵詞
-    request_keywords = [
-        '推薦', '穿搭', '搭配', '衣服', '服裝', 'outfit', '適合', '場合',
-        '約會', '上班', '休閒', '運動', '正式', '派對', '出遊', '旅行',
-        '春天', '夏天', '秋天', '冬天', '天氣', '風格', '時尚', '帥氣',
-        '可愛', '優雅', '簡約', '韓系', '日系', '美式', '歐美', '西裝',
-        '褲子', '外套', '鞋子', '配件', '包包', '帽子', '圍巾', '裙子',
-        '洋裝', '襯衫', 'T恤', '牛仔褲', '運動鞋', '靴子', '涼鞋'
+    # 強烈的推薦意圖關鍵詞（明確要求推薦）
+    strong_keywords = [
+        '推薦', '穿搭', '搭配', '穿什麼', '怎麼穿', '想要', '需要',
+        '幫我', '給我', '來個', '來一套', '建議', 'outfit', '適合',
+        '找', '選', '挑'
     ]
+    
+    # 服裝單品關鍵詞（提到具體單品時才算推薦需求）
+    clothing_keywords = [
+        '西裝', '褲子', '外套', '鞋子', '配件', '包包', '帽子', '圍巾', 
+        '裙子', '洋裝', '襯衫', 'T恤', '牛仔褲', '運動鞋', '靴子', '涼鞋',
+        '衣服', '服裝'
+    ]
+    
+    # 場合關鍵詞（搭配強烈意圖詞才算）
+    occasion_keywords = [
+        '約會', '上班', '休閒', '運動', '正式', '派對', '出遊', '旅行',
+        '面試', '聚會', '婚禮', '逛街'
+    ]
+    
+    # 純閒聊關鍵詞（即使提到也不算推薦需求）
+    casual_only = ['天氣', '心情', '今天', '最近', '感覺', '覺得']
+    
     greetings = ['你好', '嗨', 'hi', 'hello', '哈囉', '早安', '午安', '晚安', '您好']
     
     lower_text = user_input.lower()
+    
+    # 判斷是否為問候語
     is_greeting = any(
         lower_text == g or lower_text == g + '！' or lower_text == g + '!' 
         for g in greetings
     ) and len(user_input) < 10
     
-    has_keywords = any(keyword in user_input for keyword in request_keywords)
-    is_recommendation_request = has_keywords or (len(user_input) > 15 and not is_greeting)
+    # 判斷推薦意圖
+    has_strong_intent = any(kw in user_input for kw in strong_keywords)
+    has_clothing = any(kw in user_input for kw in clothing_keywords)
+    has_occasion = any(kw in user_input for kw in occasion_keywords)
+    is_casual_only = any(kw in user_input for kw in casual_only) and not has_strong_intent
+    
+    # 只有在明確表達推薦意圖時才觸發推薦
+    is_recommendation_request = (
+        has_strong_intent or  # 明確說「推薦」、「穿什麼」等
+        (has_clothing and (has_strong_intent or has_occasion)) or  # 提到單品+意圖/場合
+        (has_occasion and has_strong_intent)  # 場合+意圖
+    ) and not is_casual_only  # 排除純閒聊
     
     if is_recommendation_request:
         # 這是推薦需求
@@ -121,12 +147,16 @@ def handle_recommendation_chat(user_input: str, session_id: str = "recommendatio
             }
         
         try:
-            # 給 AI 一個友善的系統提示
-            prompt = f"""你是一個友善的穿搭顧問助理。用戶剛剛說：「{user_input}」
+            # 給 AI 一個友善、有同理心的系統提示
+            prompt = f"""你是一個親切、善解人意的穿搭顧問。用戶剛剛說：「{user_input}」
 
-請用友善、簡短的方式回應（1-2句話），並引導用戶描述他們的穿搭需求。
-如果用戶只是打招呼，就友善回應並說明你可以幫忙推薦穿搭。
-不要直接給穿搭建議，而是鼓勵用戶說明場合、風格等需求。"""
+請以溫暖、同理心的態度回應（2-3句話），並自然地引導對話：
+- 如果用戶只是打招呼，親切回應並介紹你能提供的幫助
+- 如果用戶表達不確定或困擾，先表達理解和鼓勵，再引導他們說明需求
+- 如果用戶的輸入不清楚，用輕鬆的方式詢問更多細節
+- 避免生硬的制式回答，要像朋友般自然對話
+
+記住：先建立連結，再提供協助。回應要溫暖、自然、有人情味。"""
             
             ai_response = agent.chat(
                 session_id=session_id,
@@ -141,7 +171,7 @@ def handle_recommendation_chat(user_input: str, session_id: str = "recommendatio
             print(f"[AI] 推薦頁面對話失敗: {e}", flush=True, file=sys.stderr)
             return {
                 "is_recommendation": False,
-                "response": "您好！很高興為您服務 😊 請告訴我您想要什麼樣的穿搭建議呢？例如：「適合週末約會的穿搭」、「上班通勤的正式服裝」等。"
+                "response": "嗨！我懂你的感覺，選衣服有時候真的很讓人困擾呢 😊 別擔心，我在這裡幫你！你可以告訴我，今天想穿什麼場合的衣服嗎？像是約會、上班、還是休閒逛街都可以喔～"
             }
 
 
@@ -400,9 +430,9 @@ def get_db_conn():
 
 # 中英文類別對照表
 CATEGORY_MAPPING = {
-    # 中文 -> 英文
+    # 中文 -> 英文（基於實際資料庫類別）
     "上衣": "top",
-    "上身": "top",
+    "上身": "top",  # 資料庫實際使用
     "T恤": "top",
     "t恤": "top",
     "tee": "top",
@@ -420,7 +450,7 @@ CATEGORY_MAPPING = {
     "coat": "outerwear",
     "jacket": "outerwear",
     "下身": "bottom",
-    "下著": "bottom",
+    "下著": "bottom",  # 資料庫實際使用
     "下裝": "bottom",
     "褲子": "bottom",
     "長褲": "bottom",
@@ -435,7 +465,7 @@ CATEGORY_MAPPING = {
     "洋裝": "dress",
     "連身裙": "dress",
     "鞋子": "shoes",
-    "鞋類": "shoes",
+    "鞋類": "shoes",  # 資料庫實際使用
     "運動鞋": "shoes",
     "帆布鞋": "shoes",
     "球鞋": "shoes",
@@ -445,7 +475,7 @@ CATEGORY_MAPPING = {
     "背包": "bags",
     "手提包": "bags",
     "斜背包": "bags",
-    "配件": "accessories",
+    "配件": "accessories",  # 資料庫實際使用
     "飾品": "accessories",
     "圍巾": "accessories",
     "帽子": "accessories",
@@ -746,33 +776,19 @@ def generate_wardrobe_recommendation(
                     f"{item.get('_color', '')}\n"
                 )
         
-        if system_items:
-            text += f"\n 推薦商品 ({len(system_items)} 件):\n"
-            for idx, item in enumerate(system_items, 1):
-                text += (
-                    f"{idx}. {item.get('_title', '')} "
-                    f"({item.get('_category', '')}) - "
-                    f"{item.get('_color', '')}"
-                )
-                if item.get('price'):
-                    text += f" - NT$ {item.get('price', 0):.0f}"
-                text += "\n"
+        # 不再顯示系統商品 - 純衣櫃搜尋
         
         return text, mixed_items, keywords
 
     # === 5. 使用 AI 生成推薦 ===
     try:
-        # 構建 RAG context
+        # 構建 RAG context - 只顯示衣櫃項目
         rag_context = ""
         if wardrobe_items:
             rag_context += (
                 f"\n\n 已找到用戶個人衣櫃: {len(wardrobe_items)} 件"
             )
-        if system_items:
-            rag_context += f"\n 已找到系統推薦商品(需購買): {len(system_items)} 件"
-            need_buy = [it.get("_title", "") for it in system_items if it.get("_title")]
-            if need_buy:
-                rag_context += f"\n 需購買單品: {', '.join(need_buy)}"
+        # 不再顯示系統推薦商品
         if keywords:
             rag_context += f"\n 關鍵詞: {', '.join(keywords)}"
 
@@ -803,16 +819,7 @@ def generate_wardrobe_recommendation(
                     f"{item.get('_description', '')}\n"
                 )
         
-        if system_items:
-            fallback += f"\n 推薦商品 ({len(system_items)} 件):\n"
-            for idx, item in enumerate(system_items[:3], 1):
-                fallback += (
-                    f"{idx}. {item.get('_title', '')} - "
-                    f"{item.get('_description', '')}"
-                )
-                if item.get('price'):
-                    fallback += f" - NT$ {item.get('price', 0):.0f}"
-                fallback += "\n"
+        # 不再顯示系統商品
         
         return fallback, mixed_items, keywords
 
@@ -840,10 +847,10 @@ def generate_wardrobe_structured(
 
     keywords = extract_wardrobe_keywords(user_input)
     wardrobe_fields = get_wardrobe_fields()
-    item_fields = get_item_fields()
+    # item_fields 不再需要 - 純衣櫃搜尋
 
     wardrobe_items = []
-    system_items = []
+    # system_items 不再使用
 
     try:
         conn = get_db_conn()
@@ -860,72 +867,40 @@ def generate_wardrobe_structured(
         with conn.cursor() as cur:
             # 查詢 user_wardrobe
             if user_id:
+                print(f"[DEBUG services.py] user_id = {user_id}, keywords = {keywords}", file=sys.stderr, flush=True)
                 try:
-                    if keywords:
-                        placeholders = ",".join(["%s"] * len(keywords))
-                        sql = f"""
+                    # 不再使用 keywords 過濾，直接查詢所有用戶衣櫃項目
+                    # 讓後續的分類邏輯在 routes.py 中處理
+                    print(f"[DEBUG services.py] 查詢所有衣櫃項目（不過濾類別，不限制數量）", file=sys.stderr, flush=True)
+                    cur.execute(
+                        """
                         SELECT * FROM user_wardrobe
                         WHERE user_id = %s
-                        AND (category IN ({placeholders})
-                             OR occasion IN ({placeholders}))
-                        LIMIT 20
-                        """
-                        params = [user_id] + keywords + keywords
-                        cur.execute(sql, params)
-                    else:
-                        cur.execute("SELECT 1")  # no-op
-
+                        ORDER BY uploaded_at DESC, id DESC
+                        """,
+                        (user_id,),
+                    )
                     wardrobe_items = cur.fetchall()
-                    if not wardrobe_items:
-                        cur.execute(
-                            """
-                            SELECT * FROM user_wardrobe
-                            WHERE user_id = %s
-                            ORDER BY uploaded_at DESC, id DESC
-                            LIMIT 20
-                            """,
-                            (user_id,),
-                        )
-                        wardrobe_items = [
-                            standardize_wardrobe_item(item, wardrobe_fields)
-                            for item in cur.fetchall()
-                        ]
-                    else:
-                        wardrobe_items = [
-                            standardize_wardrobe_item(item, wardrobe_fields)
-                            for item in wardrobe_items
-                        ]
+                    
+                    print(f"[DEBUG services.py] 查詢到 {len(wardrobe_items)} 個 wardrobe_items", file=sys.stderr, flush=True)
+                    
+                    # 標準化所有項目
+                    wardrobe_items = [
+                        standardize_wardrobe_item(item, wardrobe_fields)
+                        for item in wardrobe_items
+                    ]
                 except Exception as e:
                     print(
                         f"[AI] user_wardrobe 查詢失敗: {e}",
                         file=sys.stderr
                     )
 
-            # 查詢 items
-            needed = max(10 - len(wardrobe_items), 5)
-            try:
-                if keywords:
-                    placeholders = ",".join(["%s"] * len(keywords))
-                    sql = f"""
-                    SELECT * FROM items
-                    WHERE category IN ({placeholders})
-                    LIMIT {needed}
-                    """
-                    cur.execute(sql, keywords)
-                else:
-                    sql = f"SELECT * FROM items ORDER BY RAND() LIMIT {needed}"
-                    cur.execute(sql)
-
-                system_items = cur.fetchall()
-                system_items = [
-                    standardize_item(item, item_fields)
-                    for item in system_items
-                ]
-            except Exception as e:
-                print(f"[AI] items 查詢失敗: {e}", file=sys.stderr)
-
-            # 混合結果
-            mixed_items = wardrobe_items + system_items
+            # 不再查詢 items - 純衣櫃搜尋
+            # system_items 不再使用
+            
+            # 只使用衣櫃項目
+            mixed_items = wardrobe_items
+            print(f"[DEBUG services.py] mixed_items 數量 = {len(mixed_items)}", file=sys.stderr, flush=True)
 
             # 處理時間和價格
             for item in mixed_items:
@@ -958,12 +933,14 @@ def generate_wardrobe_structured(
         }, mixed_items, keywords
 
     try:
+        print(f"[DEBUG services.py] 準備調用 AI，mixed_items 數量 = {len(mixed_items)}", file=sys.stderr, flush=True)
         result = agent.dual_recommendation(
             session_id=session_id,
             user_input=user_input,
             db_outfits=mixed_items,
             preferred_model=preferred_model,
         )
+        print(f"[DEBUG services.py] AI 返回結果，準備回傳 {len(mixed_items)} 個項目", file=sys.stderr, flush=True)
         return result, mixed_items, keywords
     except Exception as e:
         error_msg = str(e)

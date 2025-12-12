@@ -195,9 +195,8 @@
                 <input id="user-input" type="text" placeholder="請描述您的穿搭需求，例如：適合週末約會的穿搭"
                   class="flex-1 px-4 py-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark text-text-light dark:text-text-dark placeholder:text-subtle-light dark:placeholder:text-subtle-dark focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm" />
                 <button type="button" id="send-btn"
-                  class="sm:px-6 px-3 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors flex items-center justify-center gap-2 whitespace-nowrap sm:min-w-[120px] min-w-[48px]">
-                  <span class="material-symbols-outlined text-lg">send</span>
-                  <span class="hidden sm:inline">發送</span>
+                  class="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors flex items-center justify-center gap-2 whitespace-nowrap min-w-[100px]">
+                  發送 ➤
                 </button>
               </div>
             </div>
@@ -336,7 +335,7 @@
         userInput.value = '';
 
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> 思考中...';
+        sendBtn.textContent = '思考中...';
 
         try {
           // 先調用聊天 API 判斷意圖
@@ -402,7 +401,7 @@
           addMessage(`🚨 發生錯誤：${err.message}`, false);
         } finally {
           sendBtn.disabled = false;
-          sendBtn.innerHTML = '<span class="material-symbols-outlined text-lg">send</span><span class="hidden sm:inline">發送</span>';
+          sendBtn.textContent = '發送 ➤';
         }
       }
       
@@ -510,12 +509,18 @@
             if (pageDotsContainer) pageDotsContainer.innerHTML = dotsHtml;
 
             outfitSlides.innerHTML = outfits.map(createOutfitSlide).join('');
+            updatePage();
         } else {
             totalPages = 0;
-            if(pageDotsContainer) pageDotsContainer.innerHTML = '';
+            if(pageDotsContainer) pageDotsContainer.innerHTML = '<div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div><div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div><div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>';
             outfitSlides.innerHTML = '<div class="text-center text-subtle-light dark:text-subtle-dark w-full p-10">請在上方輸入您的需求以開始生成穿搭建議。</div>';
+            pageNumber.textContent = '0 / 0';
+            // 初始狀態：隱藏所有導航按鈕
+            prevBtn.classList.add('invisible');
+            prevBtn.disabled = true;
+            nextBtn.classList.add('hidden');
+            shoppingBtn.classList.add('hidden');
         }
-        updatePage();
       }
 
       sendBtn.addEventListener("click", sendMessage);
@@ -555,6 +560,20 @@
 
       window.addEventListener('load', () => {
         initOutfits();
+        // 確保按鈕文字正確
+        setTimeout(() => {
+          if (sendBtn && !sendBtn.disabled) {
+            sendBtn.textContent = '發送 ➤';
+          }
+        }, 100);
+      });
+      
+      // DOMContentLoaded 也設定一次
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById("send-btn");
+        if (btn && !btn.disabled) {
+          btn.textContent = '發送 ➤';
+        }
       });
     </script>
 

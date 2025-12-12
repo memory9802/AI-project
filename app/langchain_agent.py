@@ -295,24 +295,25 @@ class OutfitAIAgent:
         self._throttle(session_id)
         session = self.get_or_create_session(session_id)
 
+        # 列出所有可用的衣櫃項目（包含 tags）
         closet_lines = []
         if db_outfits:
-            for outfit in db_outfits[:3]:
-                title = outfit.get("_title") or outfit.get("title") or outfit.get("name") or "未命名穿搭"
-                occasion = outfit.get("_occasion") or outfit.get("occasion") or ""
-                items = outfit.get("items") or []
-                item_names = []
-                if isinstance(items, list):
-                    for item in items[:4]:
-                        if isinstance(item, dict):
-                            nm = item.get("name")
-                            if nm:
-                                item_names.append(nm)
-                item_str = ", ".join(item_names) if item_names else "無單品細節"
-                closet_lines.append(
-                    f"- ID:{outfit.get('_id') or outfit.get('id')} | 名稱:{title} | 場合:{occasion} | 單品:{item_str}"
-                )
-        closet_context = "\n".join(closet_lines) if closet_lines else "（無庫存資料，可直接給理想搭配）"
+            for idx, outfit in enumerate(db_outfits, 1):
+                item_name = outfit.get("_title") or outfit.get("item_name") or outfit.get("title") or "未命名"
+                category = outfit.get("_category") or outfit.get("category") or "未分類"
+                color = outfit.get("_color") or outfit.get("color") or ""
+                tags = outfit.get("tags") or ""
+                
+                item_info = f"{idx}. {item_name} (類別:{category}"
+                if color:
+                    item_info += f", 顏色:{color}"
+                if tags:
+                    item_info += f", 風格標籤:{tags}"
+                item_info += ")"
+                
+                closet_lines.append(item_info)
+        
+        closet_context = "\n".join(closet_lines) if closet_lines else "（無衣櫃資料）"
 
         schemas = [
             ResponseSchema(
@@ -330,21 +331,34 @@ class OutfitAIAgent:
         format_instructions = output_parser.get_format_instructions()
 
         prompt_template = """
-你是專業穿搭顧問，請產出 1) closet_pick（庫存最接近） 2) global_pick（理想方案）。
-使用 JSON 回答。
+你是專業穿搭顧問。根據使用者的場合需求，從衣櫃項目中選擇最合適的單品組合。
 
-使用者輸入/結構化提示：
+使用者需求：
 {user_input}
 
-可參考的庫存（最多 3 筆）：
+可用的衣櫃項目（請仔細參考風格標籤選擇）：
 {closet_context}
 
 請嚴格依下列 JSON schema 回覆：
 {format_instructions}
 
-要求：
-- 每個 pick 需包含 title、occasion、items（2~4 項，逗號分隔）、reason。
-- 語言請用中文，條列清楚。
+重要指示：
+1. closet_pick: 從上方衣櫃項目中選擇最適合場合的單品（上衣、褲子、鞋子、配件）
+   - 根據場合特性選擇：運動→運動鞋/運動褲，正式→襯衫/皮鞋，休閒→T恤/牛仔褲
+   - 參考風格標籤：日系/韓風/極簡/休閒等，選擇風格一致的單品
+   - items 格式：直接使用衣櫃項目名稱，用逗號分隔（例如："白V領短袖, 運動短褲, 運動鞋, 球帽"）
+   
+2. global_pick: 不受限制的理想穿搭建議（可以是不在衣櫃裡的商品）
+   - 提供更完美的搭配方案
+   - items 格式：理想單品描述，用逗號分隔
+
+3. 每個 pick 必須包含：
+   - title: 穿搭主題名稱
+   - occasion: 適合場合
+   - items: 單品列表（2-4項，逗號分隔）
+   - reason: 選擇理由（說明為何適合該場合，並提到風格標籤）
+
+請用中文回答，語氣友善專業。
 """
         prompt = prompt_template.format(
             user_input=user_input, closet_context=closet_context, format_instructions=format_instructions
