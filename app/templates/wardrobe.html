@@ -82,11 +82,21 @@
         sessionStorage.setItem('current_user', JSON.stringify(data.user));
         document.body.dataset.userId = data.user?.id || '';
         document.body.dataset.username = data.user?.username || '';
+        
+        // 顯示使用者名稱
         const userDisplay = document.getElementById('user-display');
         if (userDisplay && data.user?.username) {
           userDisplay.textContent = data.user.username;
           userDisplay.classList.remove('hidden');
         }
+        
+        // 顯示登出區域
+        const logoutSection = document.getElementById('logout-section');
+        if (logoutSection) {
+          logoutSection.classList.remove('hidden');
+          logoutSection.classList.add('flex');
+        }
+        
         const recommendationLink = document.getElementById('recommendation-link');
         if (recommendationLink && recommendationLink.dataset.base && data.user?.id) {
           recommendationLink.href = `${recommendationLink.dataset.base}?user_id=${data.user.id}&username=${encodeURIComponent(data.user.username || '')}`;
@@ -151,15 +161,26 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <span id="user-display" class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span>
-            <a href="{{ url_for('home.clear_user_session') }}" class="text-sm font-medium text-subtle-light dark:text-subtle-dark hover:text-red-500 transition-colors" title="登出">
-              登出
-            </a>
-            <a href="{{ url_for('login.login') }}"
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              title="登入">
-              <span class="material-symbols-outlined text-xl">person</span>
-            </a>
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('login.login') }}"
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                title="登入">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </a>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+            
+            <!-- 登出區域 -->
+            <div id="logout-section" class="hidden flex-col items-center gap-1">
+              <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+            
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -189,8 +210,6 @@
                       <option value="配件">配件</option>
                     </select>
                     <input id="color" type="text" placeholder="衣物顏色"
-                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
-                    <input id="occasion" type="text" placeholder="場合"
                       class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
                     <input id="itemImage" type="file" accept="image/*" multiple
                       class="px-2 py-2 border rounded-md w-40 sm:w-48 md:w-56 flex-shrink-0 bg-white dark:bg-secondary-dark/80" />
@@ -276,7 +295,6 @@
                 name: document.getElementById('itemName'),
                 category: document.getElementById('itemCategory'),
                 color: document.getElementById('color'),
-                occasion: document.getElementById('occasion'),
                 image: document.getElementById('itemImage'),
                 addBtn: document.getElementById('addBtn'),
                 gallery: document.getElementById('gallery'),
@@ -391,7 +409,7 @@
 
                   const meta = document.createElement('div');
                   meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                  meta.textContent = [item.category, item.color, item.occasion].filter(Boolean).join(' · ');
+                  meta.textContent = [item.category, item.color].filter(Boolean).join(' · ');
 
                   const tags = document.createElement('div');
                   tags.className = 'flex flex-wrap gap-2 text-[11px] text-primary';
@@ -437,7 +455,6 @@
               function resetForm() {
                 el.name.value = '';
                 el.color.value = '';
-                el.occasion.value = '';
                 el.category.value = 'top';
                 el.image.value = '';
                 state.selectedStyles.clear();
@@ -451,11 +468,10 @@
                 const name = el.name.value.trim();
                 const category = el.category.value.trim();
                 const color = el.color.value.trim();
-                const occasion = el.occasion.value.trim();
                 const styles = Array.from(state.selectedStyles);
                 const files = Array.from(el.image.files || []);
 
-                if (!name || !category || !color || !occasion) {
+                if (!name || !category || !color) {
                   alert('所有欄位都必填');
                   return;
                 }
@@ -472,7 +488,6 @@
                 formData.append('item_name', name);
                 formData.append('category', category);
                 formData.append('color', color);
-                formData.append('occasion', occasion);
                 formData.append('tags', styles.join(','));
                 files.forEach(file => formData.append('images', file));
 
