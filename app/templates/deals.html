@@ -197,10 +197,14 @@
             </div>
 
             <!-- Back Button -->
-            <div class="text-center mt-8">
+            <div class="text-center mt-8 flex gap-4 justify-center">
               <a href="{{ url_for('recommendation.recommend') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
                 <span class="material-symbols-outlined">arrow_back</span>
                 <span>返回推薦</span>
+              </a>
+              <a href="{{ url_for('wardrobe.wardrobe') }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-secondary-light dark:bg-secondary-dark text-text-light dark:text-text-dark rounded-lg font-medium hover:bg-primary/10 transition-colors">
+                <span class="material-symbols-outlined">checkroom</span>
+                <span>我的衣櫃</span>
               </a>
             </div>
           </div>
