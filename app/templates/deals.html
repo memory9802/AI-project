@@ -283,6 +283,23 @@
       }
     });
 
+    const CATEGORY_LABELS = {
+      'top': '上衣',
+      'bottom': '下身',
+      'shoes': '鞋子',
+      'accessories': '配件',
+      'outerwear': '外套',
+      'dress': '洋裝',
+      'bags': '配件',
+      'bag': '配件',
+    };
+
+    function formatCategory(cat) {
+      if (!cat) return '未分類';
+      const key = cat.toString().trim().toLowerCase();
+      return CATEGORY_LABELS[key] || cat;
+    }
+
     function renderOutfit(outfit) {
       const container = document.getElementById('outfit-container');
       if (!outfit || !outfit.items || outfit.items.length === 0) {
@@ -292,7 +309,7 @@
 
       const itemsHTML = outfit.items.map(item => {
         const title = item._title || item.name || '未命名商品';
-        const category = item._category || item.category || '未分類';
+        const category = formatCategory(item._category || item.category || '未分類');
         const color = item._color || item.color || '未指定顏色';
         const image = item._image || item.image_url || 'https://via.placeholder.com/300?text=No+Image';
         const price = item.price ? `NT$ ${Math.round(item.price)}` : '詢價';

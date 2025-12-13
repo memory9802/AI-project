@@ -435,6 +435,9 @@ CATEGORY_MAPPING = {
     "t-shirt": "top",
     "短t": "top",
     "短袖": "top",
+    "帽t": "top",
+    "帽Ｔ": "top",
+    "連帽": "top",
     "襯衫": "top",
     "針織衫": "top",
     "毛衣": "top",
@@ -1228,10 +1231,15 @@ def smart_categorize(item_name, db_category=None):
     name_lower = item_name.lower()
     
     # 關鍵字定義 (簡化版，完整版可參考原 routes.py)
-    top_keywords = ['t恤', 't-shirt', 'tee', '襯衫', 'shirt', '背心', '上衣', 'top', '帽t', 'hoodie', '衛衣', '毛衣', 'sweater', '外套', 'jacket', 'coat']
+    top_keywords = [
+        't恤', 't-shirt', 'tee', '襯衫', 'shirt', '背心', '上衣', 'top',
+        '帽t', '帽t恤', '帽踢', '連帽', '連帽t', '連帽t恤',
+        'hoodie', 'hooded', '衛衣', '毛衣', 'sweater',
+        '外套', 'jacket', 'coat'
+    ]
     bottom_keywords = ['長褲', '褲', 'pants', 'jeans', '牛仔褲', '短褲', 'shorts', '裙', 'skirt']
     shoes_keywords = ['鞋', 'shoes', 'sneaker', 'boots', '靴', '涼鞋']
-    accessories_keywords = ['帽', 'cap', 'hat', '包', 'bag', '圍巾', '眼鏡', '飾品', '襪', 'belt']
+    accessories_keywords = ['帽子', 'cap', 'hat', '棒球帽', '漁夫帽', '毛帽', '包', 'bag', '圍巾', '眼鏡', '飾品', '襪', 'belt']
     
     for keyword in top_keywords:
         if keyword in name_lower: return 'top'
@@ -1331,8 +1339,8 @@ def generate_purchase_recommendation(
     """
     # 1. 獲取商品和關鍵字
     item_fields = get_item_fields()
-    wardrobe_fields = get_wardrobe_fields() if user_id else None
     system_items = []
+    # Deals 場景不混入衣櫃，強制只用 items 表
     wardrobe_items = []
     keywords = extract_item_keywords(user_input)  # 保留關鍵字提取，可用於日誌或未來擴充
     
@@ -1379,23 +1387,6 @@ def generate_purchase_recommendation(
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
-            # 2-0. 讀取使用者衣櫃，讓 Deals 也能參考「我已經有哪些單品」
-            if user_id and wardrobe_fields:
-                try:
-                    cur.execute(
-                        """
-                        SELECT * FROM user_wardrobe
-                        WHERE user_id = %s
-                        ORDER BY uploaded_at DESC, id DESC
-                        """,
-                        (user_id,),
-                    )
-                    wardrobe_items = [
-                        standardize_wardrobe_item(item, wardrobe_fields)
-                        for item in cur.fetchall()
-                    ]
-                except Exception as e:
-                    print(f"[AI] user_wardrobe 查詢失敗: {e}", file=sys.stderr)
             # 結合 關鍵字、顏色 和 擴充風格詞 進行搜尋 (去重)
             search_terms = list(set(keywords + detected_colors + expanded_terms))
             # 策略優化：如果有明確的風格關鍵字 (expanded_terms)，優先使用它們
@@ -1517,6 +1508,85 @@ def generate_purchase_recommendation(
         if filtered_items:
             system_items = filtered_items
         # else: system_items 保持原樣 (全隨機)，這是最後的 fallback
+
+    # 統一類別欄位，確保前端組裝成「上衣/下身/鞋子/配件」
+    normalized_items = []
+    for item in system_items:
+        item = dict(item)
+        smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+        if smart_cat and smart_cat != 'unknown':
+            item['_category'] = smart_cat
+        else:
+            norm_cat = normalize_category(item.get('_category', ''))
+            if norm_cat:
+                item['_category'] = norm_cat
+        normalized_items.append(item)
+    system_items = normalized_items
+
+    # 若缺少必要類別，嘗試從 items 再抓補足 (top/bottom/shoes/accessories)
+    def missing_categories(items):
+        cats = {(it.get("_category") or "").lower() for it in items}
+        required = ['top', 'bottom', 'shoes', 'accessories']
+        return [cat for cat in required if not any(cat in c for c in cats)]
+
+    missing = missing_categories(system_items)
+    if missing:
+        fillers = []
+        try:
+            conn_extra = get_db_conn()
+            with conn_extra.cursor() as cur:
+                for cat in missing:
+                    like = f"%{cat}%"
+                    cur.execute(
+                        "SELECT * FROM items WHERE category LIKE %s OR clothing_type LIKE %s ORDER BY RAND() LIMIT %s",
+                        (like, like, 3),
+                    )
+                    results = cur.fetchall() or []
+                    fillers.extend(results)
+        except Exception as e:
+            print(f"[AI] 補類別查詢失敗: {e}", file=sys.stderr)
+        finally:
+            try:
+                conn_extra.close()
+            except Exception:
+                pass
+
+        if fillers:
+            fillers_std = [standardize_item(it, item_fields) for it in fillers]
+            system_items = system_items + fillers_std
+
+            # 再次標準化類別
+            normalized_items = []
+            for item in system_items:
+                item = dict(item)
+                smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+                if smart_cat and smart_cat != 'unknown':
+                    item['_category'] = smart_cat
+                else:
+                    norm_cat = normalize_category(item.get('_category', ''))
+                    if norm_cat:
+                        item['_category'] = norm_cat
+                normalized_items.append(item)
+            system_items = normalized_items
+
+    # 補完後再以類別均衡方式挑選最多 limit 件
+    if system_items:
+        cats = {'top': [], 'bottom': [], 'shoes': [], 'accessories': [], 'other': []}
+        for item in system_items:
+            c = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+            if c in cats:
+                cats[c].append(item)
+            else:
+                cats['other'].append(item)
+        balanced_items = []
+        max_len = max(len(l) for l in cats.values()) if any(cats.values()) else 0
+        for i in range(max_len):
+            for key in ['top', 'bottom', 'shoes', 'accessories', 'other']:
+                if i < len(cats[key]):
+                    balanced_items.append(cats[key][i])
+            if len(balanced_items) >= limit:
+                break
+        system_items = balanced_items[:limit]
 
     def can_form_sets(items):
         if len(items) < 2:
