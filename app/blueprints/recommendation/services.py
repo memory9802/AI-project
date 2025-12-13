@@ -1331,7 +1331,9 @@ def generate_purchase_recommendation(
     """
     # 1. 獲取商品和關鍵字
     item_fields = get_item_fields()
+    wardrobe_fields = get_wardrobe_fields() if user_id else None
     system_items = []
+    wardrobe_items = []
     keywords = extract_item_keywords(user_input)  # 保留關鍵字提取，可用於日誌或未來擴充
     
     # 1.5 額外偵測顏色關鍵字 (增強 SQL 搜尋準確度)
@@ -1377,6 +1379,23 @@ def generate_purchase_recommendation(
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
+            # 2-0. 讀取使用者衣櫃，讓 Deals 也能參考「我已經有哪些單品」
+            if user_id and wardrobe_fields:
+                try:
+                    cur.execute(
+                        """
+                        SELECT * FROM user_wardrobe
+                        WHERE user_id = %s
+                        ORDER BY uploaded_at DESC, id DESC
+                        """,
+                        (user_id,),
+                    )
+                    wardrobe_items = [
+                        standardize_wardrobe_item(item, wardrobe_fields)
+                        for item in cur.fetchall()
+                    ]
+                except Exception as e:
+                    print(f"[AI] user_wardrobe 查詢失敗: {e}", file=sys.stderr)
             # 結合 關鍵字、顏色 和 擴充風格詞 進行搜尋 (去重)
             search_terms = list(set(keywords + detected_colors + expanded_terms))
             # 策略優化：如果有明確的風格關鍵字 (expanded_terms)，優先使用它們
@@ -1430,13 +1449,13 @@ def generate_purchase_recommendation(
                     item["price"] = float(item["price"])
     except Exception as e:
         print(f"[AI] DB 查詢失敗: {e}", file=sys.stderr)
-        return {"error": "無法連線資料庫，請稍後再試"}, [], keywords
+        return {"error": "無法連線資料庫，請稍後再試"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
     finally:
         if conn:
             conn.close()
             
-    if not system_items:
-        return {"error": "目前資料庫中沒有商品"}, [], keywords
+    if not system_items and not wardrobe_items:
+        return {"error": "目前資料庫中沒有商品"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
         
     # === 關鍵修改：在送給 LLM 之前，先用 Python 邏輯過濾一遍 ===
     # 這確保了即使 SQL 沒搜到 "簡約"，我們也能從隨機池中篩選出 "素色/基本款" 的商品
@@ -1445,6 +1464,29 @@ def generate_purchase_recommendation(
         # 將標題與顏色合併判斷，讓 is_suitable_for_theme 能過濾顏色
         if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
     ]
+    # 針對正式/商務需求再加一道白名單，避免穿搭出現運動或街頭單品
+    theme_lower = user_input.lower()
+    is_formal = any(sig in theme_lower for sig in ['正式', '商務', '正裝', '面試', '上班', '會議', '職場'])
+    if is_formal:
+        formal_allow = [
+            '西裝', 'blazer', 'suit', '西褲', '西裝褲',
+            '襯衫', 'shirt', '皮鞋', 'oxford', 'derby',
+            '領帶', 'tie', '領結', 'belt', '皮帶'
+        ]
+        formal_block = ['運動', '球鞋', 'sneaker', 'hoodie', '帽t', '短褲', '涼鞋', '拖鞋', '漁夫帽', '棒球帽', '印花', '卡通', '圖騰', 'oversize', '街頭']
+        def match_formal(item):
+            text = " ".join([
+                str(item.get("_title", "")),
+                str(item.get("_description", "")),
+                str(item.get("_category", "")),
+                str(item.get("clothing_type", "")),
+            ]).lower()
+            return any(k in text for k in formal_allow) and not any(b in text for b in formal_block)
+        base = filtered_items if filtered_items else system_items
+        filtered_items = [it for it in base if match_formal(it)]
+        # 正式場景若仍無結果，直接返回錯誤，避免亂湊穿搭
+        if not filtered_items:
+            return {"error": "目前找不到符合正式/商務風格的商品"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
     
     # === 優化：類別平衡邏輯 ===
     # 確保回傳的列表中包含 上/下/鞋/配，避免因隨機排序導致鞋子配件被截斷
@@ -1476,8 +1518,25 @@ def generate_purchase_recommendation(
             system_items = filtered_items
         # else: system_items 保持原樣 (全隨機)，這是最後的 fallback
 
+    def can_form_sets(items):
+        if len(items) < 2:
+            return False
+        categories = {(it.get("_category") or "").lower() for it in items}
+        has_top = any("top" in c or "dress" in c for c in categories)
+        has_bottom = any("bottom" in c for c in categories)
+        has_shoes = any("shoes" in c for c in categories)
+        has_bag = any("bags" in c for c in categories)
+        return has_top and (has_bottom or has_shoes or has_bag)
+
+    combined_for_ai = wardrobe_items + system_items if wardrobe_items else system_items
+    payload = {
+        "items": system_items,
+        "wardrobe_items": wardrobe_items,
+        "can_form_sets": can_form_sets(system_items or wardrobe_items),
+    }
+
     if not agent:
-        return {"error": "AI 功能未啟用"}, system_items, keywords
+        return {"error": "AI 功能未啟用"}, payload, keywords
 
     # 3. 調用 AI 模型 (使用與衣櫃推薦相同的機制)
     try:
@@ -1493,14 +1552,13 @@ def generate_purchase_recommendation(
 
         ai_response_dict = agent.dual_recommendation(
             session_id=session_id,
-            user_input=user_input,
             user_input=instruction + user_input,
-            db_outfits=system_items,  # 直接傳遞結構化商品列表，讓 Agent 內部處理
+            db_outfits=combined_for_ai,  # 直接傳遞結構化商品列表（含衣櫃），讓 Agent 內部處理
             preferred_model=preferred_model,
         )
         
-        return ai_response_dict, system_items, keywords
+        return ai_response_dict, payload, keywords
         
     except Exception as e:
         print(f"[AI] 購買推薦 AI 處理失敗: {e}", file=sys.stderr)
-        return {"error": f"AI 推薦生成失敗: {str(e)}"}, [], keywords
+        return {"error": f"AI 推薦生成失敗: {str(e)}"}, payload, keywords

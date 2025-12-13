@@ -275,6 +275,7 @@
       let currentPage = 0;
       let outfits = [];
       let totalPages = 0;
+      let lastPrompt = '';
 
       const prevBtn = document.getElementById("prev-btn");
       const nextBtn = document.getElementById("next-btn");
@@ -330,6 +331,7 @@
           return;
         }
 
+        lastPrompt = text;
         // 添加用戶訊息到聊天記錄
         addMessage(text, true);
         userInput.value = '';
@@ -547,7 +549,7 @@
       });
       shoppingBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const message = userInput.value.trim() || '推薦購買';
+        const message = userInput.value.trim() || lastPrompt || '推薦購買';
         // 儲存消息到 sessionStorage 並跳轉到 deals 頁面
         sessionStorage.setItem('deals_message', message);
         const dealsUrl = `{{ url_for('recommendation.deals') }}?message=${encodeURIComponent(message)}`;

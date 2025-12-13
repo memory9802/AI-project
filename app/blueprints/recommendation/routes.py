@@ -434,7 +434,10 @@ def deals_api():
         if not data or 'message' not in data:
             return jsonify({'success': False, 'error': '請提供需求'}), 400
         
-        user_input = data['message'].strip()
+        user_input = (data['message'] or '').strip()
+        placeholder_messages = {'推薦購買', '推薦穿搭', '推薦', '購物推薦', '推薦購買清單', '推薦搭配'}
+        if not user_input or user_input in placeholder_messages:
+            return jsonify({'success': False, 'error': '請描述你的需求，例如：正式穿搭、商務會議、週末約會等'}), 400
         session_id = data.get('session_id', f'deals-{user_id or "guest"}-{int(__import__("time").time())}')
         preferred_model = data.get('model', 'auto')
 
@@ -450,10 +453,18 @@ def deals_api():
             user_id=user_id
         )
         
-        if not items_payload:
+        has_candidates = False
+        if isinstance(items_payload, dict):
+            has_candidates = bool((items_payload.get('items') or []) or (items_payload.get('wardrobe_items') or []))
+        else:
+            has_candidates = bool(items_payload)
+        if not has_candidates:
             return jsonify({'success': False, 'error': 'AI 未能根據您的需求找到合適的商品。'}), 500
 
+        wardrobe_items = []
         all_items = items_payload if isinstance(items_payload, list) else items_payload.get('items', [])
+        if isinstance(items_payload, dict):
+            wardrobe_items = items_payload.get('wardrobe_items', []) or []
         
         # 使用與衣櫃搜索相同的邏輯過濾不合適的商品 (回應使用者的需求)
         # 這能確保如 "滑雪" 需求下不會出現 "短褲" 或 "涼鞋"
@@ -461,15 +472,26 @@ def deals_api():
             item for item in all_items 
             if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
         ]
+        wardrobe_filtered = [
+            item for item in wardrobe_items
+            if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
+        ] if wardrobe_items else []
         
         # 只要有過濾後的商品，就優先使用，不再因為數量少而退回使用混雜的 all_items
         if filtered_items:
             all_items = filtered_items
+        if wardrobe_filtered:
+            wardrobe_items = wardrobe_filtered
         
-        outfit_items = build_complete_outfit(all_items)
+        product_pool = all_items
+        outfit_source = wardrobe_items + product_pool if wardrobe_items else product_pool
+        if not outfit_source:
+            outfit_source = wardrobe_items
+
+        outfit_items = build_complete_outfit(outfit_source)
         
         outfit_ids = {id(item) for item in outfit_items}
-        product_items = [item for item in all_items if id(item) not in outfit_ids][:10]
+        product_items = [item for item in product_pool if id(item) not in outfit_ids][:10]
         
         # 針對前端 Grid 高度不一致問題的後端修正：
         # 截斷過長的標題與描述，讓卡片高度盡量一致，確保「加入購物車」按鈕對齊
