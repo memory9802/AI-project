@@ -239,30 +239,5 @@
     </div>
   </section>
 
-  <!-- 浮動對話框：粉色圓形按鈕 + 內嵌機器人 iframe -->
-  <div class="dialog-container">
-    <!-- 這顆按鈕的樣式（粉色圓形）在 homecss.css 裡，JS 在 aichat.js 控制開關 -->
-    <button id="toggleBtn">
-      <span class="material-symbols-outlined">forum</span>
-    </button>
-    <div id="dialog">
-      <div class="dialog-header">
-        <h3>AI 穿搭顧問</h3>
-        <button id="closeBtn" class="close-btn">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <iframe
-        src="{{ url_for('aichat.chat') }}"
-        width="100%"
-        height="100%"
-        style="border: none;">
-      </iframe>
-    </div>
-  </div>
-
-  <!-- 控制對話框開關的 JS（也放在 static/） -->
-  <script src="{{ url_for('static', filename='aichat.js') }}"></script>
-
 </body>
 </html>

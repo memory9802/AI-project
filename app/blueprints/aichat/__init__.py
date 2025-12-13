@@ -1,5 +1,1 @@
-from flask import Blueprint
-
-aichat_bp = Blueprint('aichat', __name__, template_folder='templates')
-
-from . import routes
+from flask import Blueprint\n\naichat_bp = Blueprint('aichat', __name__, template_folder='templates')\n

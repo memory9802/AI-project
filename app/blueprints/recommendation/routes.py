@@ -1,7 +1,7 @@
 from flask import render_template, g, request, jsonify
 from auth import login_required, get_current_user
 from . import recommendation_bp
-from ..aichat.services import generate_wardrobe_structured, get_db_conn, normalize_category, handle_recommendation_chat
+from .services import generate_wardrobe_structured, get_db_conn, normalize_category, handle_recommendation_chat
 import json
 import sys
 from .rating_service import (
