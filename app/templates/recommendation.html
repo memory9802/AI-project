@@ -547,7 +547,11 @@
       });
       shoppingBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        window.open("{{ url_for('wardrobe.deals') }}", '_blank', 'noopener,noreferrer');
+        const message = userInput.value.trim() || '推薦購買';
+        // 儲存消息到 sessionStorage 並跳轉到 deals 頁面
+        sessionStorage.setItem('deals_message', message);
+        const dealsUrl = `{{ url_for('recommendation.deals') }}?message=${encodeURIComponent(message)}`;
+        window.location.href = dealsUrl;
       });
       document.addEventListener('keydown', (e) => {
         if (document.activeElement.tagName === 'INPUT') return;

@@ -7,7 +7,7 @@
 
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
   <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet"/>
 
@@ -45,6 +45,24 @@
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+    }
+    .spinner {
+      border: 4px solid rgba(216, 167, 177, 0.1);
+      border-top: 4px solid #D8A7B1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -65,13 +83,11 @@
           const currentPath = window.location.pathname + window.location.search;
           window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
         } else {
-          // 顯示使用者名稱
           const userDisplay = document.getElementById('user-display');
           if (userDisplay && data.user?.username) {
             userDisplay.textContent = data.user.username;
             userDisplay.classList.remove('hidden');
           }
-          // 顯示登出區域
           const logoutSection = document.getElementById('logout-section');
           if (logoutSection) {
             logoutSection.classList.remove('hidden');
@@ -103,38 +119,33 @@
           <div class="hidden md:flex items-center gap-9">
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon" width="40" height="40">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('home.index') }}">首頁</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon" width="40" height="40">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon" width="40" height="40">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon" width="40" height="40">
               </picture>
               <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享 &amp; 互動</a>
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <!-- 使用者頭像與名稱 -->
             <div class="flex flex-col items-center gap-1">
               <a href="{{ url_for('login.login') }}"
                 class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
@@ -144,7 +155,6 @@
               <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
             </div>
             
-            <!-- 登出區域 -->
             <div id="logout-section" class="hidden flex-col items-center gap-1">
               <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
                 class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
@@ -166,176 +176,31 @@
             <!-- Page Title -->
             <div class="text-center mb-8">
               <h1 class="text-4xl font-bold text-text-light dark:text-text-dark mb-2">好康推薦</h1>
-              <p class="text-lg text-subtle-light dark:text-subtle-dark">精選三套優質穿搭組合，限時優惠中！</p>
+              <p class="text-lg text-subtle-light dark:text-subtle-dark" id="subtitle">根據你的需求推薦購買清單</p>
             </div>
 
-            <!-- Outfit 1 -->
-            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
-              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">商務會議</h2>
-                    <p class="text-sm text-subtle-light dark:text-subtle-dark">專業俐落的商務穿搭，展現自信與專業形象</p>
-                  </div>
-                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
-                    <span class="material-symbols-outlined text-primary">star</span>
-                    <span class="font-bold text-lg">95%</span>
-                  </div>
-                </div>
+            <!-- 上半部分：推薦穿搭 -->
+            <div id="outfit-container" class="mb-12">
+              <div class="loading">
+                <div class="spinner"></div>
               </div>
-              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1620799140188-3b2a7f3a5a7e?w=400" alt="白色襯衫" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">白色襯衫</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">白色</p>
-                  <p class="text-xs text-primary font-medium">UNIQLO</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400" alt="黑色西裝褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">黑色西裝褲</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
-                  <p class="text-xs text-primary font-medium">ZARA</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400" alt="黑色皮鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">黑色皮鞋</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
-                  <p class="text-xs text-primary font-medium">Clarks</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1611652022419-a9419f74343f?w=400" alt="皮革公事包" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">配件</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">皮革公事包</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">棕色</p>
-                  <p class="text-xs text-primary font-medium">Coach</p>
+            </div>
+
+            <!-- 下半部分：推薦單品清單 -->
+            <div class="mb-8">
+              <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-6">推薦單品清單</h2>
+              <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="loading">
+                  <div class="spinner"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Outfit 2 -->
-            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
-              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">週末休閒</h2>
-                    <p class="text-sm text-subtle-light dark:text-subtle-dark">輕鬆自在的週末穿搭，舒適又有型</p>
-                  </div>
-                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
-                    <span class="material-symbols-outlined text-primary">star</span>
-                    <span class="font-bold text-lg">88%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400" alt="卡其色T恤" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">卡其色T恤</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">卡其</p>
-                  <p class="text-xs text-primary font-medium">H&M</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=400" alt="淺藍牛仔褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">淺藍牛仔褲</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">淺藍</p>
-                  <p class="text-xs text-primary font-medium">Levi's</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400" alt="白色球鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">白色球鞋</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">白色</p>
-                  <p class="text-xs text-primary font-medium">Nike</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400" alt="棒球帽" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">配件</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">棒球帽</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">黑色</p>
-                  <p class="text-xs text-primary font-medium">New Era</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Outfit 3 -->
-            <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
-              <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">日常出門</h2>
-                    <p class="text-sm text-subtle-light dark:text-subtle-dark">簡約舒適的日常穿搭，溫暖百搭又實用</p>
-                  </div>
-                  <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
-                    <span class="material-symbols-outlined text-primary">star</span>
-                    <span class="font-bold text-lg">92%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400" alt="深藍針織衫" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">上衣</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">深藍針織衫</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">深藍</p>
-                  <p class="text-xs text-primary font-medium">MUJI</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400" alt="卡其色休閒褲" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">下身</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">卡其色休閒褲</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">卡其</p>
-                  <p class="text-xs text-primary font-medium">GAP</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3">
-                    <img src="https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=400" alt="棕色休閒鞋" class="w-full h-48 object-cover rounded-lg shadow-md" />
-                    <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">鞋子</div>
-                  </div>
-                  <h3 class="font-bold text-sm mb-1">棕色休閒鞋</h3>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">棕色</p>
-                  <p class="text-xs text-primary font-medium">Timberland</p>
-                </div>
-                <div class="outfit-item">
-                  <div class="relative mb-3 border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg h-48 flex items-center justify-center">
-                    <div class="text-center text-subtle-light dark:text-subtle-dark">
-                      <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">checkroom</span>
-                      <p class="text-xs">暫無配件</p>
-                    </div>
-                  </div>
-                  <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">可自由搭配</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- My Wardrobe Button -->
+            <!-- Back Button -->
             <div class="text-center mt-8">
-              <a href="{{ url_for('wardrobe.wardrobe') }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                <span class="material-symbols-outlined">checkroom</span>
-                <span>我的衣櫃</span>
+              <a href="{{ url_for('recommendation.recommend') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span>返回推薦</span>
               </a>
             </div>
           </div>
@@ -359,5 +224,152 @@
       </div>
     </div>
   </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 從 URL 參數或 sessionStorage 獲取用戶輸入的需求
+      const params = new URLSearchParams(window.location.search);
+      const message = params.get('message') || sessionStorage.getItem('deals_message') || '推薦購買';
+      
+      if (message && message !== '推薦購買') {
+        document.getElementById('subtitle').textContent = `根據「${message}」為你推薦購買清單`;
+      }
+
+      try {
+        const response = await fetch('{{ url_for("recommendation.deals_api") }}', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            message: message
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`API 請求失敗: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || '無法獲取推薦數據');
+        }
+
+        // 渲染推薦穿搭
+        renderOutfit(data.outfit);
+        
+        // 渲染推薦單品
+        renderProducts(data.products);
+
+      } catch (error) {
+        console.error('Deals API 錯誤:', error);
+        document.getElementById('outfit-container').innerHTML = `
+          <div class="text-center text-red-500 p-8">
+            <p>無法加載推薦數據: ${error.message}</p>
+          </div>
+        `;
+        document.getElementById('products-container').innerHTML = `
+          <div class="text-center text-red-500 p-8">
+            <p>無法加載推薦單品</p>
+          </div>
+        `;
+      }
+    });
+
+    function renderOutfit(outfit) {
+      const container = document.getElementById('outfit-container');
+      if (!outfit || !outfit.items || outfit.items.length === 0) {
+        container.innerHTML = '<p class="text-center text-subtle-light">暫無推薦穿搭</p>';
+        return;
+      }
+
+      const itemsHTML = outfit.items.map(item => {
+        const title = item._title || item.name || '未命名商品';
+        const category = item._category || item.category || '未分類';
+        const color = item._color || item.color || '未指定顏色';
+        const image = item._image || item.image_url || 'https://via.placeholder.com/300?text=No+Image';
+        const price = item.price ? `NT$ ${Math.round(item.price)}` : '詢價';
+
+        return `
+          <div class="outfit-item">
+            <div class="relative mb-3">
+              <img src="${image}" alt="${title}" class="w-full h-48 object-cover rounded-lg shadow-md" onerror="this.src='https://via.placeholder.com/300?text=No+Image'" />
+              <div class="absolute top-2 left-2 bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">${category}</div>
+            </div>
+            <h3 class="font-bold text-sm mb-1">${title}</h3>
+            <p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${color}</p>
+            <p class="text-xs text-primary font-medium">${price}</p>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="mb-8 bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
+          <div class="bg-gradient-to-r from-primary/20 to-primary/10 px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-1">${outfit.title || '推薦穿搭'}</h2>
+                <p class="text-sm text-subtle-light dark:text-subtle-dark">${outfit.description || outfit.occasion || '限時推薦穿搭'}</p>
+              </div>
+              <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
+                <span class="material-symbols-outlined text-primary">star</span>
+                <span class="font-bold text-lg">限時</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProducts(products) {
+      const container = document.getElementById('products-container');
+      if (!products || products.length === 0) {
+        container.innerHTML = '<p class="text-center text-subtle-light col-span-full">暫無推薦單品</p>';
+        return;
+      }
+
+      const productsHTML = products.map(product => {
+        const title = product._title || product.name || '未命名商品';
+        const category = product._category || product.category || '未分類';
+        const color = product._color || product.color || '';
+        const image = product._image || product.image_url || 'https://via.placeholder.com/300?text=No+Image';
+        const price = product.price ? `NT$ ${Math.round(product.price)}` : '詢價';
+        const description = product._description || product.clothing_type || '限時推薦';
+
+        return `
+          <div class="bg-white dark:bg-secondary-dark rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="relative overflow-hidden h-40 bg-secondary-light dark:bg-secondary-dark">
+              <img src="${image}" alt="${title}" class="w-full h-full object-cover hover:scale-105 transition-transform" onerror="this.src='https://via.placeholder.com/300?text=No+Image'" />
+              <div class="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded text-xs font-medium">${category}</div>
+            </div>
+            <div class="p-3">
+              <h3 class="font-bold text-sm mb-1 line-clamp-2">${title}</h3>
+              ${color ? `<p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${color}</p>` : ''}
+              <p class="text-xs text-subtle-light dark:text-subtle-dark mb-2">${description}</p>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-primary font-bold text-sm">${price}</span>
+              </div>
+              <button onclick="addToCart('${title}', '${price}')" class="w-full bg-primary text-white py-2 rounded text-sm font-medium hover:bg-primary/90 transition-colors">
+                加入購物車
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = productsHTML;
+    }
+
+    function addToCart(title, price) {
+      alert(`已添加「${title}」(${price}) 到購物車`);
+      // 這裡可以實現真實的購物車邏輯
+    }
+  </script>
 </body>
 </html>

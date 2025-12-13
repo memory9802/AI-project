@@ -1039,3 +1039,85 @@ def api_test_statistics():
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ===========================
+# Deals 頁面 - 購買推薦
+# ===========================
+
+@recommendation_bp.route('/deals', methods=['POST'])
+@login_required
+def deals_api():
+    """
+    Deals 頁面推薦 API
+    返回：1 套完整穿搭 + 10 件推薦單品（都來自 items 表格）
+    
+    Request Body (JSON):
+        {
+            "message": "明天很冷",  // 用戶的需求
+            "session_id": "deals-xxx"  // 可選
+        }
+    """
+    from .services import generate_items_only
+    
+    try:
+        user = getattr(g, 'current_user', get_current_user())
+        user_id = user.get('id') if user else None
+        
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'success': False, 'error': '請提供需求'}), 400
+        
+        user_input = data['message'].strip()
+        session_id = data.get('session_id', f'deals-{user_id or "guest"}-{int(__import__("time").time())}')
+        preferred_model = data.get('model', 'auto')
+        
+        # 調用 generate_items_only 獲取 14 件商品（1 套穿搭 4 件 + 10 件單品）
+        ai_response, items_payload, keywords = generate_items_only(
+            user_input=user_input,
+            session_id=session_id,
+            preferred_model=preferred_model,
+            limit=14  # 獲取 14 件商品
+        )
+        
+        # 檢查 items_payload 結構
+        if isinstance(items_payload, dict):
+            all_items = items_payload.get('items', [])
+        else:
+            all_items = items_payload if isinstance(items_payload, list) else []
+        
+        # 分割為穿搭和單品清單
+        outfit_items = all_items[:4] if len(all_items) >= 4 else all_items  # 前 4 件組成穿搭
+        product_items = all_items[4:14] if len(all_items) > 4 else []  # 後 10 件作為單品清單
+        
+        return jsonify({
+            'success': True,
+            'outfit': {
+                'title': f'限時優惠推薦',
+                'occasion': '根據你的需求',
+                'description': ai_response,  # AI 生成的推薦說明
+                'items': outfit_items
+            },
+            'products': product_items,
+            'keywords': keywords,
+            'session_id': session_id
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Deals API 失敗: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@recommendation_bp.route('/deals', methods=['GET'])
+def deals():
+    """好康推薦頁面"""
+    try:
+        session_id = get_session_id(session)
+        return render_template('deals.html')
+    except Exception as e:
+        logger.error(f"加載 deals 頁面失敗: {str(e)}")
+        return redirect(url_for('recommendation.recommend'))
+
