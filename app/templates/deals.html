@@ -179,12 +179,8 @@
               <p class="text-lg text-subtle-light dark:text-subtle-dark" id="subtitle">根據你的需求推薦購買清單</p>
             </div>
 
-            <!-- 上半部分：推薦穿搭 -->
-            <div id="outfit-container" class="mb-12">
-              <div class="loading">
-                <div class="spinner"></div>
-              </div>
-            </div>
+            <!-- 上半部分：推薦穿搭（已關閉，保留隱藏容器避免 JS 取不到元素出錯） -->
+            <div id="outfit-container" class="mb-12" style="display:none;"></div>
 
             <!-- 下半部分：推薦單品清單 -->
             <div class="mb-8">
@@ -262,8 +258,8 @@
           throw new Error(data.error || '無法獲取推薦數據');
         }
 
-        // 渲染推薦穿搭
-        renderOutfit(data.outfit);
+        // 渲染推薦穿搭（已關閉）
+        // renderOutfit(data.outfit);
         
         // 渲染推薦單品
         renderProducts(data.products);

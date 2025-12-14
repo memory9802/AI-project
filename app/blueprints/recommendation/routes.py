@@ -287,7 +287,7 @@ def generate_outfits_api():
                     # 完全匹配
                     if ai_item_name in wardrobe_dict:
                         item_obj = wardrobe_dict[ai_item_name]
-                        smart_cat = smart_categorize(item_obj['name'], item_obj['category'])
+                        smart_cat = smart_categorize(item_obj['name'], item_obj['category'], item_obj.get('clothing_type'))
                         if smart_cat in ['top', 'bottom', 'shoes', 'accessories']:
                             matched_items[smart_cat] = item_obj
                             print(f"[DEBUG] ✓ 匹配成功: {ai_item_name} -> {smart_cat}", file=sys.stderr, flush=True)
@@ -295,7 +295,7 @@ def generate_outfits_api():
                         # 模糊匹配
                         for wardrobe_name, item_obj in wardrobe_dict.items():
                             if ai_item_name in wardrobe_name or wardrobe_name in ai_item_name:
-                                smart_cat = smart_categorize(item_obj['name'], item_obj['category'])
+                                smart_cat = smart_categorize(item_obj['name'], item_obj['category'], item_obj.get('clothing_type'))
                                 if smart_cat in ['top', 'bottom', 'shoes', 'accessories'] and smart_cat not in matched_items:
                                     matched_items[smart_cat] = item_obj
                                     print(f"[DEBUG] ≈ 模糊匹配: {ai_item_name} -> {wardrobe_name} ({smart_cat})", file=sys.stderr, flush=True)
@@ -328,7 +328,7 @@ def generate_outfits_api():
                         db_category = db_item.get('_category') or db_item.get('category') or ''
                         
                         # 使用智能分類：優先從名稱判斷，補充使用資料庫類別
-                        smart_cat = smart_categorize(item_name, db_category)
+                        smart_cat = smart_categorize(item_name, db_category, db_item.get('clothing_type'))
                         
                         item_obj = {
                             'name': item_name,
@@ -387,6 +387,38 @@ def generate_outfits_api():
                 print(f"[DEBUG]   - {cat_key}: {item.get('name', 'N/A')}", file=sys.stderr, flush=True)
             if not outfit_data['items']:
                 print(f"[DEBUG] 穿搭 {i+1} items 是空的！", file=sys.stderr, flush=True)
+
+            # 補強：若 AI 少給類別，至少補齊上衣/下身/鞋子三類
+            def detect_cat(item_obj):
+                cat = smart_categorize(item_obj.get('name', ''), item_obj.get('category', ''), item_obj.get('clothing_type'))
+                if cat in ['top', 'bottom', 'shoes', 'accessories']:
+                    return cat
+                norm_cat = normalize_category(item_obj.get('category', ''))
+                if norm_cat in ['top', 'bottom', 'shoes', 'accessories']:
+                    return norm_cat
+                return None
+
+            missing_core = [c for c in ['top', 'bottom', 'shoes'] if c not in outfit_data['items']]
+            if missing_core and db_items:
+                for db_item in db_items:
+                    cat = detect_cat({
+                        'name': db_item.get('_title') or db_item.get('item_name') or '',
+                        'category': db_item.get('_category') or db_item.get('category') or ''
+                    })
+                    if cat in missing_core:
+                        outfit_data['items'][cat] = {
+                            'name': db_item.get('_title') or db_item.get('item_name') or '',
+                            'category': db_item.get('_category') or db_item.get('category') or '',
+                            'color': db_item.get('_color') or db_item.get('color') or '經典色',
+                            'brand': db_item.get('brand') or '個人衣櫃',
+                            'image': db_item.get('_image') or db_item.get('image_url') or '',
+                            'image_url': db_item.get('_image') or db_item.get('image_url') or ''
+                        }
+                        missing_core = [c for c in missing_core if c != cat]
+                    if not missing_core:
+                        break
+                if missing_core:
+                    print(f"[DEBUG] 仍缺少類別: {missing_core}，衣櫃無法補齊", file=sys.stderr, flush=True)
             
             # 生成簽名避免完全相同的套裝重複
             sig_parts = []
@@ -511,6 +543,46 @@ def deals_api():
             outfit_source = wardrobe_items
 
         outfit_items = build_complete_outfit(outfit_source)
+
+        # 若 AI/落地結果少給類別，至少補齊上衣/下身/鞋子三類
+        def detect_cat(item_obj):
+            cat = smart_categorize(
+                str(item_obj.get('_title') or item_obj.get('name') or ''),
+                str(item_obj.get('_category') or item_obj.get('category') or ''),
+                item_obj.get('clothing_type')
+            )
+            if cat in ['top', 'bottom', 'shoes', 'accessories']:
+                return cat
+            norm_cat = normalize_category(str(item_obj.get('_category') or item_obj.get('category') or ''))
+            if norm_cat in ['top', 'bottom', 'shoes', 'accessories']:
+                return norm_cat
+            return None
+
+        def has_cat(item, cat_key):
+            raw = item.get('_category') or item.get('category') or ''
+            try:
+                return cat_key in str(raw).lower()
+            except Exception:
+                return False
+
+        missing_core = [c for c in ['top', 'bottom', 'shoes'] if not any(has_cat(it, c) for it in outfit_items)]
+        if missing_core and product_pool:
+            for pool_item in product_pool:
+                cat = detect_cat(pool_item)
+                if cat in missing_core:
+                    outfit_items.append({
+                        '_title': pool_item.get('_title') or pool_item.get('name') or '',
+                        '_category': pool_item.get('_category') or pool_item.get('category') or '',
+                        '_color': pool_item.get('_color') or pool_item.get('color') or '經典色',
+                        '_image': pool_item.get('_image') or pool_item.get('image_url') or '',
+                        'brand': pool_item.get('brand') or pool_item.get('_brand') or '',
+                        'price': pool_item.get('price') or pool_item.get('_price') or '',
+                    })
+                    missing_core = [c for c in missing_core if c != cat]
+                if not missing_core:
+                    break
+            if missing_core:
+                print(f"[DEBUG] Deals 補齊失敗，仍缺: {missing_core}", file=sys.stderr, flush=True)
         
         outfit_ids = {id(item) for item in outfit_items}
         product_items = [item for item in product_pool if id(item) not in outfit_ids][:10]
@@ -536,15 +608,10 @@ def deals_api():
         occasion = recommendation.get('occasion', '根據您的需求')
         reason = recommendation.get('reason', f"根據您提出的「{user_input}」需求，為您精選搭配。")
 
+        # 好康推薦不再傳回「推薦穿搭」區塊，只提供推薦單品清單
         return jsonify({
             'success': True,
-            'outfit': {
-                'id': 1,
-                'occasion': outfit_title,
-                'description': reason,
-                'score': 95,
-                'items': outfit_items
-            },
+            'outfit': None,
             'products': product_items,
             'keywords': keywords,
             'session_id': session_id

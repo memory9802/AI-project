@@ -1,4 +1,4 @@
-"""
+﻿"""
 AI 聊天/推薦服務（單檔分上下段）
 - 上：全球搜索（純 LLM，不觸 DB）
 - 下：衣櫃搜索（DB + RAG，關鍵字與欄位可由 LLM 協助判斷）
@@ -518,9 +518,13 @@ def normalize_gender_label(gender: str) -> str:
     """
     將性別標籤粗略歸一化為 '男' / '女' / None
     """
-    if not gender:
+    if gender is None or gender == "":
         return None
-    g = gender.strip().lower()
+    # DB 可能回傳 bool/數值，先轉字串再處理，避免 .lower() 在非字串型別上拋例外
+    try:
+        g = str(gender).strip().lower()
+    except Exception:
+        return None
     if any(key in g for key in ['男', 'male', 'man', 'boy']):
         return '男'
     if any(key in g for key in ['女', 'female', 'woman', 'girl']):
@@ -538,6 +542,7 @@ def is_gender_suitable(item: dict, user_gender: str) -> bool:
         return True
 
     item_gender_raw = item.get("gender") or item.get("_gender") or ""
+    # 可能是 bool/數值，先轉字串再丟給 normalize，避免 .lower 例外
     item_gender = normalize_gender_label(item_gender_raw)
     title_text = " ".join([
         str(item.get("_title", "")),
@@ -1330,7 +1335,7 @@ def generate_items_only(
 # 智能分類與過濾系統 (從 routes.py 移入，供全域使用)
 # =====================================================================
 
-def smart_categorize(item_name, db_category=None):
+def smart_categorize(item_name, db_category=None, clothing_type=None):
     """
     從項目名稱智能判斷類別
     優先使用名稱中的關鍵字，補充使用資料庫類別
@@ -1339,6 +1344,7 @@ def smart_categorize(item_name, db_category=None):
         item_name = ""
     
     name_lower = item_name.lower()
+    type_lower = (clothing_type or "").lower()
     
     # 關鍵字定義 (簡化版，完整版可參考原 routes.py)
     bag_keywords = ['包', 'bag', 'handbag', 'backpack', 'briefcase', 'tote', 'crossbody', 'belt bag', 'satchel', '手提包', '斜背包', '背包', '腰包']
@@ -1373,6 +1379,56 @@ def smart_categorize(item_name, db_category=None):
     for keyword in accessories_keywords:
         if keyword in name_lower: return 'accessories'
     
+    return 'unknown'
+
+# 重新覆寫 smart_categorize，加入 clothing_type 優先邏輯
+def smart_categorize(item_name, db_category=None, clothing_type=None):
+    if not item_name:
+        item_name = ""
+    name_lower = item_name.lower()
+    type_lower = (clothing_type or "").lower()
+
+    bag_keywords = ['包', 'bag', 'handbag', 'backpack', 'briefcase', 'tote', 'crossbody', 'belt bag', 'satchel', '手提包', '挎包', '背包', '腰包']
+    top_keywords = [
+        't恤', 't-shirt', 'tee', '襯衫', 'shirt', '背心', '上衣', 'top',
+        '帽t', '帽t恤', '帽踢', '連帽', '連帽t', '連帽t恤',
+        'hoodie', 'hooded', '衛衣', '毛衣', 'sweater',
+        '外套', 'jacket', 'coat'
+    ]
+    bottom_keywords = ['褲', 'pants', 'jeans', '運動褲', '短褲', 'shorts', '裙', 'skirt']
+    shoes_keywords = ['鞋', 'shoes', 'sneaker', 'boots', '涼鞋']
+    accessories_keywords = ['帽子', 'cap', 'hat', '棒球帽', '漁夫帽', '包', 'bag', '手套', '腰帶', 'belt']
+
+    # 1) clothing_type 優先
+    if type_lower:
+        if any(kw in type_lower for kw in bag_keywords):
+            return 'accessories'
+        if any(kw in type_lower for kw in top_keywords):
+            return 'top'
+        if any(kw in type_lower for kw in bottom_keywords):
+            return 'bottom'
+        if any(kw in type_lower for kw in shoes_keywords):
+            return 'shoes'
+        if any(kw in type_lower for kw in accessories_keywords):
+            return 'accessories'
+
+    # 2) 名稱關鍵字（先判斷包類）
+    if any(kw in name_lower for kw in bag_keywords):
+        return 'accessories'
+
+    # 3) 資料庫欄位判斷（clothing_type 優先，其次 category）
+    cat_source = type_lower or (db_category.lower() if db_category else '')
+    if cat_source:
+        normalized = normalize_category(cat_source)
+        if normalized in ['top', 'bottom', 'shoes', 'accessories', 'bags', 'outerwear', 'dress']:
+            return 'bags' if normalized == 'bags' else normalized
+
+    # 4) 名稱關鍵字 fallback
+    if any(kw in name_lower for kw in top_keywords): return 'top'
+    if any(kw in name_lower for kw in bottom_keywords): return 'bottom'
+    if any(kw in name_lower for kw in shoes_keywords): return 'shoes'
+    if any(kw in name_lower for kw in accessories_keywords): return 'accessories'
+
     return 'unknown'
 
 
@@ -1521,8 +1577,8 @@ def generate_purchase_recommendation(
             elif normalized_gender == '女':
                 gender_clause = " AND (gender IS NULL OR gender = '' OR gender LIKE %s OR gender LIKE %s OR gender LIKE %s)"
                 gender_params = ["%女%", "%female%", "%woman%"]
-            # 僅回傳有圖的商品，避免前端灰底卡片
-            image_clause = " AND image_url IS NOT NULL AND image_url <> ''"
+            # 放寬圖片限制（允許無圖，避免候選不足）
+            image_clause = ""
 
             # 結合 關鍵字、顏色 和 擴充風格詞 進行搜尋 (去重)
             search_terms = list(set(keywords + detected_colors + expanded_terms))
@@ -1627,7 +1683,7 @@ def generate_purchase_recommendation(
         # 分組
         cats = {'top': [], 'bottom': [], 'shoes': [], 'accessories': [], 'other': []}
         for item in filtered_items:
-            c = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+            c = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
             if c in cats:
                 cats[c].append(item)
             else:
@@ -1654,7 +1710,7 @@ def generate_purchase_recommendation(
     normalized_items = []
     for item in system_items:
         item = dict(item)
-        smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+        smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
         if smart_cat and smart_cat != 'unknown':
             item['_category'] = smart_cat
         else:
@@ -1701,7 +1757,7 @@ def generate_purchase_recommendation(
             normalized_items = []
             for item in system_items:
                 item = dict(item)
-                smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+                smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
                 if smart_cat and smart_cat != 'unknown':
                     item['_category'] = smart_cat
                 else:
@@ -1715,7 +1771,7 @@ def generate_purchase_recommendation(
     if system_items:
         cats = {'top': [], 'bottom': [], 'shoes': [], 'accessories': [], 'other': []}
         for item in system_items:
-            c = smart_categorize(item.get('_title', ''), item.get('_category', ''))
+            c = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
             if c in cats:
                 cats[c].append(item)
             else:
