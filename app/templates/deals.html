@@ -357,7 +357,7 @@
 
       const productsHTML = products.map(product => {
         const title = product._title || product.name || '未命名商品';
-        const category = product._category || product.category || '未分類';
+        const category = formatCategory(product._category || product.category || '未分類');
         const color = product._color || product.color || '';
         const image = product._image || product.image_url || 'https://via.placeholder.com/300?text=No+Image';
         const price = product.price ? `NT$ ${Math.round(product.price)}` : '詢價';

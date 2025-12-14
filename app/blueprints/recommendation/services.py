@@ -6,6 +6,7 @@ AI 聊天/推薦服務（單檔分上下段）
 
 import os
 import sys
+import re
 from decimal import Decimal
 import pymysql
 
@@ -511,6 +512,115 @@ def normalize_category(category: str) -> str:
     
     # 查找對照表
     return CATEGORY_MAPPING.get(category, category)
+
+
+def normalize_gender_label(gender: str) -> str:
+    """
+    將性別標籤粗略歸一化為 '男' / '女' / None
+    """
+    if not gender:
+        return None
+    g = gender.strip().lower()
+    if any(key in g for key in ['男', 'male', 'man', 'boy']):
+        return '男'
+    if any(key in g for key in ['女', 'female', 'woman', 'girl']):
+        return '女'
+    return None
+
+
+def is_gender_suitable(item: dict, user_gender: str) -> bool:
+    """
+    根據使用者性別排除明顯不符的商品（透過 gender 欄位與名稱判斷）
+    寬鬆策略：中性/未標示/無明顯性別詞 一律允許
+    """
+    normalized_user_gender = normalize_gender_label(user_gender)
+    if not normalized_user_gender:
+        return True
+
+    item_gender_raw = item.get("gender") or item.get("_gender") or ""
+    item_gender = normalize_gender_label(item_gender_raw)
+    title_text = " ".join([
+        str(item.get("_title", "")),
+        str(item.get("name", "")),
+        str(item.get("_description", "")),
+        str(item.get("clothing_type", "")),
+        str(item.get("_category", "")),
+    ]).lower()
+
+    female_tokens = ['女', 'women', 'woman', 'female', 'lady', 'ladies', 'girl']
+    male_tokens = ['男', 'men', 'man', 'male', 'gentleman', 'gentlemen', 'boy']
+
+    if normalized_user_gender == '男':
+        # 如果 item_gender 明確標為女才排除
+        if item_gender == '女':
+            return False
+        # 名稱/描述含明顯女性標記才排除
+        if any(tok in title_text for tok in female_tokens):
+            return False
+        return True
+
+    if normalized_user_gender == '女':
+        if item_gender == '男':
+            return False
+        if any(tok in title_text for tok in male_tokens):
+            return False
+        return True
+
+    return True
+
+
+def infer_gender_from_wardrobe(user_id: int, username: str = "") -> str:
+    """
+    嘗試從使用者名稱 + 衣櫃內容推測性別 (粗略)
+    回傳 '男' / '女' / None
+    """
+    name = (username or "").lower()
+    # 特例：直接指定已知使用者
+    if name == 'bob':
+        return '男'
+    if name == 'alice':
+        return '女'
+    if any(tok in name for tok in ['mr', 'sir', 'boy', 'man', 'men', 'male', 'king', '哥', '先生']):
+        return '男'
+    if any(tok in name for tok in ['ms', 'mrs', 'lady', 'girl', 'woman', 'women', 'female', 'queen', '姐', '小姐']):
+        return '女'
+
+    if not user_id:
+        return None
+
+    maybe_gender = None
+    try:
+        conn = get_db_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT category, tags, item_name
+                FROM user_wardrobe
+                WHERE user_id = %s
+                LIMIT 200
+                """,
+                (user_id,),
+            )
+            rows = cur.fetchall() or []
+            text = " ".join([
+                " ".join(filter(None, [
+                    str(r.get('category','')), str(r.get('tags','')), str(r.get('item_name',''))
+                ])).lower()
+                for r in rows
+            ])
+            if any(tok in text for tok in ['女', 'women', 'woman', 'ladies', 'girl', '女生', '女款']):
+                maybe_gender = '女'
+            elif any(tok in text for tok in ['男', 'men', 'man', 'male', 'gentleman', '紳士', '男款']):
+                maybe_gender = '男'
+    except Exception:
+        maybe_gender = None
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    return maybe_gender
 
 
 def extract_keywords(text: str):
@@ -1231,6 +1341,7 @@ def smart_categorize(item_name, db_category=None):
     name_lower = item_name.lower()
     
     # 關鍵字定義 (簡化版，完整版可參考原 routes.py)
+    bag_keywords = ['包', 'bag', 'handbag', 'backpack', 'briefcase', 'tote', 'crossbody', 'belt bag', 'satchel', '手提包', '斜背包', '背包', '腰包']
     top_keywords = [
         't恤', 't-shirt', 'tee', '襯衫', 'shirt', '背心', '上衣', 'top',
         '帽t', '帽t恤', '帽踢', '連帽', '連帽t', '連帽t恤',
@@ -1241,6 +1352,18 @@ def smart_categorize(item_name, db_category=None):
     shoes_keywords = ['鞋', 'shoes', 'sneaker', 'boots', '靴', '涼鞋']
     accessories_keywords = ['帽子', 'cap', 'hat', '棒球帽', '漁夫帽', '毛帽', '包', 'bag', '圍巾', '眼鏡', '飾品', '襪', 'belt']
     
+    # 包包優先判斷（如果名稱明確是包，即使 DB 說是 top 也視為配件）
+    for keyword in bag_keywords:
+        if keyword in name_lower:
+            return 'accessories'
+
+    # 再用資料庫欄位判斷
+    if db_category:
+        normalized = normalize_category(db_category)
+        if normalized in ['top', 'bottom', 'shoes', 'accessories', 'bags', 'outerwear', 'dress']:
+            return 'bags' if normalized == 'bags' else normalized
+    
+    # 再用名稱關鍵字
     for keyword in top_keywords:
         if keyword in name_lower: return 'top'
     for keyword in bottom_keywords:
@@ -1250,11 +1373,6 @@ def smart_categorize(item_name, db_category=None):
     for keyword in accessories_keywords:
         if keyword in name_lower: return 'accessories'
     
-    if db_category:
-        normalized = normalize_category(db_category)
-        if normalized in ['top', 'bottom', 'shoes', 'accessories']:
-            return normalized
-            
     return 'unknown'
 
 
@@ -1330,8 +1448,9 @@ def generate_purchase_recommendation(
     user_input: str,
     session_id: str = "purchase-bot",
     preferred_model: str = "auto",
-    limit: int = 30,  # 增加抽樣數量，讓 AI 有更多選擇
+    limit: int = 500,  # 放大候選數量，讓 AI 有更多選擇
     user_id: int = None,
+    user_gender: str = None,
 ):
     """
     針對 items 的購買導向推薦機器人。
@@ -1371,6 +1490,12 @@ def generate_purchase_recommendation(
         'winter': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
         '冬': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
         '冷': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
+        # 休閒/簡約/日常
+        'casual': ['休閒', '休閒褲', '寬版', 'jogger', 'sweatshirt', 'hoodie', '帽t', '衛衣', 't恤', 't-shirt', 'tee', '牛仔褲', '帆布鞋', '運動鞋', '球鞋', 'sneaker'],
+        '休閒': ['休閒', '休閒褲', '寬版', 'jogger', 'sweatshirt', 'hoodie', '帽t', '衛衣', 't恤', 't-shirt', 'tee', '牛仔褲', '帆布鞋', '運動鞋', '球鞋', 'sneaker'],
+        '簡約': ['素色', 'basic', 'minimal', '無印', '純色', '極簡', '圓領', '衛衣', '毛衣', '襯衫', '牛仔褲', '西裝褲'],
+        '日常': ['休閒', '日常', '簡約', 'basic', '素色', '帆布鞋', '運動鞋', '球鞋'],
+        '街頭': ['街頭', 'oversize', '帽t', '連帽', 'sweatshirt', 'hoodie', '束口褲', 'jogger', '球鞋', 'sneaker'],
     }
     
     expanded_terms = []
@@ -1387,6 +1512,18 @@ def generate_purchase_recommendation(
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
+            gender_clause = ""
+            gender_params = []
+            normalized_gender = normalize_gender_label(user_gender)
+            if normalized_gender == '男':
+                gender_clause = " AND (gender IS NULL OR gender = '' OR gender LIKE %s OR gender LIKE %s OR gender LIKE %s)"
+                gender_params = ["%男%", "%male%", "%man%"]
+            elif normalized_gender == '女':
+                gender_clause = " AND (gender IS NULL OR gender = '' OR gender LIKE %s OR gender LIKE %s OR gender LIKE %s)"
+                gender_params = ["%女%", "%female%", "%woman%"]
+            # 僅回傳有圖的商品，避免前端灰底卡片
+            image_clause = " AND image_url IS NOT NULL AND image_url <> ''"
+
             # 結合 關鍵字、顏色 和 擴充風格詞 進行搜尋 (去重)
             search_terms = list(set(keywords + detected_colors + expanded_terms))
             # 策略優化：如果有明確的風格關鍵字 (expanded_terms)，優先使用它們
@@ -1395,6 +1532,10 @@ def generate_purchase_recommendation(
                 search_terms = list(set(expanded_terms + detected_colors))
             else:
                 search_terms = list(set(keywords + detected_colors))
+            # fallback：若仍無關鍵字，將使用者輸入拆解為基本詞彙參與搜尋
+            if not search_terms:
+                basic_terms = [t for t in re.split(r'[\\s,;，。]+', user_input) if t]
+                search_terms = basic_terms or [user_input]
             
             if search_terms:
                 conditions = []
@@ -1413,8 +1554,8 @@ def generate_purchase_recommendation(
                 
                 where_clause = " OR ".join(conditions)
                 # 先抓取符合關鍵字的商品
-                sql = f"SELECT * FROM items WHERE {where_clause} ORDER BY RAND() LIMIT %s"
-                cur.execute(sql, params + [fetch_limit])
+                sql = f"SELECT * FROM items WHERE ({where_clause}){gender_clause}{image_clause} ORDER BY RAND() LIMIT %s"
+                cur.execute(sql, params + gender_params + [fetch_limit])
                 fetched_items = cur.fetchall()
                 
                 # ⚠️ 關鍵修正：寧缺勿濫
@@ -1426,8 +1567,8 @@ def generate_purchase_recommendation(
                 pass 
             else:
                 # 無關鍵字則全隨機
-                sql = "SELECT * FROM items ORDER BY RAND() LIMIT %s"
-                cur.execute(sql, (fetch_limit,))
+                sql = f"SELECT * FROM items WHERE 1=1{gender_clause}{image_clause} ORDER BY RAND() LIMIT %s"
+                cur.execute(sql, gender_params + [fetch_limit])
                 fetched_items = cur.fetchall()
 
             system_items = [standardize_item(item, item_fields) for item in fetched_items]
@@ -1521,7 +1662,8 @@ def generate_purchase_recommendation(
             if norm_cat:
                 item['_category'] = norm_cat
         normalized_items.append(item)
-    system_items = normalized_items
+    # 性別過濾：避免推薦與使用者性別明顯不符的單品
+    system_items = [it for it in normalized_items if is_gender_suitable(it, user_gender)]
 
     # 若缺少必要類別，嘗試從 items 再抓補足 (top/bottom/shoes/accessories)
     def missing_categories(items):
@@ -1538,8 +1680,8 @@ def generate_purchase_recommendation(
                 for cat in missing:
                     like = f"%{cat}%"
                     cur.execute(
-                        "SELECT * FROM items WHERE category LIKE %s OR clothing_type LIKE %s ORDER BY RAND() LIMIT %s",
-                        (like, like, 3),
+                        f"SELECT * FROM items WHERE (category LIKE %s OR clothing_type LIKE %s){gender_clause}{image_clause} ORDER BY RAND() LIMIT %s",
+                        (like, like, *gender_params, 3) if gender_params else (like, like, 3),
                     )
                     results = cur.fetchall() or []
                     fillers.extend(results)

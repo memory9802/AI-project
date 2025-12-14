@@ -7,7 +7,9 @@ from .services import (
     normalize_category, 
     handle_recommendation_chat,
     smart_categorize,
-    is_suitable_for_theme
+    is_suitable_for_theme,
+    is_gender_suitable,
+    infer_gender_from_wardrobe,
 )
 import json
 import sys
@@ -443,15 +445,33 @@ def deals_api():
 
         # 確保直接使用當前輸入，不讀取歷史紀錄
         context_prompt = user_input
+        # 嘗試從使用者名稱 + 衣櫃內容推測性別（users 表沒有 gender 欄位）
+        user_gender = infer_gender_from_wardrobe(user_id, user.get('username') if user else "")
+        try:
+            logger.info("[deals] user_id=%s username=%s inferred_gender=%s message=%s", user_id, user.get('username') if user else None, user_gender, user_input)
+        except Exception:
+            pass
+        # 除了 logger 也用 print，方便直接在容器日誌中查詢
+        print(f"[deals] user_id={user_id} username={user.get('username') if user else None} inferred_gender={user_gender} message={user_input}", flush=True)
         
         # 調用 generate_purchase_recommendation 獲取購買推薦（14 件商品）
         ai_response_dict, items_payload, keywords = generate_purchase_recommendation(
             user_input=context_prompt,  # 使用結合了上下文的 prompt
             session_id=session_id,
             preferred_model=preferred_model,
-            limit=20,  # 增加到 20，確保有足夠單品進行類別平衡(鞋/配)
-            user_id=user_id
+            limit=500,  # 放大到 500，給 LLM 更多候選
+            user_id=user_id,
+            user_gender=user_gender
         )
+        try:
+            logger.info(
+                "[deals] message=%s keywords=%s resp_keys=%s",
+                user_input,
+                keywords,
+                list(ai_response_dict.keys()) if isinstance(ai_response_dict, dict) else type(ai_response_dict),
+            )
+        except Exception:
+            pass
         
         has_candidates = False
         if isinstance(items_payload, dict):
@@ -471,10 +491,12 @@ def deals_api():
         filtered_items = [
             item for item in all_items 
             if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
+            and is_gender_suitable(item, user_gender)
         ]
         wardrobe_filtered = [
             item for item in wardrobe_items
             if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
+            and is_gender_suitable(item, user_gender)
         ] if wardrobe_items else []
         
         # 只要有過濾後的商品，就優先使用，不再因為數量少而退回使用混雜的 all_items
