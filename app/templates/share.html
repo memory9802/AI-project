@@ -255,99 +255,21 @@
         <main class="flex-1 py-8 md:py-12 px-6 md:px-10 lg:px-20">
           <div class="max-w-6xl mx-auto">
             <!-- Page Title -->
-            <div class="mb-8">
-              <h1 class="text-3xl md:text-4xl font-bold mb-2">穿搭分享</h1>
-              <p class="text-subtle-light dark:text-subtle-dark">分享你的穿搭靈感，與社群互動和評分</p>
+            <div class="mb-8 flex items-center justify-between">
+              <div>
+                <h1 class="text-3xl md:text-4xl font-bold mb-2">穿搭分享</h1>
+                <p class="text-subtle-light dark:text-subtle-dark">分享你的穿搭靈感，與社群互動和評分</p>
+              </div>
+              <button id="open-upload-modal" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined">upload</span>
+                <span>上傳穿搭</span>
+              </button>
             </div>
 
-            <!-- Two Column Layout -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <!-- Upload Section (Left - 1 column) -->
-              <div class="lg:col-span-1">
-                <div
-                  class="sticky top-24 bg-white dark:bg-secondary-dark rounded-lg p-6 shadow-sm border border-secondary-light dark:border-secondary-dark">
-                  <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined">upload</span>
-                    上傳穿搭
-                  </h2>
-
-                  <!-- Upload Form -->
-                  <form id="upload-form" class="space-y-4">
-                    <!-- Image Upload -->
-                    <div>
-                      <label class="block text-sm font-medium mb-2">穿搭照片</label>
-                      <div
-                        class="border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg p-6 text-center cursor-pointer hover:bg-secondary-light/30 dark:hover:bg-secondary-dark/30 transition-colors"
-                        id="upload-area">
-                        <input type="file" id="image-input" accept="image/*" class="hidden" />
-                        <span class="material-symbols-outlined text-4xl text-primary mb-2 block">image</span>
-                        <p class="text-sm font-medium">點擊或拖放上傳照片</p>
-                        <p class="text-xs text-subtle-light dark:text-subtle-dark mt-1">支援 JPG, PNG, GIF (最大 5MB)</p>
-                      </div>
-                      <img id="preview-image" class="w-full rounded-lg mt-2 hidden" />
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                      <label class="block text-sm font-medium mb-2">穿搭描述</label>
-                      <textarea id="description-input" placeholder="描述你的穿搭靈感..."
-                        class="w-full px-4 py-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark text-text-light dark:text-text-dark focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
-                        rows="4"></textarea>
-                    </div>
-
-                    <!-- Tags -->
-                    <div>
-                      <label class="block text-sm font-medium mb-2">風格標籤</label>
-                      <div class="flex flex-wrap gap-2 mb-2">
-                        <input type="hidden" id="tags-input" />
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="休閒">休閒</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="正式">正式</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="運動">運動</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="街頭">街頭</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="韓風">韓風</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="日系">日系</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="歐美">歐美</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="極簡">極簡</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="復古">復古</button>
-                        <button type="button"
-                          class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                          data-tag="中性">中性</button>
-                      </div>
-                      <div id="selected-tags" class="flex flex-wrap gap-2"></div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit"
-                      class="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                      上傳穿搭
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              <!-- Outfits Feed (Right - 2 columns) -->
-              <div class="lg:col-span-2 space-y-6">
-                <div id="outfits-container" class="space-y-6">
-                  <!-- Outfits will be loaded here -->
-                </div>
+            <!-- Outfits Feed -->
+            <div class="space-y-6">
+              <div id="outfits-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Outfits will be loaded here -->
               </div>
             </div>
             <!-- Product card template will render here; each card includes a rate button and weight-info (hidden by default) -->
@@ -376,35 +298,183 @@
       </div>
     </div>
 
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-secondary-dark rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined">upload</span>
+            上傳穿搭
+          </h2>
+          <button id="close-upload-modal" class="p-1 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <!-- Upload Form -->
+        <form id="upload-form" class="space-y-4">
+          <!-- Image Upload -->
+          <div>
+            <label class="block text-sm font-medium mb-2">穿搭照片</label>
+            <div
+              class="border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg p-6 text-center cursor-pointer hover:bg-secondary-light/30 dark:hover:bg-secondary-dark/30 transition-colors"
+              id="upload-area">
+              <input type="file" id="image-input" accept="image/*" class="hidden" />
+              <span class="material-symbols-outlined text-4xl text-primary mb-2 block">image</span>
+              <p class="text-sm font-medium">點擊或拖放上傳照片</p>
+              <p class="text-xs text-subtle-light dark:text-subtle-dark mt-1">支援 JPG, PNG, GIF (最大 5MB)</p>
+            </div>
+            <img id="preview-image" class="w-full rounded-lg mt-2 hidden" />
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-sm font-medium mb-2">穿搭描述</label>
+            <textarea id="description-input" placeholder="描述你的穿搭靈感..."
+              class="w-full px-4 py-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark text-text-light dark:text-text-dark focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+              rows="4"></textarea>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <label class="block text-sm font-medium mb-2">風格標籤</label>
+            <div class="flex flex-wrap gap-2 mb-2">
+              <input type="hidden" id="tags-input" />
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="休閒">休閒</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="正式">正式</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="運動">運動</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="街頭">街頭</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="韓風">韓風</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="日系">日系</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="歐美">歐美</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="極簡">極簡</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="復古">復古</button>
+              <button type="button"
+                class="tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
+                data-tag="中性">中性</button>
+            </div>
+            <div id="selected-tags" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit"
+            class="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+            上傳穿搭
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Modal for Comments -->
     <div id="comments-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-secondary-dark rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold">評論與評分</h3>
+          <h3 class="text-xl font-bold" > </h3>
+          <button id="close-modal" class="p-1 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
 
-          <!-- Modal-level rating control removed: Keep per-comment stars and bottom submit -->
-            <div class="flex items-center gap-3">
-            <button id="close-modal" class="p-1 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg">
-              <span class="material-symbols-outlined">close</span>
+        <!-- 總體評分區域（評論與評分模式） -->
+        <div id="overall-rating-section" class="mb-6 p-4 bg-secondary-light/30 dark:bg-secondary-dark/30 rounded-lg border border-secondary-light dark:border-secondary-dark">
+          <h4 class="text-lg font-bold mb-4">貼文穿搭</h4>
+          <div class="flex gap-4">
+            <!-- 左邊：貼文圖片 -->
+            <div class="flex-1">
+              <img id="outfit-modal-image" src="" alt="outfit" class="w-full h-48 object-cover rounded-lg border border-secondary-light dark:border-secondary-dark" />
+            </div>
+            
+            <!-- 右邊：目前平均評分 -->
+            <div class="w-32 flex flex-col items-center justify-center gap-2 border-l border-secondary-light dark:border-secondary-dark pl-4">
+              <p class="text-xs text-subtle-light dark:text-subtle-dark text-center">目前評分</p>
+              <div class="flex flex-col items-center">
+                <span id="current-avg-rating" style="color: #FFD700; font-size: 20px;">☆☆☆☆☆</span>
+                <span id="current-avg-rating-value" class="text-2xl font-bold text-primary mt-1">0.0</span>
+              </div>
+              <p id="current-rating-count" class="text-xs text-subtle-light dark:text-subtle-dark">(0 評分)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 評論區域（評論與評分模式） -->
+        <div id="comments-section-wrapper" class="mb-6 border-t border-secondary-light dark:border-secondary-dark pt-4">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-lg font-bold">評論</h4>
+            <button id="add-rating-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm">
+              <span class="material-symbols-outlined inline-block align-middle text-lg">rate_review</span>
+              <span class="align-middle">評分</span>
             </button>
-          </div> 
+          </div>
+          
+          <!-- 新增評論與評分表單（默認隱藏） -->
+          <div id="add-comment-form" class="hidden mb-4 p-4 bg-secondary-light/30 dark:bg-secondary-dark/30 rounded-lg border border-secondary-light dark:border-secondary-dark">
+            <h4 class="font-medium mb-4">新增評分</h4>
+            
+            <!-- 評分選擇 -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-2">評分 <span class="text-red-500">*</span></label>
+              <div class="flex gap-1" id="new-comment-rating">
+                <span class="new-comment-star cursor-pointer text-3xl" style="color: #888888;" data-rating="1">☆</span>
+                <span class="new-comment-star cursor-pointer text-3xl" style="color: #888888;" data-rating="2">☆</span>
+                <span class="new-comment-star cursor-pointer text-3xl" style="color: #888888;" data-rating="3">☆</span>
+                <span class="new-comment-star cursor-pointer text-3xl" style="color: #888888;" data-rating="4">☆</span>
+                <span class="new-comment-star cursor-pointer text-3xl" style="color: #888888;" data-rating="5">☆</span>
+              </div>
+              <p id="new-comment-rating-text" class="text-xs text-subtle-light dark:text-subtle-dark mt-1">請選擇評分</p>
+            </div>
+            
+            <!-- 評論文字 -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-2">評論內容（可選）</label>
+              <textarea id="new-comment-text" placeholder="分享你的想法..." 
+                class="w-full px-3 py-2 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark text-text-light dark:text-text-dark focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                rows="3"></textarea>
+            </div>
+            
+            <!-- 按鈕 -->
+            <div class="flex gap-2">
+              <button id="submit-new-comment" class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">提交</button>
+              <button id="cancel-new-comment" class="px-4 py-2 bg-secondary-light dark:bg-secondary-dark rounded-lg hover:bg-secondary-light/80 dark:hover:bg-secondary-dark/80 transition-colors">取消</button>
+            </div>
+          </div>
+          
+          <!-- 評論列表 -->
+          <div id="comments-content">
+            <!-- Comments will be loaded here -->
+          </div>
         </div>
 
-        <div id="comments-content">
-          <!-- Comments will be loaded here -->
+        <!-- 單品評分區域（查看單品模式） -->
+        <div id="items-section" class="hidden mb-6 p-4 bg-secondary-light/30 dark:bg-secondary-dark/30 rounded-lg border border-secondary-light dark:border-secondary-dark">
+          <h4 class="text-lg font-bold mb-4">單品評分</h4>
+          <div id="items-content">
+            <!-- Items will be loaded here -->
+          </div>
+          <!-- 提交按鈕 -->
+          <div class="mt-6 flex justify-end">
+            <button id="submit-item-ratings" class="py-2 px-6 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+              提交評分
+            </button>
+          </div>
         </div>
-
-        <!-- Submit changed comment ratings -->
-        <div class="mt-6 border-t border-secondary-light dark:border-secondary-dark pt-6 flex justify-end">
-          <button id="submit-comment-ratings" class="py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">提交評論評分</button>
-        </div>
-
-        <!-- Rating moved to header; Add Comment block removed by request -->
-        
-        <!-- Modal-level Rating (right side of modal header) -->
-        <!-- This will render clickable stars for rating the outfit -->
-        
-        <!-- The form for adding comments and ratings has been removed -->
       </div>
     </div>
   <script src="{{ url_for('static', filename='share_post.js') }}"></script>
