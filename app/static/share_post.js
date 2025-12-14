@@ -28,6 +28,40 @@ uploadModal.addEventListener('click', (e) => {
   }
 });
 
+// ===== Image Lightbox =====
+const imageLightbox = document.getElementById('image-lightbox');
+const lightboxImage = document.getElementById('lightbox-image');
+const closeLightboxBtn = document.getElementById('close-lightbox');
+
+function openImageLightbox(imageUrl) {
+  lightboxImage.src = imageUrl;
+  imageLightbox.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeImageLightbox() {
+  imageLightbox.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+if (closeLightboxBtn) {
+  closeLightboxBtn.addEventListener('click', closeImageLightbox);
+}
+
+// Close lightbox when clicking on background
+imageLightbox.addEventListener('click', (e) => {
+  if (e.target === imageLightbox || e.target === lightboxImage) {
+    closeImageLightbox();
+  }
+});
+
+// Close lightbox with ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !imageLightbox.classList.contains('hidden')) {
+    closeImageLightbox();
+  }
+});
+
 // ===== Tag Selection =====
 document.querySelectorAll('.tag-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
@@ -203,6 +237,57 @@ function renderStars(rating, size = 'small', interactive = false) {
   return output;
 } 
 
+// ===== Update Outfit Rating =====
+async function updateOutfitRating(outfitId, newRating, isNewComment) {
+  try {
+    // 獲取原始貼文資料
+    const res = await fetch('/share/api/outfits');
+    const outfits = await res.json();
+    const outfit = outfits.find(o => o.id == outfitId);
+    
+    if (!outfit) return;
+    
+    // 獲取後端所有評論來計算基礎評分
+    const commentsRes = await fetch(`/share/api/outfits/${outfitId}/comments`);
+    const backendComments = await commentsRes.json();
+    
+    // 計算後端評論的總評分
+    const backendTotalRating = backendComments.reduce((sum, c) => sum + (c.rating || 0), 0);
+    const backendCommentCount = backendComments.length;
+    
+    // 獲取用戶提交的評論
+    const commentsKey = `outfit_comments_${outfitId}`;
+    const storedComments = localStorage.getItem(commentsKey);
+    let userComments = [];
+    
+    if (storedComments) {
+      userComments = JSON.parse(storedComments);
+    }
+    
+    // 計算用戶評論的總評分
+    const userTotalRating = userComments.reduce((sum, c) => sum + (c.rating || 0), 0);
+    const userCommentCount = userComments.length;
+    
+    // 計算總評分和總人數
+    const totalRating = backendTotalRating + userTotalRating;
+    const totalCount = backendCommentCount + userCommentCount;
+    
+    // 計算平均評分：總評分 / 評論人數
+    const avgRating = totalCount > 0 ? totalRating / totalCount : 0;
+    
+    // 儲存到 localStorage
+    const storageKey = `outfit_rating_${outfitId}`;
+    localStorage.setItem(storageKey, JSON.stringify({
+      total_rating: totalRating,
+      comment_count: totalCount,
+      avg_rating: avgRating
+    }));
+    
+  } catch (err) {
+    console.error('更新評分失敗:', err);
+  }
+}
+
 // ===== Upload Form =====
 document.getElementById('upload-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -248,13 +333,34 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
 async function loadOutfits() {
   try {
     const res = await fetch('/share/api/outfits');
-    const outfits = await res.json();
+    let outfits = await res.json();
+    
+    // 更新每個貼文的評分和評論數（從 localStorage 讀取）
+    outfits = outfits.map(outfit => {
+      const storageKey = `outfit_rating_${outfit.id}`;
+      const ratingData = localStorage.getItem(storageKey);
+      
+      if (ratingData) {
+        const parsed = JSON.parse(ratingData);
+        return {
+          ...outfit,
+          avg_rating: parsed.avg_rating,
+          comment_count: parsed.comment_count
+        };
+      }
+      return outfit;
+    });
 
     const container = document.getElementById('outfits-container');
     container.innerHTML = outfits.map(outfit => `
     <div class="bg-white dark:bg-secondary-dark rounded-lg overflow-hidden shadow-sm border border-secondary-light dark:border-secondary-dark">
       <!-- Outfit Image -->
-      <img src="${outfit.image_url}" alt="outfit" class="w-full h-64 object-cover" />
+      <div class="relative w-full cursor-pointer group" style="padding-bottom: 125%;" onclick="openImageLightbox('${outfit.image_url}')">
+        <img src="${outfit.image_url}" alt="outfit" class="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
+        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          <span class="material-symbols-outlined text-white text-5xl opacity-0 group-hover:opacity-100 transition-opacity">zoom_in</span>
+        </div>
+      </div>
 
       <!-- Outfit Info -->
             <div class="p-6">
@@ -392,8 +498,24 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
       }
     }
     
-    const res = await fetch(`/share/api/outfits/${outfitId}/comments`);
-    const comments = await res.json();
+    // 根據模式決定 API endpoint
+    const endpoint = mode === 'items' ? 
+      `/share/api/outfits/${outfitId}/items` : 
+      `/share/api/outfits/${outfitId}/comments`;
+    
+    const res = await fetch(endpoint);
+    let comments = await res.json();
+    
+    // 如果是評論模式，合併後端評論和用戶提交的評論
+    if (mode === 'comment') {
+      const userCommentsKey = `outfit_comments_${outfitId}`;
+      const storedUserComments = localStorage.getItem(userCommentsKey);
+      if (storedUserComments) {
+        const userComments = JSON.parse(storedUserComments);
+        // 將用戶評論添加到列表末尾
+        comments = [...comments, ...userComments];
+      }
+    }
 
     // 根據模式加載不同的內容
     if (mode === 'comment') {
@@ -411,17 +533,7 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
         content.innerHTML = comments.map(comment => `
           <div class="mb-4 pb-4 border-b border-secondary-light dark:border-secondary-dark last:border-b-0">
             <div class="flex items-start gap-3">
-              <!-- 用戶頭像/圖片 -->
-              <div class="flex-shrink-0">
-                ${comment.img_url ? 
-                  `<img src="${comment.img_url}" alt="user avatar" class="h-12 w-12 rounded-full object-cover border-2 border-primary/20">` : 
-                  `<div class="h-12 w-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-primary">person</span>
-                  </div>`
-                }
-              </div>
-              
-              <!-- 評論內容 -->
+              <!-- 評論內容（移除頭像） -->
               <div class="flex-1">
                 <!-- 用戶名和時間 -->
                 <div class="flex items-center justify-between mb-2">
@@ -439,7 +551,7 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
                 <!-- 評論文字 -->
                 ${comment.comment_text ? 
                   `<p class="text-sm text-text-light dark:text-text-dark leading-relaxed">${comment.comment_text}</p>` : 
-                  `<p class="text-sm text-subtle-light dark:text-subtle-dark italic">未留下評論文字</p>`
+                  `<p class="text-sm text-subtle-light dark:text-subtle-dark italic"> </p>`
                 }
               </div>
             </div>
@@ -459,37 +571,64 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
     } else if (mode === 'items') {
       // 單品模式：加載單品評分
       const itemsContent = document.getElementById('items-content');
-      itemsContent.innerHTML = comments.map(comment => `
-        <div class="mb-4 p-4 border border-secondary-light dark:border-secondary-dark rounded-lg flex gap-4">
-          <!-- 左邊：單品圖片 -->
-          <div class="flex-shrink-0">
-            ${comment.img_url ? 
-              `<img src="${comment.img_url}" alt="item" class="w-24 h-24 object-cover rounded-lg" />` : 
-              `<div class="w-24 h-24 rounded-lg bg-secondary-light dark:bg-secondary-dark flex items-center justify-center">
-                <span class="material-symbols-outlined text-4xl text-subtle-light">checkroom</span>
-              </div>`
-            }
-          </div>
-          
-          <!-- 右邊：評分區域 -->
-          <div class="flex-1 flex flex-col justify-between">
-            <!-- 目前評分（和星星、分數同一行） -->
-            <div class="flex items-center gap-2 mb-3">
-              <p class="text-sm text-subtle-light dark:text-subtle-dark">目前評分：</p>
-              <span style="color: #FFD700; font-size: 16px;">${renderStarsDisplay(comment.rating || 0)}</span>
-              <span class="font-bold text-primary">${(comment.rating || 0).toFixed(1)}</span>
+      itemsContent.innerHTML = comments.map(comment => {
+        // 檢查 localStorage 是否有更新的評分
+        const storageKey = `item_${outfitId}_${comment.id}`;
+        const storedData = localStorage.getItem(storageKey);
+        let displayRating = comment.rating || 0;
+        let displayRatingCount = comment.rating_count || 0;
+        
+        if (storedData) {
+          const parsed = JSON.parse(storedData);
+          displayRating = parsed.rating;
+          displayRatingCount = parsed.rating_count;
+        }
+        
+        return `
+          <div class="mb-4 p-4 border border-secondary-light dark:border-secondary-dark rounded-lg flex gap-4">
+            <!-- 左邊：單品圖片和名稱 -->
+            <div class="flex-shrink-0">
+              ${comment.img_url ? 
+                `<img src="${comment.img_url}" alt="item" class="w-24 h-24 object-cover rounded-lg" />` : 
+                `<div class="w-24 h-24 rounded-lg bg-secondary-light dark:bg-secondary-dark flex items-center justify-center">
+                  <span class="material-symbols-outlined text-4xl text-subtle-light">checkroom</span>
+                </div>`
+              }
+              <p class="text-sm font-medium text-center mt-2">${comment.name || '單品'}</p>
             </div>
             
-            <!-- 給予評分 -->
-            <div>
-              <p class="text-sm text-subtle-light dark:text-subtle-dark mb-2">給予評分：</p>
-              <div class="comment-rating flex gap-1" data-comment-id="${comment.id}" data-comment-rating="${comment.rating}" data-outfit-id="${outfitId}">
-                ${renderStars(0, 'large', true)}
+            <!-- 右邊：評分區域 -->
+            <div class="flex-1 flex flex-col justify-between">
+              <!-- 目前評分（和星星、分數同一行） -->
+              <div class="flex items-center gap-2 mb-3">
+                <p class="text-sm text-subtle-light dark:text-subtle-dark">目前評分：</p>
+                <span style="color: #FFD700; font-size: 16px;">${renderStarsDisplay(displayRating)}</span>
+                <span class="font-bold text-primary">${displayRating.toFixed(1)}</span>
+                <span class="text-xs text-subtle-light dark:text-subtle-dark">(${displayRatingCount} 評分)</span>
+              </div>
+              
+              <!-- 給予評分 -->
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <p class="text-sm text-subtle-light dark:text-subtle-dark">給予評分：</p>
+                  ${localStorage.getItem(`user_rating_${outfitId}_${comment.id}`) ? 
+                    '<span class="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">已評分</span>' : 
+                    ''}
+                </div>
+                <div class="comment-rating flex gap-1" 
+                     data-comment-id="${comment.id}" 
+                     data-comment-rating="${comment.rating}" 
+                     data-original-rating="${comment.rating}"
+                     data-rating-count="${comment.rating_count}"
+                     data-user-rating="${localStorage.getItem(`user_rating_${outfitId}_${comment.id}`) || '0'}"
+                     data-outfit-id="${outfitId}">
+                  ${renderStars(0, 'large', true)}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       // Attach interactive listeners for item stars
       attachCommentStarListeners();
@@ -526,16 +665,54 @@ function initAddCommentForm() {
   
   // 重置表單
   const resetForm = () => {
-    newCommentRating = 0;
-    ratingStars.forEach(s => {
-      s.style.color = '#888888';
-      s.textContent = '☆';
-    });
-    if (ratingText) {
-      ratingText.textContent = '請選擇評分';
-      ratingText.classList.remove('text-primary');
+    // 檢查是否有保存的評論記錄
+    const savedComment = localStorage.getItem(`user_comment_${currentOutfitId}`);
+    if (savedComment) {
+      const parsed = JSON.parse(savedComment);
+      newCommentRating = parsed.rating || 0;
+      
+      // 恢復星星顯示
+      ratingStars.forEach((s, idx) => {
+        if (idx < newCommentRating) {
+          s.style.color = '#FFD700';
+          s.textContent = '★';
+        } else {
+          s.style.color = '#888888';
+          s.textContent = '☆';
+        }
+      });
+      
+      // 恢復評分文字
+      if (ratingText && newCommentRating > 0) {
+        ratingText.textContent = ratingTexts[newCommentRating];
+        ratingText.classList.add('text-primary');
+      }
+      
+      // 恢復評論文字
+      if (commentText && parsed.comment_text) {
+        commentText.value = parsed.comment_text;
+      }
+      
+      // 恢復匿名選項
+      const anonymousCheckbox = document.getElementById('anonymous-comment');
+      if (anonymousCheckbox && parsed.is_anonymous !== undefined) {
+        anonymousCheckbox.checked = parsed.is_anonymous;
+      }
+    } else {
+      // 沒有保存記錄，重置為空
+      newCommentRating = 0;
+      ratingStars.forEach(s => {
+        s.style.color = '#888888';
+        s.textContent = '☆';
+      });
+      if (ratingText) {
+        ratingText.textContent = '請選擇評分';
+        ratingText.classList.remove('text-primary');
+      }
+      if (commentText) commentText.value = '';
+      const anonymousCheckbox = document.getElementById('anonymous-comment');
+      if (anonymousCheckbox) anonymousCheckbox.checked = false;
     }
-    if (commentText) commentText.value = '';
   };
   
   // 顯示表單
@@ -621,53 +798,74 @@ function initAddCommentForm() {
         return;
       }
       
+      // 驗證：評分為必選
       if (newCommentRating === 0) {
-        alert('請選擇評分');
+        alert('請選擇評分（必填）');
         return;
       }
       
       const text = commentText ? commentText.value.trim() : '';
+      const anonymousCheckbox = document.getElementById('anonymous-comment');
+      const isAnonymous = anonymousCheckbox ? anonymousCheckbox.checked : false;
       
+      // Demo 版本：本地儲存評論
       try {
-        const requests = [];
+        // 獲取當前用戶名（實際應用中從登入系統獲取）
+        const username = 'CurrentUser'; // Demo 用假用戶名
+        const displayName = isAnonymous ? '匿名用戶' : username;
         
-        // 1. 提交評論（總體評分）
-        requests.push(
-          fetch(`/share/api/outfits/${currentOutfitId}/comments`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              rating: newCommentRating,
-              comment_text: text || null
-            })
-          })
-        );
+        // 創建新評論對象
+        const newComment = {
+          id: Date.now(), // 使用時間戳作為臨時 ID
+          user_name: displayName,
+          rating: newCommentRating,
+          comment_text: text || '',
+          created_at: new Date().toISOString()
+        };
         
-        // 2. 提交單品評分（如果有）
-        for (const [commentId, rating] of changedCommentRatings.entries()) {
-          requests.push(
-            fetch(`/share/api/outfits/${currentOutfitId}/comments/${commentId}/rate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ rating: rating })
-            })
-          );
+        // 保存到 localStorage（用於記憶評論）
+        localStorage.setItem(`user_comment_${currentOutfitId}`, JSON.stringify({
+          rating: newCommentRating,
+          comment_text: text,
+          is_anonymous: isAnonymous
+        }));
+        
+        // 保存新評論到 localStorage（用於顯示在列表中）
+        const commentsKey = `outfit_comments_${currentOutfitId}`;
+        let existingComments = [];
+        const stored = localStorage.getItem(commentsKey);
+        if (stored) {
+          existingComments = JSON.parse(stored);
         }
         
-        const results = await Promise.all(requests);
-        
-        if (results.every(r => r.ok)) {
-          alert('評論已提交！');
-          changedCommentRatings.clear();
-          // 隱藏表單並顯示按鈕
-          if (addCommentForm) addCommentForm.classList.add('hidden');
-          if (addRatingBtn) addRatingBtn.classList.remove('hidden');
-          // 重新載入
-          const outfit = await fetch('/share/api/outfits').then(r => r.json()).then(outfits => outfits.find(o => o.id == currentOutfitId));
-          await loadComments(currentOutfitId, outfit, 'comment');
+        // 檢查是否已有用戶的評論（更新而不是新增）
+        const existingIndex = existingComments.findIndex(c => c.user_name === displayName);
+        if (existingIndex >= 0) {
+          existingComments[existingIndex] = newComment;
         } else {
-          alert('部分提交失敗');
+          existingComments.push(newComment);
         }
+        
+        localStorage.setItem(commentsKey, JSON.stringify(existingComments));
+        
+        // 更新貼文的平均評分和評論人數
+        await updateOutfitRating(currentOutfitId, newCommentRating, existingIndex < 0);
+        
+        // 重新載入貼文列表以顯示更新後的評分
+        await loadOutfits();
+        
+        // 所有操作完成後，只顯示一次成功通知
+        alert('評論已提交！');
+        
+        // 通知按掉後，清除資料並關閉視窗
+        changedCommentRatings.clear();
+        
+        // 隱藏表單並顯示按鈕
+        if (addCommentForm) addCommentForm.classList.add('hidden');
+        if (addRatingBtn) addRatingBtn.classList.remove('hidden');
+        
+        // 關閉評論視窗
+        modal.classList.add('hidden');
       } catch (err) {
         alert('錯誤: ' + err.message);
       }
@@ -697,9 +895,17 @@ function attachCommentStarListeners() {
       // keep backend rating separate; do not overwrite dataset.commentRating
     };
 
-    // initialize visual state to 0 (user must click to set rating)
-    setVisual(0);
-    container.dataset.userRating = 0;
+    // 檢查是否有用戶之前的評分記錄
+    const savedUserRating = parseInt(container.dataset.userRating) || 0;
+    
+    // 初始化視覺狀態：如果有保存的評分則顯示，否則為 0
+    setVisual(savedUserRating);
+    container.dataset.userRating = savedUserRating;
+    
+    // 如果有保存的評分，則加入到 changedCommentRatings（這樣可以重新提交修改）
+    if (savedUserRating > 0) {
+      changedCommentRatings.set(commentId, savedUserRating);
+    }
 
     // hover behavior
     stars.forEach(s => {
@@ -724,7 +930,7 @@ function attachCommentStarListeners() {
   });
 }
 
-// ===== Submit Item Ratings =====
+// ===== Submit Item Ratings (Demo Version with Local Storage) =====
 document.addEventListener('DOMContentLoaded', () => {
   const submitItemRatingsBtn = document.getElementById('submit-item-ratings');
   if (submitItemRatingsBtn) {
@@ -740,29 +946,41 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Demo版本：本地更新評分數據
       try {
-        const requests = [];
+        // 更新本地儲存的評分數據
+        for (const [itemId, newRating] of changedCommentRatings.entries()) {
+          // 從 DOM 獲取原始評分數據
+          const itemContainer = document.querySelector(`.comment-rating[data-comment-id="${itemId}"]`);
+          if (itemContainer) {
+            const originalRating = parseFloat(itemContainer.dataset.originalRating) || 0;
+            const ratingCount = parseInt(itemContainer.dataset.ratingCount) || 0;
+            
+            // 計算新的平均評分：(原總分 + 新評分) / (原人數 + 1)
+            const totalScore = originalRating * ratingCount;
+            const newTotalScore = totalScore + newRating;
+            const newRatingCount = ratingCount + 1;
+            const newAverageRating = newTotalScore / newRatingCount;
+            
+            // 儲存平均評分到 localStorage (demo用途)
+            const storageKey = `item_${currentOutfitId}_${itemId}`;
+            localStorage.setItem(storageKey, JSON.stringify({
+              rating: newAverageRating,
+              rating_count: newRatingCount
+            }));
+            
+            // 儲存用戶個人評分（用於下次顯示已評分狀態）
+            const userRatingKey = `user_rating_${currentOutfitId}_${itemId}`;
+            localStorage.setItem(userRatingKey, newRating.toString());
+          }
+        }
         
-        // 提交單品評分
-        for (const [commentId, rating] of changedCommentRatings.entries()) {
-          requests.push(
-            fetch(`/share/api/outfits/${currentOutfitId}/comments/${commentId}/rate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ rating: rating })
-            })
-          );
-        }
-
-        const results = await Promise.all(requests);
-        if (results.every(r => r.ok)) {
-          alert('評分已提交！');
-          changedCommentRatings.clear();
-          modal.classList.add('hidden');
-          await loadOutfits();
-        } else {
-          alert('部分評分提交失敗');
-        }
+        alert('評分已提交！');
+        changedCommentRatings.clear();
+        modal.classList.add('hidden');
+        
+        // 重新載入以顯示更新後的評分
+        await loadOutfits();
       } catch (err) {
         alert('錯誤: ' + err.message);
       }
