@@ -1500,333 +1500,114 @@ def is_suitable_for_theme(item_name, theme_text):
     return True
 
 
+# =====================================================================
+# 購買推薦：全部交給 LLM 判定，僅做性別過濾並優先有圖
+# =====================================================================
 def generate_purchase_recommendation(
     user_input: str,
     session_id: str = "purchase-bot",
     preferred_model: str = "auto",
-    limit: int = 500,  # 放大候選數量，讓 AI 有更多選擇
+    limit: int = 10,
     user_id: int = None,
     user_gender: str = None,
 ):
     """
-    針對 items 的購買導向推薦機器人。
-    此版本改為從資料庫隨機抽取多樣化的商品，再交由 LLM 從中挑選並生成推薦。
+    完全交給 LLM 判定適合度；僅保留性別過濾，並優先提供有圖片的商品。
     """
-    # 1. 獲取商品和關鍵字
     item_fields = get_item_fields()
-    system_items = []
-    # Deals 場景不混入衣櫃，強制只用 items 表
     wardrobe_items = []
-    keywords = extract_item_keywords(user_input)  # 保留關鍵字提取，可用於日誌或未來擴充
-    
-    # 1.5 額外偵測顏色關鍵字 (增強 SQL 搜尋準確度)
-    color_map = ['黑', '白', '紅', '藍', '綠', '黃', '紫', '粉', '灰', '深色', '淺色', '卡其', '米色', '棕', '咖']
-    detected_colors = [c for c in color_map if c in user_input]
-    
-    # 1.6 風格關鍵字擴充 (關鍵修正：將抽象風格翻譯為具體單品，避免 SQL 搜不到導致隨機推薦)
-    style_map = {
-        # 正式/商務
-        'formal': ['西裝', 'suit', '襯衫', 'shirt', '皮鞋', 'leather', 'blazer', 'trousers', '正裝', '西褲'],
-        '正式': ['西裝', 'suit', '襯衫', 'shirt', '皮鞋', 'leather', 'blazer', 'trousers', '正裝', '西褲'],
-        '商務': ['西裝', 'suit', '襯衫', 'shirt', '皮鞋', 'leather', 'blazer', 'trousers', '正裝', '西褲'],
-        '面試': ['西裝', 'suit', '襯衫', 'shirt', '皮鞋', 'leather', 'blazer', 'trousers', '正裝', '西褲'],
-        '上班': ['西裝', 'suit', '襯衫', 'shirt', '皮鞋', 'leather', 'blazer', 'trousers', '正裝', '西褲', 'blouse'],
-        
-        # 運動/健身
-        'sport': ['運動', 'sport', 'running', 'sneaker', '球鞋', '跑鞋', 'leggings', 'jogger', 'training', '健身'],
-        '運動': ['運動', 'sport', 'running', 'sneaker', '球鞋', '跑鞋', 'leggings', 'jogger', 'training', '健身'],
-        '健身': ['運動', 'sport', 'running', 'sneaker', '球鞋', '跑鞋', 'leggings', 'jogger', 'training', '健身'],
-        
-        # 夏日/海邊
-        'summer': ['短褲', 'shorts', '涼鞋', 'sandals', '背心', 'tank', 't-shirt', 't恤', '短袖'],
-        '夏': ['短褲', 'shorts', '涼鞋', 'sandals', '背心', 'tank', 't-shirt', 't恤', '短袖'],
-        '海邊': ['短褲', 'shorts', '涼鞋', 'sandals', '背心', 'tank', 'beach', 'swim'],
-        
-        # 冬日/保暖
-        'winter': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
-        '冬': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
-        '冷': ['外套', 'coat', 'jacket', '毛衣', 'sweater', 'hoodie', 'boots', '靴', '圍巾'],
-        # 休閒/簡約/日常
-        'casual': ['休閒', '休閒褲', '寬版', 'jogger', 'sweatshirt', 'hoodie', '帽t', '衛衣', 't恤', 't-shirt', 'tee', '牛仔褲', '帆布鞋', '運動鞋', '球鞋', 'sneaker'],
-        '休閒': ['休閒', '休閒褲', '寬版', 'jogger', 'sweatshirt', 'hoodie', '帽t', '衛衣', 't恤', 't-shirt', 'tee', '牛仔褲', '帆布鞋', '運動鞋', '球鞋', 'sneaker'],
-        '簡約': ['素色', 'basic', 'minimal', '無印', '純色', '極簡', '圓領', '衛衣', '毛衣', '襯衫', '牛仔褲', '西裝褲'],
-        '日常': ['休閒', '日常', '簡約', 'basic', '素色', '帆布鞋', '運動鞋', '球鞋'],
-        '街頭': ['街頭', 'oversize', '帽t', '連帽', 'sweatshirt', 'hoodie', '束口褲', 'jogger', '球鞋', 'sneaker'],
-    }
-    
-    expanded_terms = []
-    user_input_lower = user_input.lower()
-    for style_key, terms in style_map.items():
-        if style_key in user_input_lower:
-            expanded_terms.extend(terms)
-    
-    # 擴大搜尋範圍，以便進行過濾
-    fetch_limit = limit * 10  # 大幅增加搜尋範圍，確保能撈到足夠的合格商品
+    fetch_limit = max(limit * 20, 400)  # 放寬候選池
 
-    # 2. 從資料庫隨機獲取一批商品
-    conn = None  # 初始化 conn
+    system_items = []
+    conn = None
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
             gender_clause = ""
             gender_params = []
-            normalized_gender = normalize_gender_label(user_gender)
-            if normalized_gender == '男':
+            g = normalize_gender_label(user_gender)
+            if g == '男':
                 gender_clause = " AND (gender IS NULL OR gender = '' OR gender LIKE %s OR gender LIKE %s OR gender LIKE %s)"
                 gender_params = ["%男%", "%male%", "%man%"]
-            elif normalized_gender == '女':
+            elif g == '女':
                 gender_clause = " AND (gender IS NULL OR gender = '' OR gender LIKE %s OR gender LIKE %s OR gender LIKE %s)"
                 gender_params = ["%女%", "%female%", "%woman%"]
-            # 放寬圖片限制（允許無圖，避免候選不足）
-            image_clause = ""
 
-            # 結合 關鍵字、顏色 和 擴充風格詞 進行搜尋 (去重)
-            search_terms = list(set(keywords + detected_colors + expanded_terms))
-            # 策略優化：如果有明確的風格關鍵字 (expanded_terms)，優先使用它們
-            # 避免因為 AI 提取出 "上衣" (keywords) 而導致 "正式" 需求撈到 T恤
-            if expanded_terms:
-                search_terms = list(set(expanded_terms + detected_colors))
-            else:
-                search_terms = list(set(keywords + detected_colors))
-            # fallback：若仍無關鍵字，將使用者輸入拆解為基本詞彙參與搜尋
-            if not search_terms:
-                basic_terms = [t for t in re.split(r'[\\s,;，。]+', user_input) if t]
-                search_terms = basic_terms or [user_input]
-            
-            if search_terms:
-                conditions = []
-                params = []
-                for kw in search_terms:
-                    # 搜尋名稱、類別、描述 和 顏色
-                    term = f"%{kw}%"
-                    conditions.append("name LIKE %s")
-                    params.append(term)
-                    conditions.append("category LIKE %s")
-                    params.append(term)
-                    conditions.append("clothing_type LIKE %s")
-                    params.append(term)
-                    conditions.append("color LIKE %s")
-                    params.append(term)
-                
-                where_clause = " OR ".join(conditions)
-                # 先抓取符合關鍵字的商品
-                sql = f"SELECT * FROM items WHERE ({where_clause}){gender_clause}{image_clause} ORDER BY RAND() LIMIT %s"
-                cur.execute(sql, params + gender_params + [fetch_limit])
-                fetched_items = cur.fetchall()
-                
-                # ⚠️ 關鍵修正：寧缺勿濫
-                # 如果有指定搜尋條件（search_terms），絕對不要用隨機商品補齊！
-                # 這樣才能確保回傳的都是符合「正式/簡約」等關鍵字的商品。
-                # 只有當完全沒搜到任何東西時，才考慮是否要 fallback（或者直接回傳空讓前端顯示無結果）
-                
-                # 這裡我們選擇：如果有搜到東西，就只用搜到的；如果沒搜到，保持 empty，讓後續邏輯處理
-                pass 
-            else:
-                # 無關鍵字則全隨機
-                sql = f"SELECT * FROM items WHERE 1=1{gender_clause}{image_clause} ORDER BY RAND() LIMIT %s"
-                cur.execute(sql, gender_params + [fetch_limit])
-                fetched_items = cur.fetchall()
-
-            system_items = [standardize_item(item, item_fields) for item in fetched_items]
-
-            # 處理價格和時間戳
+            # 僅性別條件，其餘交給 LLM
+            sql = f"SELECT * FROM items WHERE 1=1{gender_clause} ORDER BY RAND() LIMIT %s"
+            cur.execute(sql, gender_params + [fetch_limit])
+            rows = cur.fetchall() or []
+            system_items = [standardize_item(row, item_fields) for row in rows]
             for item in system_items:
                 if "created_at" in item and item["created_at"]:
-                    item["created_at"] = item["created_at"].isoformat()
+                    try:
+                        item["created_at"] = item["created_at"].isoformat()
+                    except Exception:
+                        pass
                 if "price" in item and isinstance(item["price"], Decimal):
                     item["price"] = float(item["price"])
     except Exception as e:
         print(f"[AI] DB 查詢失敗: {e}", file=sys.stderr)
-        return {"error": "無法連線資料庫，請稍後再試"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
+        return {"error": "無法連線資料庫，請稍後再試"}, {"items": [], "wardrobe_items": wardrobe_items}, []
     finally:
         if conn:
-            conn.close()
-            
-    if not system_items and not wardrobe_items:
-        return {"error": "目前資料庫中沒有商品"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
-        
-    # === 關鍵修改：在送給 LLM 之前，先用 Python 邏輯過濾一遍 ===
-    # 這確保了即使 SQL 沒搜到 "簡約"，我們也能從隨機池中篩選出 "素色/基本款" 的商品
-    filtered_items = [
-        item for item in system_items 
-        # 將標題與顏色合併判斷，讓 is_suitable_for_theme 能過濾顏色
-        if is_suitable_for_theme(f"{item.get('_title', '')} {item.get('_color', '')}", user_input)
-    ]
-    # 針對正式/商務需求再加一道白名單，避免穿搭出現運動或街頭單品
-    theme_lower = user_input.lower()
-    is_formal = any(sig in theme_lower for sig in ['正式', '商務', '正裝', '面試', '上班', '會議', '職場'])
-    if is_formal:
-        formal_allow = [
-            '西裝', 'blazer', 'suit', '西褲', '西裝褲',
-            '襯衫', 'shirt', '皮鞋', 'oxford', 'derby',
-            '領帶', 'tie', '領結', 'belt', '皮帶'
-        ]
-        formal_block = ['運動', '球鞋', 'sneaker', 'hoodie', '帽t', '短褲', '涼鞋', '拖鞋', '漁夫帽', '棒球帽', '印花', '卡通', '圖騰', 'oversize', '街頭']
-        def match_formal(item):
-            text = " ".join([
-                str(item.get("_title", "")),
-                str(item.get("_description", "")),
-                str(item.get("_category", "")),
-                str(item.get("clothing_type", "")),
-            ]).lower()
-            return any(k in text for k in formal_allow) and not any(b in text for b in formal_block)
-        base = filtered_items if filtered_items else system_items
-        filtered_items = [it for it in base if match_formal(it)]
-        # 正式場景若仍無結果，直接返回錯誤，避免亂湊穿搭
-        if not filtered_items:
-            return {"error": "目前找不到符合正式/商務風格的商品"}, {"items": [], "wardrobe_items": wardrobe_items}, keywords
-    
-    # === 優化：類別平衡邏輯 ===
-    # 確保回傳的列表中包含 上/下/鞋/配，避免因隨機排序導致鞋子配件被截斷
-    balanced_items = []
-    if len(filtered_items) >= limit:
-        # 分組
-        cats = {'top': [], 'bottom': [], 'shoes': [], 'accessories': [], 'other': []}
-        for item in filtered_items:
-            c = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
-            if c in cats:
-                cats[c].append(item)
-            else:
-                cats['other'].append(item)
-        
-        # 輪詢選取 (確保各類別都有機會進入前 limit 名單)
-        max_len = max(len(l) for l in cats.values()) if any(cats.values()) else 0
-        for i in range(max_len):
-            for key in ['top', 'bottom', 'shoes', 'accessories', 'other']:
-                if i < len(cats[key]):
-                    balanced_items.append(cats[key][i])
-            if len(balanced_items) >= limit:
-                break
-                
-        system_items = balanced_items[:limit]
-    else:
-        # 寧缺勿濫：如果過濾後有商品，就只用過濾後的，絕對不補垃圾
-        # 只有在完全沒找到任何符合商品時，才被迫使用原始列表（避免空白）
-        if filtered_items:
-            system_items = filtered_items
-        # else: system_items 保持原樣 (全隨機)，這是最後的 fallback
-
-    # 統一類別欄位，確保前端組裝成「上衣/下身/鞋子/配件」
-    normalized_items = []
-    for item in system_items:
-        item = dict(item)
-        smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
-        if smart_cat and smart_cat != 'unknown':
-            item['_category'] = smart_cat
-        else:
-            norm_cat = normalize_category(item.get('_category', ''))
-            if norm_cat:
-                item['_category'] = norm_cat
-        normalized_items.append(item)
-    # 性別過濾：避免推薦與使用者性別明顯不符的單品
-    system_items = [it for it in normalized_items if is_gender_suitable(it, user_gender)]
-
-    # 若缺少必要類別，嘗試從 items 再抓補足 (top/bottom/shoes/accessories)
-    def missing_categories(items):
-        cats = {(it.get("_category") or "").lower() for it in items}
-        required = ['top', 'bottom', 'shoes', 'accessories']
-        return [cat for cat in required if not any(cat in c for c in cats)]
-
-    missing = missing_categories(system_items)
-    if missing:
-        fillers = []
-        try:
-            conn_extra = get_db_conn()
-            with conn_extra.cursor() as cur:
-                for cat in missing:
-                    like = f"%{cat}%"
-                    cur.execute(
-                        f"SELECT * FROM items WHERE (category LIKE %s OR clothing_type LIKE %s){gender_clause}{image_clause} ORDER BY RAND() LIMIT %s",
-                        (like, like, *gender_params, 3) if gender_params else (like, like, 3),
-                    )
-                    results = cur.fetchall() or []
-                    fillers.extend(results)
-        except Exception as e:
-            print(f"[AI] 補類別查詢失敗: {e}", file=sys.stderr)
-        finally:
             try:
-                conn_extra.close()
+                conn.close()
             except Exception:
                 pass
 
-        if fillers:
-            fillers_std = [standardize_item(it, item_fields) for it in fillers]
-            system_items = system_items + fillers_std
+    if not system_items:
+        return {"error": "資料庫中沒有可用商品"}, {"items": [], "wardrobe_items": wardrobe_items}, []
 
-            # 再次標準化類別
-            normalized_items = []
-            for item in system_items:
-                item = dict(item)
-                smart_cat = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
-                if smart_cat and smart_cat != 'unknown':
-                    item['_category'] = smart_cat
-                else:
-                    norm_cat = normalize_category(item.get('_category', ''))
-                    if norm_cat:
-                        item['_category'] = norm_cat
-                normalized_items.append(item)
-            system_items = normalized_items
+    def has_image(it):
+        img = it.get("_image") or it.get("image_url") or it.get("image") or ""
+        return bool(img)
 
-    # 補完後再以類別均衡方式挑選最多 limit 件
-    if system_items:
-        cats = {'top': [], 'bottom': [], 'shoes': [], 'accessories': [], 'other': []}
-        for item in system_items:
-            c = smart_categorize(item.get('_title', ''), item.get('_category', ''), item.get('clothing_type'))
-            if c in cats:
-                cats[c].append(item)
+    # 優先有圖
+    system_items.sort(key=lambda it: 0 if has_image(it) else 1)
+
+    selected_items = system_items
+    ai_response_dict = {"parsed": {}}
+
+    if agent:
+        subset = system_items[:150]  # 控制 prompt 長度
+        lines = []
+        for idx, it in enumerate(subset, 1):
+            lines.append(
+                f"{idx}. 名稱:{it.get('_title') or it.get('name')} | 類別:{it.get('_category') or it.get('category')} | 類型:{it.get('clothing_type','')} | 顏色:{it.get('_color') or it.get('color','')} | 有圖:{'Y' if has_image(it) else 'N'}"
+            )
+        prompt = (
+            "請當造型顧問，依使用者需求挑出適合購買的單品，回傳 JSON 例如 {\"keep\":[1,2,5]}。\n"
+            "最多保留 10 件，優先有圖片，其餘由你判斷場合/風格適合度。\n"
+            f"使用者需求: {user_input}\n"
+            "候選清單:\n" + "\n".join(lines)
+        )
+        try:
+            resp = agent.chat(session_id=session_id, user_input=prompt, db_outfits=None, preferred_model=preferred_model)
+            keep_ids = []
+            if isinstance(resp, dict):
+                keep_ids = resp.get("keep") or []
             else:
-                cats['other'].append(item)
-        balanced_items = []
-        max_len = max(len(l) for l in cats.values()) if any(cats.values()) else 0
-        for i in range(max_len):
-            for key in ['top', 'bottom', 'shoes', 'accessories', 'other']:
-                if i < len(cats[key]):
-                    balanced_items.append(cats[key][i])
-            if len(balanced_items) >= limit:
-                break
-        system_items = balanced_items[:limit]
+                import json as _json
+                try:
+                    keep_ids = _json.loads(str(resp)).get("keep") or []
+                except Exception:
+                    keep_ids = []
+            if keep_ids:
+                selected_items = [subset[i - 1] for i in keep_ids if 0 < i <= len(subset)]
+                if not selected_items:
+                    selected_items = subset
+        except Exception as e:
+            print(f"[AI] LLM 篩選失敗: {e}", file=sys.stderr)
+            selected_items = system_items
 
-    def can_form_sets(items):
-        if len(items) < 2:
-            return False
-        categories = {(it.get("_category") or "").lower() for it in items}
-        has_top = any("top" in c or "dress" in c for c in categories)
-        has_bottom = any("bottom" in c for c in categories)
-        has_shoes = any("shoes" in c for c in categories)
-        has_bag = any("bags" in c for c in categories)
-        return has_top and (has_bottom or has_shoes or has_bag)
+    result_items = selected_items[:limit] if selected_items else []
+    if not result_items:
+        result_items = system_items[:limit]
 
-    combined_for_ai = wardrobe_items + system_items if wardrobe_items else system_items
     payload = {
-        "items": system_items,
+        "items": result_items,
         "wardrobe_items": wardrobe_items,
-        "can_form_sets": can_form_sets(system_items or wardrobe_items),
+        "can_form_sets": True,
     }
-
-    if not agent:
-        return {"error": "AI 功能未啟用"}, payload, keywords
-
-    # 3. 調用 AI 模型 (使用與衣櫃推薦相同的機制)
-    try:
-        # 完全移除額外的 instruction，直接使用 user_input，與衣櫃推薦保持一致
-        # 雖然使用與衣櫃推薦相同的 dual_recommendation，但我們需要通過 Prompt 喚醒 LLM 的判斷力
-        # 讓它知道這是在「選購」，必須嚴格符合風格，而不是「衣櫃搭配」（硬湊）
-        instruction = (
-            f"【任務】請作為嚴格的購物顧問，從下方清單挑選符合「{user_input}」的商品。\n"
-            "⚠️ 嚴格過濾：若商品風格與需求不符（例如要求正式卻只有T恤），請勿推薦該商品。\n"
-            "⚠️ 標題精準：標題必須回應使用者需求（如：正式穿搭）。\n"
-            "使用者需求："
-        )
-
-        ai_response_dict = agent.dual_recommendation(
-            session_id=session_id,
-            user_input=instruction + user_input,
-            db_outfits=combined_for_ai,  # 直接傳遞結構化商品列表（含衣櫃），讓 Agent 內部處理
-            preferred_model=preferred_model,
-        )
-        
-        return ai_response_dict, payload, keywords
-        
-    except Exception as e:
-        print(f"[AI] 購買推薦 AI 處理失敗: {e}", file=sys.stderr)
-        return {"error": f"AI 推薦生成失敗: {str(e)}"}, payload, keywords
+    return ai_response_dict, payload, []
