@@ -586,7 +586,7 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
         
         return `
           <div class="mb-4 p-4 border border-secondary-light dark:border-secondary-dark rounded-lg flex gap-4">
-            <!-- 左邊：單品圖片和名稱 -->
+            <!-- 左邊：單品圖片 -->
             <div class="flex-shrink-0">
               ${comment.img_url ? 
                 `<img src="${comment.img_url}" alt="item" class="w-24 h-24 object-cover rounded-lg" />` : 
@@ -594,7 +594,6 @@ async function loadComments(outfitId, outfit, mode = 'comment') {
                   <span class="material-symbols-outlined text-4xl text-subtle-light">checkroom</span>
                 </div>`
               }
-              <p class="text-sm font-medium text-center mt-2">${comment.name || '單品'}</p>
             </div>
             
             <!-- 右邊：評分區域 -->

@@ -183,7 +183,7 @@
                   <div class="flex-1">
                     <div class="bg-white dark:bg-secondary-dark rounded-lg p-4 shadow-sm">
                       <p class="text-sm leading-relaxed text-text-light dark:text-text-dark">
-                        請在下方輸入您的穿搭需求，讓我為您推薦三套專屬組合！
+                        請在下方輸入您的穿搭需求，讓我為您推薦專屬組合！
                       </p>
                     </div>
                   </div>
@@ -210,10 +210,10 @@
                 <span class="text-sm text-subtle-light dark:text-subtle-dark">穿搭組合</span>
                 <div class="flex gap-2">
                   <div class="page-dot w-2 h-2 rounded-full bg-primary"></div>
-                  <div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>
-                  <div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>
+                  <!-- <div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div> -->
+                  <!-- <div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div> -->
                 </div>
-                <span id="page-number" class="text-sm font-medium text-primary">1 / 3</span>
+                <span id="page-number" class="text-sm font-medium text-primary">0 / 1</span>
               </div>
 
               <!-- Outfit Cards Container -->
@@ -377,7 +377,8 @@
             if (lastMessage) lastMessage.remove();
 
             if (genData.success && genData.data.length > 0) {
-              outfits = genData.data;
+              // outfits = genData.data; // 多套推薦暫時不用，保留以備後續擴充
+              outfits = genData.data.slice(0, 1);
               totalPages = outfits.length;
               
               // 使用推薦結果的標題，如果沒有標題則使用簡潔的訊息
@@ -474,11 +475,11 @@
       function updatePage() {
         if (!pageNumber) return;
         if (outfits.length === 0) {
-            pageNumber.textContent = '0 / 0';
+            pageNumber.textContent = '0 / 1';
             prevBtn.classList.add('invisible');
             nextBtn.classList.add('hidden');
             shoppingBtn.classList.add('hidden');
-            if (pageDotsContainer) pageDotsContainer.innerHTML = '';
+            if (pageDotsContainer) pageDotsContainer.innerHTML = '<div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>';
             return;
         }
 
@@ -496,10 +497,15 @@
         prevBtn.classList.toggle('invisible', currentPage === 0);
         prevBtn.classList.toggle('flex', currentPage > 0);
         
-        const isLastPage = currentPage === totalPages - 1;
-        nextBtn.classList.toggle('hidden', isLastPage);
-        shoppingBtn.classList.toggle('hidden', !isLastPage);
-        shoppingBtn.classList.toggle('flex', isLastPage);
+        // 單套模式不需要翻頁按鈕，保留控制以備未來多套時使用
+        nextBtn.classList.add('hidden');
+        prevBtn.classList.add('invisible');
+        prevBtn.disabled = true;
+
+        // 單套模式一旦有結果就顯示好康推薦按鈕
+        const showShopping = totalPages > 0;
+        shoppingBtn.classList.toggle('hidden', !showShopping);
+        shoppingBtn.classList.toggle('flex', showShopping);
       }
 
       function initOutfits() {
@@ -516,9 +522,10 @@
             updatePage();
         } else {
             totalPages = 0;
-            if(pageDotsContainer) pageDotsContainer.innerHTML = '<div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div><div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div><div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>';
+            // 預設改為單套顯示，保留多點樣式以供未來啟用
+            if(pageDotsContainer) pageDotsContainer.innerHTML = '<div class="page-dot w-2 h-2 rounded-full bg-subtle-light dark:bg-subtle-dark"></div>';
             outfitSlides.innerHTML = '<div class="text-center text-subtle-light dark:text-subtle-dark w-full p-10">請在上方輸入您的需求以開始生成穿搭建議。</div>';
-            pageNumber.textContent = '0 / 0';
+            pageNumber.textContent = '0 / 1';
             // 初始狀態：隱藏所有導航按鈕
             prevBtn.classList.add('invisible');
             prevBtn.disabled = true;
@@ -534,37 +541,39 @@
           sendMessage();
         }
       });
-      prevBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (currentPage > 0) {
-          currentPage--;
-          updatePage();
-        }
-      });
-      nextBtn.addEventListener('click', (e) => {
-        if (currentPage < totalPages - 1) {
-          currentPage++;
-          updatePage();
-        }
-      });
+      // 單套模式暫不使用上下頁按鈕
+      // prevBtn.addEventListener('click', (e) => {
+      //   e.preventDefault();
+      //   if (currentPage > 0) {
+      //     currentPage--;
+      //     updatePage();
+      //   }
+      // });
+      // nextBtn.addEventListener('click', (e) => {
+      //   if (currentPage < totalPages - 1) {
+      //     currentPage++;
+      //     updatePage();
+      //   }
+      // });
       shoppingBtn.addEventListener('click', (e) => {
         e.preventDefault();
         const message = userInput.value.trim() || lastPrompt || '推薦購買';
         // 儲存消息到 sessionStorage 並跳轉到 deals 頁面
         sessionStorage.setItem('deals_message', message);
         const dealsUrl = `{{ url_for('recommendation.deals') }}?message=${encodeURIComponent(message)}`;
-        window.location.href = dealsUrl;
+        window.open(dealsUrl, '_blank', 'noopener');
       });
-      document.addEventListener('keydown', (e) => {
-        if (document.activeElement.tagName === 'INPUT') return;
-        if (e.key === 'ArrowLeft' && currentPage > 0) {
-          currentPage--;
-          updatePage();
-        } else if (e.key === 'ArrowRight' && currentPage < totalPages - 1) {
-          currentPage++;
-          updatePage();
-        }
-      });
+      // 單套模式停用左右鍵翻頁監聽，保留備查
+      // document.addEventListener('keydown', (e) => {
+      //   if (document.activeElement.tagName === 'INPUT') return;
+      //   if (e.key === 'ArrowLeft' && currentPage > 0) {
+      //     currentPage--;
+      //     updatePage();
+      //   } else if (e.key === 'ArrowRight' && currentPage < totalPages - 1) {
+      //     currentPage++;
+      //     updatePage();
+      //   }
+      // });
 
       window.addEventListener('load', () => {
         initOutfits();
