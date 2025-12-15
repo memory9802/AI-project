@@ -192,13 +192,14 @@
             <h3 class="text-2xl font-bold mb-2">我的衣櫃</h3>
 
             <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;" enctype="multipart/form-data">
-              <div class="grid grid-cols-[1fr_auto] gap-4">
-                <!-- 左側：說明與快速開啟上傳視窗 -->
+              <div class="grid grid-cols-[1fr_auto] gap-4 items-center">
+                <!-- 左側：說明 -->
                 <div class="flex flex-col gap-4">
-                  <div class="flex items-center gap-3 flex-nowrap overflow-x-auto">
-                    <p class="text-sm text-subtle-light dark:text-subtle-dark">請使用右側「上傳衣物」開啟上傳視窗，預覽、選擇標籤與上傳都在視窗中操作，體驗更佳。</p>
-                    <button id="open-upload-modal" type="button" class="px-3 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳衣物</button>
-                  </div>
+                  <p class="text-sm text-subtle-light dark:text-subtle-dark">請使用右側「上傳衣物」開啟上傳視窗，預覽、選擇標籤與上傳都在視窗中操作，體驗更佳。</p>
+                </div>
+                <!-- 右側：上傳按鈕（靠右對齊） -->
+                <div class="flex items-center justify-end">
+                  <button id="open-upload-modal" type="button" class="px-3 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳衣物</button>
                 </div>
               </div>
             </form>
