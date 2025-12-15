@@ -189,74 +189,90 @@
 
         <main class="px-6 md:px-10 lg:px-20 py-8">
           <section class="max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold mb-2">我的衣櫃 — 上傳衣物</h3>
-            <p id="user-meta" class="text-sm text-subtle-light dark:text-subtle-dark mb-4">
-              {% if user %}登入者：{{ user.username }} (ID: {{ user.id }}){% else %}尚未登入{% endif %}
-            </p>
+            <h3 class="text-2xl font-bold mb-2">我的衣櫃</h3>
 
             <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;" enctype="multipart/form-data">
               <div class="grid grid-cols-[1fr_auto] gap-4">
-                <!-- 左側：輸入欄位和風格按鈕 -->
+                <!-- 左側：說明與快速開啟上傳視窗 -->
                 <div class="flex flex-col gap-4">
-                  <!-- 上方：基本資料輸入欄位 -->
                   <div class="flex items-center gap-3 flex-nowrap overflow-x-auto">
-                    <input id="itemName" type="text" placeholder="衣物名稱"
-                      class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
-                    <select id="itemCategory" class="px-3 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80">
-                      <option value="" selected>衣物型別</option>
-                      <option value="上身">上身</option>
-                      <option value="下著">下著</option>
-                      <option value="鞋類">鞋類</option>
-                      <option value="配件">配件</option>
-                    </select>
-                    <input id="color" type="text" placeholder="衣物顏色"
-                      class="px-2 py-2 border rounded-md w-28 sm:w-36 md:w-44 flex-shrink-0 bg-white dark:bg-secondary-dark/80 min-w-0" />
-                    <input id="itemImage" type="file" accept="image/*" multiple
-                      class="px-2 py-2 border rounded-md w-40 sm:w-48 md:w-56 flex-shrink-0 bg-white dark:bg-secondary-dark/80" />
+                    <p class="text-sm text-subtle-light dark:text-subtle-dark">請使用右側「上傳衣物」開啟上傳視窗，預覽、選擇標籤與上傳都在視窗中操作，體驗更佳。</p>
+                    <button id="open-upload-modal" type="button" class="px-3 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳衣物</button>
                   </div>
-                  
-                  <!-- 下方：風格標籤按鈕 (10個一行) -->
-                  <div class="grid grid-cols-10 gap-2">
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="休閒">休閒</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="正式">正式</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="運動">運動</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="街頭">街頭</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="韓風">韓風</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="日系">日系</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="歐美">歐美</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="極簡">極簡</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="復古">復古</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors"
-                      data-style="中性">中性</button>
-                  </div>
-                </div>
-                
-                <!-- 右側：上傳按鈕 (垂直置中) -->
-                <div class="flex items-center justify-center">
-                  <button id="addBtn" type="button"
-                    class="px-6 py-3 bg-primary text-white rounded-md hover:opacity-90 whitespace-nowrap">上傳</button>
                 </div>
               </div>
             </form>
+
+            <!-- Upload Modal (moved inputs here to keep code logic intact) -->
+            <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+              <div class="bg-white dark:bg-secondary-dark rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-xl font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined">upload</span>
+                    上傳衣物
+                  </h2>
+                  <button id="close-upload-modal" class="p-1 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+
+                <form id="modal-upload-form" class="space-y-4" onsubmit="return false;">
+                  <div>
+                    <label class="block text-sm font-medium mb-2">衣物名稱</label>
+                    <input id="itemName" type="text" placeholder="衣物名稱" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2">類別</label>
+                      <select id="itemCategory" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80">
+                        <option value="" selected>衣物型別</option>
+                        <option value="上身">上身</option>
+                        <option value="下著">下著</option>
+                        <option value="鞋類">鞋類</option>
+                        <option value="配件">配件</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2">顏色</label>
+                      <input id="color" type="text" placeholder="衣物顏色" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-2">上傳圖片</label>
+                    <div id="upload-area" class="border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg p-4 text-center cursor-pointer hover:bg-secondary-light/20 dark:hover:bg-secondary-dark/20 transition-colors">
+                      <input id="itemImage" type="file" accept="image/*" multiple class="hidden" />
+                      <span class="material-symbols-outlined text-4xl text-primary mb-2 block">image</span>
+                      <p class="text-sm font-medium">點擊或拖放圖片到此處</p>
+                      <p class="text-xs text-subtle-light dark:text-subtle-dark mt-1">支援 JPG, PNG，大小限制視後端而定</p>
+                    </div>
+                    <img id="preview-image" class="w-full rounded-lg mt-2 hidden" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-2">風格標籤</label>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="休閒">休閒</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="正式">正式</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="運動">運動</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="街頭">街頭</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="韓風">韓風</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="日系">日系</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="歐美">歐美</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="極簡">極簡</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="復古">復古</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="中性">中性</button>
+                    </div>
+                    <div id="selected-tags" class="flex flex-wrap gap-2"></div>
+                  </div>
+
+                  <div class="flex gap-2">
+                    <button id="modal-upload-submit" class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">上傳</button>
+                    <button id="modal-upload-cancel" class="px-4 py-2 bg-secondary-light dark:bg-secondary-dark rounded-lg hover:bg-secondary-light/80 dark:hover:bg-secondary-dark/80 transition-colors">取消</button>
+                  </div>
+                </form>
+              </div>
+            </div>
 
             <div class="mt-4 flex items-center justify-between">
               <div class="flex items-center gap-2">
@@ -270,15 +286,14 @@
                   <option value="accessories">配件</option>
                 </select>
               </div>
+              <div id="delete-bar" class="mt-4 flex items-center justify-between">
+                  <button id="deleteBtn"
+                  class="px-5 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 transition-colors">
+                  刪除已選 (<span id="delete-count">0</span>)
+                  </button>
+                </div>
             </div>
-
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
-            <div id="delete-bar" class="hidden mt-4 flex justify-center">
-              <button id="deleteBtn"
-                class="px-5 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 transition-colors">
-                刪除已選 (<span id="delete-count">0</span>)
-              </button>
-            </div>
           </section>
 
           <script>
@@ -458,12 +473,19 @@
                 el.category.value = 'top';
                 el.image.value = '';
                 state.selectedStyles.clear();
-                styleButtons.forEach(btn => btn.classList.remove('bg-primary', 'text-white', 'border-primary'));
+                styleButtons.forEach(btn => {
+                  btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                  btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                });
+                const preview = document.getElementById('preview-image');
+                if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+                const selectedTags = document.getElementById('selected-tags');
+                if (selectedTags) selectedTags.innerHTML = '';
               }
 
               async function handleUpload() {
                 const user = await ensureLogin();
-                if (!user) return;
+                if (!user) return false;
 
                 const name = el.name.value.trim();
                 const category = el.category.value.trim();
@@ -501,13 +523,15 @@
                   if (!handled) return; // 已重定向
                   
                   const data = await res.json();
-                  if (!data.success) {
-                    throw new Error(data.message || '上傳失敗');
-                  }
-                  await loadItems();
-                  resetForm();
+                      if (!data.success) {
+                        throw new Error(data.message || '上傳失敗');
+                      }
+                      await loadItems();
+                      resetForm();
+                      return true;
                 } catch (error) {
                   alert(error.message || '上傳失敗，請稍後再試');
+                  return false;
                 }
               }
 
@@ -579,10 +603,102 @@
                     btn.classList.remove('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
                     btn.classList.add('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
                   }
+                  refreshSelectedTags();
                 });
               });
 
-              el.addBtn.addEventListener('click', handleUpload);
+              // Modal controls and preview
+              const uploadModal = document.getElementById('upload-modal');
+              const openUploadBtn = document.getElementById('open-upload-modal');
+              const closeUploadBtn = document.getElementById('close-upload-modal');
+              const modalCancelBtn = document.getElementById('modal-upload-cancel');
+              const modalSubmitBtn = document.getElementById('modal-upload-submit');
+              const uploadArea = document.getElementById('upload-area');
+              const previewImage = document.getElementById('preview-image');
+
+              function refreshSelectedTags() {
+                const container = document.getElementById('selected-tags');
+                if (!container) return;
+                container.innerHTML = '';
+                Array.from(state.selectedStyles).forEach(tag => {
+                  const span = document.createElement('span');
+                  span.className = 'px-2 py-1 bg-primary/10 rounded-full text-sm text-primary';
+                  span.textContent = tag;
+                  container.appendChild(span);
+                });
+              }
+
+              function openModal() {
+                if (!uploadModal) return;
+                uploadModal.classList.remove('hidden');
+                uploadModal.classList.add('flex');
+                // sync tag button states
+                styleButtons.forEach(btn => {
+                  const s = btn.dataset.style;
+                  if (state.selectedStyles.has(s)) {
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.remove('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                  } else {
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                  }
+                });
+                refreshSelectedTags();
+                const nameEl = document.getElementById('itemName'); if (nameEl) nameEl.focus();
+              }
+
+              function closeModal() {
+                if (!uploadModal) return;
+                uploadModal.classList.add('hidden');
+                uploadModal.classList.remove('flex');
+                if (previewImage) { previewImage.src = ''; previewImage.classList.add('hidden'); }
+                const fileInput = document.getElementById('itemImage'); if (fileInput) fileInput.value = '';
+              }
+
+              if (openUploadBtn) openUploadBtn.addEventListener('click', openModal);
+              if (el.addBtn) el.addBtn.addEventListener('click', openModal);
+              if (closeUploadBtn) closeUploadBtn.addEventListener('click', closeModal);
+              if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
+
+              if (uploadArea) {
+                uploadArea.addEventListener('click', () => document.getElementById('itemImage').click());
+                uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('bg-secondary-light/20'); });
+                uploadArea.addEventListener('dragleave', (e) => { uploadArea.classList.remove('bg-secondary-light/20'); });
+                uploadArea.addEventListener('drop', (e) => {
+                  e.preventDefault(); uploadArea.classList.remove('bg-secondary-light/20');
+                  const files = e.dataTransfer.files; if (files && files.length) {
+                    const fileInput = document.getElementById('itemImage');
+                    try { fileInput.files = files; } catch (err) {
+                      // some browsers don't allow programmatic FileList assignment; fallback by creating a DataTransfer
+                      const dt = new DataTransfer(); Array.from(files).forEach(f => dt.items.add(f)); fileInput.files = dt.files;
+                    }
+                    fileInput.dispatchEvent(new Event('change'));
+                  }
+                });
+              }
+
+              // preview handler
+              if (el.image) {
+                el.image.addEventListener('change', () => {
+                  const f = el.image.files && el.image.files[0];
+                  if (f && previewImage) {
+                    previewImage.src = URL.createObjectURL(f);
+                    previewImage.classList.remove('hidden');
+                  } else if (previewImage) {
+                    previewImage.src = '';
+                    previewImage.classList.add('hidden');
+                  }
+                });
+              }
+
+              if (modalSubmitBtn) {
+                modalSubmitBtn.addEventListener('click', async () => {
+                  const ok = await handleUpload();
+                  if (ok) {
+                    closeModal();
+                  }
+                });
+              }
               if (el.filter) {
                 el.filter.addEventListener('change', () => {
                   state.filterCategory = el.filter.value || 'all';
