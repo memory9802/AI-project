@@ -356,13 +356,14 @@
         const category = formatCategory(product._category || product.category || '未分類');
         const color = product._color || product.color || '';
         const image = product._image || product.image_url || 'https://via.placeholder.com/300?text=No+Image';
+        const sku = product._sku || product.sku || '未找到此商品';
         const price = product.price ? `NT$ ${Math.round(product.price)}` : '詢價';
         const description = product._description || product.clothing_type || '限時推薦';
 
         return `
           <div class="bg-white dark:bg-secondary-dark rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             <div class="relative overflow-hidden h-40 bg-secondary-light dark:bg-secondary-dark">
-              <img src="${image}" alt="${title}" class="w-full h-full object-cover hover:scale-105 transition-transform" onerror="this.src='https://via.placeholder.com/300?text=No+Image'" />
+              <a href="https://www.uniqlo.com/tw/zh_TW/product-detail.html?productCode=${sku}" target="_blank"><img src="${image}" alt="${title}" class="w-full h-full object-cover hover:scale-105 transition-transform" onerror="this.src='https://via.placeholder.com/300?text=No+Image'" /></a>
               <div class="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded text-xs font-medium">${category}</div>
             </div>
             <div class="p-3">

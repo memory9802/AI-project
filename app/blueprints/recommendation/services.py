@@ -244,6 +244,7 @@ def detect_item_fields(conn):
                 "category": "category",
                 "occasion": "category",  # items 用 category 表示場合
                 "image": "image_url",
+                "sku": "sku",
                 "description": "clothing_type",
             }
             
@@ -264,6 +265,7 @@ def detect_item_fields(conn):
             "category": "category",
             "occasion": "category",
             "image": "image_url",
+            "sku": "sku",
             "description": "clothing_type",
         }
 
@@ -340,6 +342,7 @@ def standardize_item(item, fields):
     - category → _category, _occasion
     - color → _color
     - image_url → _image
+    - sku → _sku
     - clothing_type → _description
     - _source = "items"  # 標記來源
     """
@@ -355,6 +358,7 @@ def standardize_item(item, fields):
         "_category": item.get("category") if item.get("category") else "未分類",
         "_occasion": item.get("category") if item.get("category") else "未分類",
         "_color": item.get("color") if item.get("color") else "未指定顏色",
+        "_sku": item.get("sku") if item.get("sku") else "",
         "_image": item.get("image_url") if item.get("image_url") else "",
         "_description": (
             item.get("clothing_type") if item.get("clothing_type")
@@ -374,7 +378,8 @@ def standardize_item(item, fields):
         data_quality["missing_fields"].append("image_url")
     if result["_description"] == "暫無描述":
         data_quality["missing_fields"].append("clothing_type")
-
+    if result["_sku"] == "":
+        data_quality["missing_fields"].append("sku")
     if data_quality["missing_fields"]:
         data_quality["source"] = "partial"
 
