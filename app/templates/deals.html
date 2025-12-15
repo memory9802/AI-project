@@ -369,23 +369,15 @@
               <h3 class="font-bold text-sm mb-1 line-clamp-2">${title}</h3>
               ${color ? `<p class="text-xs text-subtle-light dark:text-subtle-dark mb-1">${color}</p>` : ''}
               <p class="text-xs text-subtle-light dark:text-subtle-dark mb-2">${description}</p>
-              <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center justify-between">
                 <span class="text-primary font-bold text-sm">${price}</span>
               </div>
-              <button onclick="addToCart('${title}', '${price}')" class="w-full bg-primary text-white py-2 rounded text-sm font-medium hover:bg-primary/90 transition-colors">
-                加入購物車
-              </button>
             </div>
           </div>
         `;
       }).join('');
 
       container.innerHTML = productsHTML;
-    }
-
-    function addToCart(title, price) {
-      alert(`已添加「${title}」(${price}) 到購物車`);
-      // 這裡可以實現真實的購物車邏輯
     }
   </script>
 </body>
