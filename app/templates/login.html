@@ -251,6 +251,48 @@
                                         <label class="flex flex-col min-w-40 flex-1">
                                             <p
                                                 class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
+                                                身高體重</p>
+                                            <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                                <div
+                                                    class="text-subtle-light dark:text-subtle-dark flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pl-[15px] rounded-l-lg border-r-0">
+                                                    <span class="material-symbols-outlined"
+                                                        style="font-size: 20px;">emoji_people</span>
+                                                </div>
+                                                <input
+                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
+                                                    placeholder="身高cm" required type="number" name="height" />
+                                                <div
+                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] border-l-0">
+                                                </div>
+                                                <input
+                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
+                                                    placeholder="體重kg" required type="number" name="weight" />
+                                                <div
+                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0">
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="flex flex-col min-w-40 flex-1">
+                                            <p
+                                                class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
+                                                出生年月日</p>
+                                            <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                                <div
+                                                    class="text-subtle-light dark:text-subtle-dark flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pl-[15px] rounded-l-lg border-r-0">
+                                                    <span class="material-symbols-outlined"
+                                                        style="font-size: 20px;">date_range</span>
+                                                </div>
+                                                <input
+                                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark focus:border-primary dark:focus:border-primary h-14 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] border-l-0 border-r-0 text-base font-normal leading-normal"
+                                                    placeholder="請選擇生日" required type="date"name="birthday"min="1900-01-01"max="2025-12-31"/>
+                                                <div
+                                                    class="flex border border-secondary-light dark:border-secondary-dark bg-white dark:bg-secondary-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0">
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="flex flex-col min-w-40 flex-1">
+                                            <p
+                                                class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">
                                                 偏好風格</p>
                                             <div class="grid grid-cols-5 gap-2 p-3 border border-secondary-light dark:border-secondary-dark rounded-lg bg-white dark:bg-secondary-dark">
                                                 <input type="hidden" id="favorite-style-input" name="favoriteStyle" />
