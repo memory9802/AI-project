@@ -1,9 +1,8 @@
 ﻿"""
 AI 聊天/推薦服務（單檔分上下段）
-- [ULTIMATE COMPLETE VERSION - WITH BACKFILL]
+- [ULTIMATE COMPLETE VERSION - CONTEXT INHERITANCE FIX]
 - 核心功能：AI 意圖識別、語意過濾 (去除棉麻)、Uniqlo 優先、強力性別過濾
-- [NEW] 智慧補位機制：當 AI 精選少於 10 件時，自動用「百搭基本款」補滿，確保不留白
-- 文案修復：保留了 generate_wardrobe_structured 的文案生成功能
+- [CRITICAL FIX] generate_wardrobe_structured 啟用上下文繼承，解決推薦場景遺失問題。
 """
 
 import os
@@ -12,6 +11,7 @@ import re
 from decimal import Decimal
 import pymysql
 import random
+from typing import List, Dict
 
 # UTF-8 Setup
 if hasattr(sys.stdout, "reconfigure"):
@@ -46,6 +46,25 @@ if USE_LLM:
         print("[AI] OutfitAIAgent initialized", flush=True)
     except Exception as e:
         print(f"[AI] 初始化失敗: {e}", flush=True, file=sys.stderr)
+
+
+def build_chat_history_context(session_id: str, max_turns: int = 4) -> str:
+    """取出先前的聊天內容，供推薦時參考。"""
+    if not agent or not session_id:
+        return ""
+    sess = agent.sessions.get(session_id)
+    if not sess:
+        return ""
+    msgs = sess.get("messages", [])[-max_turns:]
+    lines = []
+    for m in msgs:
+        user_msg = str(m.get("user", "")).strip()
+        ai_msg = str(m.get("ai", "")).strip()
+        if user_msg:
+            lines.append(f"用戶: {user_msg}")
+        if ai_msg:
+            lines.append(f"AI: {ai_msg}")
+    return "\n".join(lines)
 
 
 # =====================================================================
@@ -233,6 +252,9 @@ def handle_recommendation_chat(user_input: str, session_id: str = "recommendatio
     else:
         if not agent: return {"is_recommendation": False, "response": "您好！我是您的穿搭顧問 😊"}
         try:
+            # Note: The chat session ID defaults to "recommendation-chat". If user_id is passed from the outer app, 
+            # this part should ideally use a user-scoped ID for persistence, e.g., f"recommendation-chat_{user_id}".
+            # We assume the caller passes a consistent session ID.
             ai_response = agent.chat(session_id, user_input, preferred_model=preferred_model)
             return {"is_recommendation": False, "response": ai_response}
         except Exception as e:
@@ -382,13 +404,64 @@ def generate_wardrobe_personal(
 
 
 # =====================================================================
-# [核心功能 5] 結構化推薦 (文案修復版)
+# [核心功能 5] 結構化推薦 (上下文繼承修復版)
 # =====================================================================
 def generate_wardrobe_structured(
     user_input: str, user_id: int = None, session_id: str = "wardrobe-structured", preferred_model: str = "auto"
 ):
     if not user_input: return {"error": "請輸入內容"}, [], []
     
+    # 1. 上下文繼承邏輯
+    context_user_input = user_input
+    
+    # 修正: 更寬鬆的判斷空泛的推薦請求，但若含明確場合/情境詞則優先用當前輸入
+    normalized_input = user_input.lower().strip().replace('嗎', '').replace('？', '')
+    vague_requests = ['可以推薦我怎麼穿', '怎麼穿', '那怎麼穿', '推薦我怎麼穿', '可以推薦', '怎麼搭', '推', '那', '怎麼辦', '推薦']
+    has_context_token = any(tok in normalized_input for tok in ['運動','跑步','健身','瑜珈','約會','上班','通勤','正式','圖書館','閱讀','書館','休閒','旅行'])
+    is_vague_request = (normalized_input in vague_requests or (len(normalized_input) < 4 and not re.search(r'[a-z]{3,}', normalized_input))) and not has_context_token
+    
+    # 修正 session_id 確保能讀取到聊天歷史（與前端聊天共用）
+    chat_session_id = "recommendation_chat_guest"
+    if user_id:
+        chat_session_id = f"recommendation_chat_{user_id}"
+    
+    if is_vague_request and agent:
+        try:
+            agent_session = agent.get_or_create_session(chat_session_id)
+            
+            last_message_text = None
+            if agent_session and agent_session.get("messages"):
+                # 倒著找，找最後一條使用者發的訊息
+                for msg in reversed(agent_session["messages"]):
+                    if "user" in msg:
+                        user_msg = msg["user"]
+                        # 找到最新一條「非推薦意圖」的訊息 (例如：「我要去圖書館」)
+                        if not agent.detect_intent(user_msg):
+                            last_message_text = user_msg
+                            break
+            
+            if last_message_text:
+                context_user_input = last_message_text
+                print(f"[Context Fix] 繼承上下文: '{last_message_text}'", file=sys.stderr)
+            
+        except Exception as e:
+            print(f"[Context Fix Error] 無法讀取歷史記錄: {e}", file=sys.stderr)
+
+    final_user_input = context_user_input 
+
+    # 將最近聊天紀錄一併提供，讓推薦能參考完整脈絡
+    history_context = build_chat_history_context(chat_session_id)
+    fused_user_input = final_user_input
+    if history_context:
+        fused_user_input = (
+            f"最新需求：{final_user_input}\n"
+            f"請以這個最新需求為主，舊對話僅供參考，若有衝突以最新需求為準。\n\n"
+            f"[最近對話]\n{history_context}"
+        )
+
+
+    # 2. 獲取衣櫃單品
+    # ... (不變)
     wardrobe_items = []
     try:
         conn = get_db_conn()
@@ -404,16 +477,17 @@ def generate_wardrobe_structured(
 
     if not agent: return {"error": "AI未啟用"}, wardrobe_items, []
 
+    # 3. AI 語意過濾 (使用 final_user_input)
     filtered_items = wardrobe_items
     if wardrobe_items:
-        filtered_items = agent.semantic_filter_wardrobe(user_input, wardrobe_items, preferred_model)
-        # 如果過濾後太少，這裡也可以考慮補回一些基本款，但目前先回退
+        filtered_items = agent.semantic_filter_wardrobe(fused_user_input, wardrobe_items, preferred_model)
         if not filtered_items: filtered_items = wardrobe_items[:10]
 
+    # 4. AI 生成精美文案 (使用 final_user_input)
     try:
         result = agent.dual_recommendation(
             session_id=session_id,
-            user_input=user_input,
+            user_input=fused_user_input,
             db_outfits=filtered_items,
             preferred_model=preferred_model
         )
@@ -424,7 +498,7 @@ def generate_wardrobe_structured(
             "parsed": {
                 "closet_pick": {
                     "title": "專屬穿搭推薦",
-                    "occasion": user_input,
+                    "occasion": final_user_input,
                     "items": "",
                     "reason": "根據您的衣櫃為您挑選的單品。"
                 }

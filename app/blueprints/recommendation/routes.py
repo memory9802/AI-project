@@ -94,7 +94,7 @@ def build_complete_outfit(items):
 # 頁面路由
 # ═══════════════════════════════════════════════════════════════════
 
-@recommendation_bp.route('/recommendation')
+@recommendation_bp.route('/')
 @login_required
 def recommend():
     user = getattr(g, 'current_user', get_current_user())
@@ -130,8 +130,8 @@ def generate_outfits_api():
         return jsonify({'success': False, 'error': '缺少使用者輸入'}), 400
     user_input = data['message']
     
-    import time
-    session_id = f"recommendation-generate-{user_id or 'guest'}-{int(time.time())}"
+    # 使用與聊天相同的 session_id，讓推薦可以承接前面聊天的上下文
+    session_id = f"recommendation_chat_{user_id}" if user_id else "recommendation_chat_guest"
     
     try:
         result_dict, db_items, _ = generate_wardrobe_structured(
@@ -170,6 +170,20 @@ def generate_outfits_api():
                         'image': selected.get('_image') or selected.get('image_url') or '',
                         'image_url': selected.get('_image') or selected.get('image_url') or ''
                     }
+
+        # 讓描述與選品一致：加入實際選品摘要
+        if outfit_data['items']:
+            summary_parts = []
+            for _, item in outfit_data['items'].items():
+                name = (item.get('name') or '').strip()
+                color = (item.get('color') or '').strip()
+                if name:
+                    summary_parts.append(f"{color}{name}" if color else name)
+            summary_text = "這套包含：" + "、".join(summary_parts) + "。"
+            reason = recommendation.get('reason', '') or ''
+            if reason:
+                summary_text = summary_text + " " + reason
+            outfit_data['description'] = summary_text
 
         return jsonify({'success': True, 'data': [outfit_data]})
 

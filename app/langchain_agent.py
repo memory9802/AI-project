@@ -1,7 +1,7 @@
 """
-LangChain Outfit AI Agent [ROBUST JSON FIX]
-- 加入了強力的 JSON 提取機制，解決「文案消失/顯示預設文字」的問題
-- 保持了嚴格的語意過濾 (Filter)
+LangChain Outfit AI Agent [FINAL FIX - CONCISENESS & CONTEXT]
+- 結構推薦：高精準語義過濾 + 強力 JSON 提取 (Robust Parsing)
+- 純對話：新增「簡潔」要求，將回覆限制在兩句話以內，專注引導。
 """
 
 import json
@@ -111,6 +111,12 @@ class OutfitAIAgent:
     def detect_intent(self, user_input: str) -> bool:
         if not user_input: return False
         
+        # 專門識別極短、空泛的輸入，例如「那」、「推」、「怎麼穿」
+        vague_keywords = ['推', '那', '怎麼辦', '怎麼搭', '怎麼穿']
+        # 修正：極短輸入直接判定為推薦，確保點擊「發送」時能走推薦流程
+        if user_input.lower().strip() in vague_keywords or len(user_input.strip()) < 3:
+             return True
+             
         prompt = (
             "You are a routing assistant. User Input: '{user_input}'\n"
             "Determine if the user wants clothing recommendations or is specifying a fashion style (e.g., Y2K, sports, date).\n"
@@ -132,7 +138,7 @@ class OutfitAIAgent:
         return any(k in user_input.lower() for k in keywords)
 
     # =========================================================================
-    # [CORE 2] Semantic Filtering
+    # [CORE 2] Semantic Filtering (結構推薦的過濾器)
     # =========================================================================
     def semantic_filter_wardrobe(self, user_input: str, items: list, preferred_model: str = "auto") -> list:
         if not items: return []
@@ -165,7 +171,7 @@ Candidates:
 Return ONLY a JSON list of IDs to KEEP (e.g., ["ID_0", "ID_2"]). 
 If NO items fit, return [].
 """
-        models, _ = self._choose_models(preferred_model)
+        models, _ = self._choose_models("auto")
         for m in models:
             try:
                 resp = m["llm"].invoke(prompt)
@@ -194,7 +200,7 @@ If NO items fit, return [].
         return items[:5] # 保底
 
     # =========================================================================
-    # [CORE 3] Dual Recommendation (文案生成)
+    # [CORE 3] Dual Recommendation (結構推薦的文案生成器)
     # =========================================================================
     def dual_recommendation(self, session_id: str, user_input: str, db_outfits=None, preferred_model: str = "auto"):
         self.get_or_create_session(session_id)
@@ -228,7 +234,7 @@ Rules:
 
 {format_instr}
 """
-        models, err = self._choose_models(preferred_model)
+        models, err = self._choose_models("auto")
         if err: return {"error": err}
 
         for m in models:
@@ -252,10 +258,11 @@ Rules:
                         "global_pick": {}
                     }
                 
-                # 儲存對話紀錄
-                sess = self.sessions[session_id]
-                sess["messages"].append({"user": user_input, "ai": content, "timestamp": datetime.now().isoformat()})
-                self._save_conversations({**self._load_conversations(), session_id: sess})
+                # 儲存對話紀錄 (這裡的 session ID 是結構化推薦專屬的 ID)
+                # 為了避免與 chat session ID 衝突，這裡只記錄推薦結果
+                # sess = self.sessions[session_id]
+                # sess["messages"].append({"user": user_input, "ai": content, "timestamp": datetime.now().isoformat()})
+                # self._save_conversations({**self._load_conversations(), session_id: sess})
                 
                 return {"parsed": parsed, "raw": content}
             except Exception as e:
@@ -276,21 +283,46 @@ Rules:
         }
 
     # =========================================================================
-    # [CORE 4] Standard Chat
+    # [CORE 4] Standard Chat (最終修正版：簡潔引導)
     # =========================================================================
     def chat(self, session_id: str, user_input: str, db_outfits=None, preferred_model: str = "auto"):
         self.get_or_create_session(session_id)
-        prompt = f"Act as a friendly fashion consultant. Reply in Traditional Chinese (繁體中文). User: {user_input}"
         
-        models, err = self._choose_models(preferred_model)
+        # 使用更豐富的 System Prompt 來定義 AI 的角色和行為
+        system_prompt = (
+            "您是一位專業、友善、且富有幽默感的個人服飾顧問 (Personal Stylist)。"
+            "**【語氣和長度要求】請保持親切自然，回覆可以 2-5 句，讓對話更完整，但避免冗長或推銷口吻。**"
+            "**【核心指令】在您的回覆中，請絕對不要提及任何具體的服飾名稱 (例如：毛衣、牛仔褲、T恤、裙子、鞋子、圍巾、包包)。請將重點放在穿搭的『感覺』、『風格』和『場景需求』上。**"
+            "請將您的建議融入自然的 **引導對話** 中，例如：「圖書館適合舒服又方便行動的感覺。」"
+            "保持自然對話口吻即可，不要在結尾加入按鈕或推銷式引導。"
+            "請使用 **繁體中文** 回覆，並避免使用任何 Markdown 格式符號，讓回覆更自然親切。"
+        )
+
+        prompt = f"{system_prompt}\n\n使用者輸入: {user_input}"
+        
+        models, err = self._choose_models("auto")
         if err: return err
 
         for m in models:
             try:
+                # 確保每次回覆都基於當前 prompt
                 resp = m["llm"].invoke(prompt)
-                return resp.content if hasattr(resp, "content") else str(resp)
-            except: continue
-        return "System busy."
+                
+                # 清理掉可能殘留的 Markdown/特殊字符
+                content = (resp.content if hasattr(resp, "content") else str(resp)).strip()
+                content = content.replace('*', '').replace('-', ' - ').replace('#', '').strip() 
+                
+                # 儲存對話紀錄 (這裡的 session ID 是聊天專屬的 ID)
+                sess = self.sessions[session_id]
+                sess["messages"].append({"user": user_input, "ai": content, "timestamp": datetime.now().isoformat()})
+                self._save_conversations({**self._load_conversations(), session_id: sess})
+                
+                return content
+            except Exception as e:
+                print(f"[Chat Error] {e}", file=sys.stderr)
+                continue
+        
+        return "系統繁忙中，請稍後再試試看！"
 
     def map_fields(self, *args, **kwargs): return {}
     def classify_keywords(self, *args, **kwargs): return []
