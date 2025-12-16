@@ -90,6 +90,23 @@ function updateSelectedTags() {
 const uploadArea = document.getElementById('upload-area');
 const imageInput = document.getElementById('image-input');
 const previewImage = document.getElementById('preview-image');
+const mainPreviewContainer = document.getElementById('main-preview-container');
+const removeMainImageBtn = document.getElementById('remove-main-image');
+const descriptionInput = document.getElementById('description-input');
+const descriptionCount = document.getElementById('description-count');
+const descriptionError = document.getElementById('description-error');
+const uploadLoading = document.getElementById('upload-loading');
+const uploadSuccess = document.getElementById('upload-success');
+const submitBtn = document.getElementById('submit-btn');
+const submitText = document.getElementById('submit-text');
+const submitSpinner = document.getElementById('submit-spinner');
+const uploadProgress = document.getElementById('upload-progress');
+
+// Items (multiple single-item photos)
+const itemsInput = document.getElementById('items-input');
+const chooseItemsBtn = document.getElementById('choose-items-btn');
+const itemsPreview = document.getElementById('items-preview');
+const itemsUploadArea = document.getElementById('items-upload-area');
 
 uploadArea.addEventListener('click', () => imageInput.click());
 
@@ -112,18 +129,164 @@ uploadArea.addEventListener('drop', (e) => {
   }
 });
 
+// File validation
+function validateFile(file, maxSizeMB = 5) {
+  if (!file) return { valid: false, error: '請選擇檔案' };
+  
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: '僅支援 JPG, PNG, GIF 格式' };
+  }
+  
+  const maxSize = maxSizeMB * 1024 * 1024;
+  if (file.size > maxSize) {
+    return { valid: false, error: `檔案大小不能超過 ${maxSizeMB}MB` };
+  }
+  
+  return { valid: true };
+}
+
+// Show validation error
+function showError(element, message) {
+  element.textContent = message;
+  element.classList.remove('hidden');
+}
+
+function hideError(element) {
+  element.classList.add('hidden');
+}
+
+// Description character count
+if (descriptionInput && descriptionCount) {
+  descriptionInput.addEventListener('input', () => {
+    const count = descriptionInput.value.length;
+    descriptionCount.textContent = `${count}/200`;
+    if (count > 180) {
+      descriptionCount.classList.add('text-orange-500');
+    } else {
+      descriptionCount.classList.remove('text-orange-500');
+    }
+  });
+}
+
+// Remove main image
+if (removeMainImageBtn) {
+  removeMainImageBtn.addEventListener('click', () => {
+    imageInput.value = '';
+    mainPreviewContainer.classList.add('hidden');
+  });
+}
+
+// Items selection area - click and drag/drop support like main upload
+if (itemsUploadArea && itemsInput) {
+  itemsUploadArea.addEventListener('click', () => itemsInput.click());
+  
+  itemsUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    itemsUploadArea.classList.add('bg-primary/10');
+  });
+
+  itemsUploadArea.addEventListener('dragleave', () => {
+    itemsUploadArea.classList.remove('bg-primary/10');
+  });
+
+  itemsUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    itemsUploadArea.classList.remove('bg-primary/10');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      itemsInput.files = files;
+      displayItemPreviews();
+    }
+  });
+}
+
+// Legacy button support (if still exists)
+if (chooseItemsBtn && itemsInput) {
+  chooseItemsBtn.addEventListener('click', () => itemsInput.click());
+}
+
+// Display previews for multiple item files
+if (itemsInput) {
+  itemsInput.addEventListener('change', displayItemPreviews);
+}
+
+function displayItemPreviews() {
+  if (!itemsPreview) return;
+  itemsPreview.innerHTML = '';
+  const files = itemsInput.files;
+  if (!files || files.length === 0) return;
+
+  // Validate all files first
+  const validFiles = [];
+  Array.from(files).forEach((file) => {
+    const validation = validateFile(file);
+    if (validation.valid) {
+      validFiles.push(file);
+    } else {
+      alert(`檔案 "${file.name}": ${validation.error}`);
+    }
+  });
+
+  // Update input with only valid files
+  const dt = new DataTransfer();
+  validFiles.forEach(f => dt.items.add(f));
+  itemsInput.files = dt.files;
+
+  // Display previews
+  validFiles.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const div = document.createElement('div');
+      div.className = 'relative w-full h-24 overflow-hidden rounded-lg border border-secondary-light dark:border-secondary-dark';
+      div.innerHTML = `
+        <img src="${e.target.result}" class="w-full h-24 object-cover rounded-lg" />
+        <button type="button" data-idx="${idx}" class="remove-item absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 text-xs">✕</button>
+        <div class="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-1 rounded">${idx + 1}</div>
+      `;
+      itemsPreview.appendChild(div);
+
+      // attach remove handler
+      div.querySelector('.remove-item').addEventListener('click', (ev) => {
+        ev.preventDefault();
+        removeItemAtIndex(parseInt(ev.currentTarget.dataset.idx));
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeItemAtIndex(index) {
+  const dt = new DataTransfer();
+  const files = Array.from(itemsInput.files || []);
+  files.forEach((f, i) => { if (i !== index) dt.items.add(f); });
+  itemsInput.files = dt.files;
+  displayItemPreviews();
+}
+
 imageInput.addEventListener('change', displayPreview);
 
 function displayPreview() {
   const file = imageInput.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImage.src = e.target.result;
-      previewImage.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+  if (!file) {
+    mainPreviewContainer.classList.add('hidden');
+    return;
   }
+  
+  const validation = validateFile(file);
+  if (!validation.valid) {
+    alert(validation.error);
+    imageInput.value = '';
+    mainPreviewContainer.classList.add('hidden');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewImage.src = e.target.result;
+    mainPreviewContainer.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
 }
 
 // ===== Modal Star Rating (moved from Add Comment area) =====
@@ -292,42 +455,139 @@ async function updateOutfitRating(outfitId, newRating, isNewComment) {
 document.getElementById('upload-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  // Reset previous errors
+  hideError(descriptionError);
+  
+  // Validation
   const file = imageInput.files[0];
-  const description = document.getElementById('description-input').value;
-
-  if (!file || !description) {
-    alert('請上傳照片並填寫描述');
+  const description = descriptionInput.value.trim();
+  
+  let hasError = false;
+  
+  if (!file) {
+    alert('請選擇穿搭照片');
+    hasError = true;
+  }
+  
+  if (!description) {
+    showError(descriptionError, '請填寫穿搭描述');
+    hasError = true;
+  }
+  
+  if (hasError) {
     return;
   }
 
+  // Show loading state
+  setLoadingState(true);
+  
   const formData = new FormData();
   formData.append('image', file);
   formData.append('description', description);
   formData.append('tags', selectedTags.join(','));
+  
+  // append item photos (multiple)
+  if (itemsInput && itemsInput.files && itemsInput.files.length > 0) {
+    Array.from(itemsInput.files).forEach(f => {
+      formData.append('items', f);
+    });
+  }
 
   try {
+    // Simulate progress for better UX
+    updateProgress(30);
+    
     const res = await fetch('/share/api/outfits', {
       method: 'POST',
       body: formData
     });
 
-    if (res.ok) {
-      alert('穿搭已上傳！');
-      document.getElementById('upload-form').reset();
-      previewImage.classList.add('hidden');
-      selectedTags = [];
-      document.querySelectorAll('.tag-btn').forEach(btn => {
-        btn.classList.remove('bg-primary/30', 'text-primary');
-      });
-      updateSelectedTags();
-      loadOutfits();
+    updateProgress(80);
+    
+    const result = await res.json();
+    
+    if (res.ok && result.success) {
+      updateProgress(100);
+      setTimeout(() => {
+        showSuccessState();
+        loadOutfits(); // Refresh the feed
+      }, 500);
     } else {
-      alert('上傳失敗');
+      throw new Error(result.message || '上傳失敗');
     }
   } catch (err) {
-    alert('錯誤: ' + err.message);
+    console.error('Upload error:', err);
+    setLoadingState(false);
+    alert('上傳失敗: ' + err.message);
   }
 });
+
+function setLoadingState(loading) {
+  if (loading) {
+    submitBtn.disabled = true;
+    submitText.textContent = '上傳中...';
+    submitSpinner.classList.remove('hidden');
+    uploadLoading.classList.remove('hidden');
+    updateProgress(10);
+  } else {
+    submitBtn.disabled = false;
+    submitText.textContent = '上傳穿搭';
+    submitSpinner.classList.add('hidden');
+    uploadLoading.classList.add('hidden');
+    updateProgress(0);
+  }
+}
+
+function updateProgress(percent) {
+  if (uploadProgress) {
+    uploadProgress.style.width = `${percent}%`;
+  }
+}
+
+function showSuccessState() {
+  document.getElementById('upload-form').classList.add('hidden');
+  uploadLoading.classList.add('hidden');
+  uploadSuccess.classList.remove('hidden');
+}
+
+function resetUploadForm() {
+  // Reset form
+  document.getElementById('upload-form').reset();
+  mainPreviewContainer.classList.add('hidden');
+  if (itemsPreview) itemsPreview.innerHTML = '';
+  if (itemsInput) itemsInput.value = '';
+  
+  // Reset tags
+  selectedTags = [];
+  document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.classList.remove('bg-primary/30', 'text-primary');
+  });
+  updateSelectedTags();
+  
+  // Reset character count
+  if (descriptionCount) descriptionCount.textContent = '0/200';
+  
+  // Hide errors
+  hideError(descriptionError);
+  
+  // Reset states
+  setLoadingState(false);
+  document.getElementById('upload-form').classList.remove('hidden');
+  uploadSuccess.classList.add('hidden');
+}
+
+// Upload another button
+document.getElementById('upload-another')?.addEventListener('click', () => {
+  resetUploadForm();
+});
+
+// Close modal also resets form
+if (closeUploadBtn) {
+  closeUploadBtn.addEventListener('click', () => {
+    uploadModal.classList.add('hidden');
+    setTimeout(resetUploadForm, 300); // Reset after animation
+  });
+}
 
 // ===== Load Outfits =====
 async function loadOutfits() {
@@ -809,8 +1069,8 @@ function initAddCommentForm() {
       
       // Demo 版本：本地儲存評論
       try {
-        // 獲取當前用戶名（實際應用中從登入系統獲取）
-        const username = 'CurrentUser'; // Demo 用假用戶名
+        // 獲取當前用戶名（從登入系統獲取）
+        const username = window.currentUser?.username || '用戶';
         const displayName = isAnonymous ? '匿名用戶' : username;
         
         // 創建新評論對象
