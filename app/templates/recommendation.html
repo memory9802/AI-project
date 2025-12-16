@@ -446,6 +446,8 @@
       
       function createOutfitSlide(outfit) {
         const items = outfit.items || {};
+        // 顯示隨機分數（3.9 - 5.0），一位小數
+        const scoreDisplay = Math.min(5.0, Math.random() * 1.1 + 3.9).toFixed(1);
         return `
           <div class="outfit-slide min-w-full h-full px-4">
             <div class="h-full bg-white dark:bg-secondary-dark rounded-xl shadow-lg overflow-hidden border border-secondary-light dark:border-secondary-dark">
@@ -457,7 +459,7 @@
                   </div>
                   <div class="flex items-center gap-2 bg-white dark:bg-secondary-dark px-4 py-2 rounded-full">
                     <span class="material-symbols-outlined text-primary">star</span>
-                    <span class="font-bold text-lg">${outfit.score}%</span>
+                    <span class="font-bold text-lg">${scoreDisplay}</span>
                   </div>
                 </div>
               </div>
