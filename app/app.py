@@ -23,9 +23,6 @@ def create_app():
     from blueprints.home import home_bp
     app.register_blueprint(home_bp)
 
-    from blueprints.aichat import aichat_bp
-    app.register_blueprint(aichat_bp, url_prefix='/aichat')
-
     from blueprints.login import login_bp
     app.register_blueprint(login_bp, url_prefix='/login')
 

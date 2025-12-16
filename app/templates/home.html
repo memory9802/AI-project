@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html class="light" lang="zh-TW">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>StyleRec - Your Personal Stylist</title>
 
   <!-- Tailwind CDN -->
@@ -10,9 +11,10 @@
 
   <!-- 你的自訂 JS / CSS：記得檔案已經搬到 static/ 底下 -->
   <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet" />
 
   <script id="tailwind-config">
     tailwind.config = {
@@ -52,6 +54,43 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+  <script>
+      (async () => {
+        try {
+          const res = await fetch('/login/status', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            console.log('Login status:', data);
+
+            if (data.authenticated) {
+              // 顯示使用者名稱
+              const userDisplay = document.getElementById('user-display');
+              if (userDisplay && data.user?.username) {
+                userDisplay.textContent = data.user.username;
+                userDisplay.classList.remove('hidden');
+              }
+
+              // 顯示登出區域
+              const logoutSection = document.getElementById('logout-section');
+              if (logoutSection) {
+                logoutSection.classList.remove('hidden');
+                logoutSection.classList.add('flex');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking login status:', error);
+        }
+      })();
+  </script>
+
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div class="layout-container flex h-full grow flex-col">
@@ -71,43 +110,62 @@
           <div class="hidden md:flex items-center gap-9">
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png0.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('home.index') }}">首頁</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('home.index') }}">首頁</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png1.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('wardrobe.wardrobe') }}">我的衣櫃</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors"
+                href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
             </li>
             <br>
             <li class="cs-item">
               <picture class="cs-icon-picture">
-                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon" width="40" height="40"
-                  aria-hidden="true">
+                <img class="cs-icon" src="{{ url_for('static', filename='pic/png3.png') }}" decoding="async" alt="icon"
+                  width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享 &amp; 互動</a>
+              <a class="text-sm font-medium hover:text-primary transition-colors" href="{{ url_for('share.share') }}">分享
+                &amp; 互動</a>
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <button
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-              >
-              <a href="{{ url_for('login.login') }}">
-              <span class="material-symbols-outlined text-xl">person</span>
-            </button>
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('login.login') }}"
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                title="登入">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </a>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+
+            <!-- 登出區域 -->
+            <div id="logout-section" class="hidden flex-col items-center gap-1">
+              <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span
+                  class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -121,8 +179,8 @@
               <div class="min-w-full relative">
                 <a class="block" href="#">
                   <img class="w-full h-[60vh] md:h-[80vh] object-cover"
-                       data-alt="A beautifully organized, aspirational walk-in closet"
-                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFse6ZO4JpJlsJpEWnZgeIPGzX8WXgJFRPRsdgZfVcmG1mMesScEBGaCU6OETkVTHgVAF3r3fCzBl5CJU11eh6ZFhPNPLuyxPGIDPNCc1BhYhl8EW2lVnN5-8jGkq3FK3-cMU2jfqt5UxAPNL74W-GbGGuIhBWxxzgWvyQotCKHwRF10ygSb2qVMnEsxNGdSNVp6SHd5R1XAAjx0PXnCpPw7hnbx6bE1cWWBrm8el-duSranw0fvD1purx0Ha4A92LaU_GB4Hwpgs"/>
+                    data-alt="A beautifully organized, aspirational walk-in closet"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFse6ZO4JpJlsJpEWnZgeIPGzX8WXgJFRPRsdgZfVcmG1mMesScEBGaCU6OETkVTHgVAF3r3fCzBl5CJU11eh6ZFhPNPLuyxPGIDPNCc1BhYhl8EW2lVnN5-8jGkq3FK3-cMU2jfqt5UxAPNL74W-GbGGuIhBWxxzgWvyQotCKHwRF10ygSb2qVMnEsxNGdSNVp6SHd5R1XAAjx0PXnCpPw7hnbx6bE1cWWBrm8el-duSranw0fvD1purx0Ha4A92LaU_GB4Hwpgs" />
                   <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center">
                     <div class="text-white p-4">
                       <h1 class="text-3xl md:text-5xl font-bold mb-2">數位化衣櫃</h1>
@@ -135,8 +193,8 @@
               <div class="min-w-full relative hidden">
                 <a class="block" href="#">
                   <img class="w-full h-[60vh] md:h-[80vh] object-cover"
-                       data-alt="A stylishly dressed individual looking confidently at their phone"
-                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNExtwL_CtZot3cYHNVq76-66Vge-OSQoBSDgNKW1t0TXx4FtpB-QUotV8u--0J8BefKooTX_I_CeL5SE7ekFlH9r3Fqia14yv_49fZhnUNurXytZqBtW7jvWdKdkWBphpunxkvakPl0kMr9ieJdOteM0uEw0V_735-0RTLLr7JxjV4AFu5hRS_F0nBIP6_X-Da6Y8hOQLfSojwiNjiptlCDx2wWIu-i19QUoReDipklK_YKjiR4xDoM61TGQBrOHHWVC0Fw3_FUw"/>
+                    data-alt="A stylishly dressed individual looking confidently at their phone"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNExtwL_CtZot3cYHNVq76-66Vge-OSQoBSDgNKW1t0TXx4FtpB-QUotV8u--0J8BefKooTX_I_CeL5SE7ekFlH9r3Fqia14yv_49fZhnUNurXytZqBtW7jvWdKdkWBphpunxkvakPl0kMr9ieJdOteM0uEw0V_735-0RTLLr7JxjV4AFu5hRS_F0nBIP6_X-Da6Y8hOQLfSojwiNjiptlCDx2wWIu-i19QUoReDipklK_YKjiR4xDoM61TGQBrOHHWVC0Fw3_FUw" />
                   <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center">
                     <div class="text-white p-4">
                       <h1 class="text-3xl md:text-5xl font-bold mb-2">即時推薦個人化風格</h1>
@@ -149,8 +207,8 @@
               <div class="min-w-full relative hidden">
                 <a class="block" href="#">
                   <img class="w-full h-[60vh] md:h-[80vh] object-cover"
-                       data-alt="A dynamic collage of diverse user-submitted outfits"
-                       src="https://i0.wp.com/picjumbo.com/wp-content/uploads/young-woman-taking-a-video-of-the-golden-gate-bridge.jpg?w=2210&quality=70"/>
+                    data-alt="A dynamic collage of diverse user-submitted outfits"
+                    src="https://i0.wp.com/picjumbo.com/wp-content/uploads/young-woman-taking-a-video-of-the-golden-gate-bridge.jpg?w=2210&quality=70" />
                   <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center">
                     <div class="text-white p-4">
                       <h1 class="text-3xl md:text-5xl font-bold mb-2">穿搭分享平台</h1>
@@ -167,10 +225,130 @@
               <button class="w-3 h-3 rounded-full bg-white opacity-50"></button>
             </div>
           </div>
+
+
+
+          <section class="py-20 bg-background-light dark:bg-background-dark">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">為什麼選擇 StyleRec?</h2>
+                <p class="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">我們運用先進的 AI
+                  技術，分析您的喜好與流行趨勢，為您提供精準的穿搭建議。</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div
+                  class="bg-white dark:bg-surface-dark rounded-2xl p-8 shadow-soft hover:shadow-xl transition-shadow duration-300 border border-gray-100 dark:border-gray-800 group">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">智能衣櫃分析</h3>
+                  <p class="text-gray-500 dark:text-gray-400 leading-relaxed">
+                    上傳您的衣物照片，系統將分類並數位化您的衣櫃，讓您隨時隨地掌握擁有的單品。
+                  </p>
+                </div>
+                <div
+                  class="bg-white dark:bg-surface-dark rounded-2xl p-8 shadow-soft hover:shadow-xl transition-shadow duration-300 border border-gray-100 dark:border-gray-800 group relative overflow-hidden">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">每日穿搭靈感</h3>
+                  <p class="text-gray-500 dark:text-gray-400 leading-relaxed">
+                    不知道今天穿什麼？根據天氣、場合與心情，一鍵生成穿搭方案，省去煩惱時間。
+                  </p>
+                </div>
+                <div
+                  class="bg-white dark:bg-surface-dark rounded-2xl p-8 shadow-soft hover:shadow-xl transition-shadow duration-300 border border-gray-100 dark:border-gray-800 group">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">時尚社群互動</h3>
+                  <p class="text-gray-500 dark:text-gray-400 leading-relaxed">
+                    分享您的穿搭 OOTD，探索其他時尚達人的風格，建立屬於您的時尚朋友圈。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="py-20 bg-white dark:bg-surface-dark">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div class="flex justify-between items-end mb-12">
+                <div>
+                  <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">本季熱門趨勢</h2>
+                  <p class="text-gray-500 dark:text-gray-400">探索 StyleRec 社群最受歡迎的風格搭配</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="group relative cursor-pointer">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-200">
+                    <img alt="Minimalist Style"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      src="{{ url_for('static', filename='homeimg/GU1_0.jpg') }}" />
+                  </div>
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <p class="text-white font-bold text-lg">韓系簡約</p>
+                    <p class="text-gray-200 text-sm">Minimalist Chic</p>
+                  </div>
+                </div>
+                <div class="group relative cursor-pointer">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-200">
+                    <img alt="Office Look"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      src="{{ url_for('static', filename='homeimg/GU2_0.jpg') }}" />
+                  </div>
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <p class="text-white font-bold text-lg">職場穿搭</p>
+                    <p class="text-gray-200 text-sm">Smart Casual</p>
+                  </div>
+                </div>
+                <div class="group relative cursor-pointer">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-200">
+                    <img alt="Weekend Vibes"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      src="{{ url_for('static', filename='homeimg/GU3_0.png') }}" />
+                  </div>
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <p class="text-white font-bold text-lg">週末休閒</p>
+                    <p class="text-gray-200 text-sm">Weekend Vibes</p>
+                  </div>
+                </div>
+                <div class="group relative cursor-pointer">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-200">
+                    <img alt="Vintage Style"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      src="{{ url_for('static', filename='homeimg/GU4_0.jpg') }}" />
+                  </div>
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <p class="text-white font-bold text-lg">復古風潮</p>
+                    <p class="text-gray-200 text-sm">Modern Vintage</p>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-8 text-center md:hidden">
+                <button class="text-primary font-medium border border-primary/30 rounded-full px-6 py-2">查看更多</button>
+              </div>
+            </div>
+          </section>
+          <section class="py-24 bg-background-light dark:bg-background-dark relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+            <div
+              class="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-secondary/20 dark:bg-secondary/5 rounded-full blur-3xl">
+            </div>
+              <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
+              <h2 class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 font-display">準備好升級您的風格了嗎？
+              </h2>
+              <p class="text-lg text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">
+                立即加入 StyleRec，體驗個人化穿搭推薦，讓每一天都充滿自信。
+              </p>
+              <div class="flex justify-center">
+                <a href="{{ url_for('login.login') }}"
+                  class="bg-primary hover:bg-opacity-90 text-white text-lg font-bold py-4 px-10 rounded-full shadow-lg hover:shadow-primary/50 transform hover:-translate-y-1 transition-all duration-300 inline-block">
+                  開始使用
+                </a>
+              </div>
+            </div>
+          </section>
+
+
         </main>
 
         <!-- Footer -->
-        <footer class="flex flex-col gap-8 px-5 py-10 text-center bg-secondary-light/50 dark:bg-secondary-dark/50 text-subtle-light dark:text-subtle-dark">
+        <footer
+          class="flex flex-col gap-8 px-5 py-10 text-center bg-secondary-light/50 dark:bg-secondary-dark/50 text-subtle-light dark:text-subtle-dark">
           <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
             <a class="text-sm font-medium hover:text-primary transition-colors" href="#">About Us</a>
             <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Contact</a>
@@ -178,9 +356,12 @@
             <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Privacy Policy</a>
           </div>
           <div class="flex flex-wrap justify-center gap-6">
-            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
-            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">photo_camera</span></a>
-            <a class="hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">campaign</span></a>
+            <a class="hover:text-primary transition-colors" href="#"><span
+                class="material-symbols-outlined">alternate_email</span></a>
+            <a class="hover:text-primary transition-colors" href="#"><span
+                class="material-symbols-outlined">photo_camera</span></a>
+            <a class="hover:text-primary transition-colors" href="#"><span
+                class="material-symbols-outlined">campaign</span></a>
           </div>
           <p class="text-xs">© 2025 StyleRec. All rights reserved.</p>
         </footer>
@@ -188,30 +369,6 @@
     </div>
   </section>
 
-  <!-- 浮動對話框：粉色圓形按鈕 + 內嵌機器人 iframe -->
-  <div class="dialog-container">
-    <!-- 這顆按鈕的樣式（粉色圓形）在 homecss.css 裡，JS 在 aichat.js 控制開關 -->
-    <button id="toggleBtn">
-      <span class="material-symbols-outlined">forum</span>
-    </button>
-    <div id="dialog">
-      <div class="dialog-header">
-        <h3>AI 穿搭顧問</h3>
-        <button id="closeBtn" class="close-btn">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <iframe
-        src="{{ url_for('aichat.chat') }}"
-        width="100%"
-        height="100%"
-        style="border: none;">
-      </iframe>
-    </div>
-  </div>
-
-  <!-- 控制對話框開關的 JS（也放在 static/） -->
-  <script src="{{ url_for('static', filename='aichat.js') }}"></script>
-
 </body>
+
 </html>

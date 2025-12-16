@@ -6,13 +6,9 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>StyleRec - Your Personal Stylist</title>
 
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-  <!-- 你的自訂 JS / CSS：記得檔案已經搬到 static/ 底下 -->
   <script src="{{ url_for('static', filename='imgcarousel.js') }}"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link href="{{ url_for('static', filename='homecss.css') }}" rel="stylesheet" />
 
@@ -53,40 +49,75 @@
   </style>
 </head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark"
+  data-user-id="{{ user.id if user else '' }}" data-username="{{ user.username if user else '' }}">
   <script>
-      (async () => {
-        try {
-          const res = await fetch('/login/status', { credentials: 'same-origin' });
-          const data = await res.json();
-          if (!data.authenticated) {
-            const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
-            window.location.replace(`/login/?next=${nextUrl}`);
-            return;
+    (async () => {
+      try {
+        const res = await fetch('/login/status', { 
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
           }
-          window.currentUser = data.user;
-          const userDisplay = document.getElementById('user-display');
-          if (userDisplay && data.user?.username) {
-            userDisplay.textContent = data.user.username;
-            userDisplay.classList.remove('hidden');
-          }
-        } catch (error) {
-          window.location.replace('/login/');
+        });
+        
+        if (!res.ok) {
+          console.error('Status check failed:', res.status);
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
         }
-      })();
+        
+        const data = await res.json();
+        console.log('Login status:', data);
+        
+        if (!data.authenticated) {
+          const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`/login/?next=${nextUrl}`);
+          return;
+        }
+        
+        window.currentUser = data.user;
+        sessionStorage.setItem('current_user', JSON.stringify(data.user));
+        document.body.dataset.userId = data.user?.id || '';
+        document.body.dataset.username = data.user?.username || '';
+        
+        // 顯示使用者名稱
+        const userDisplay = document.getElementById('user-display');
+        if (userDisplay && data.user?.username) {
+          userDisplay.textContent = data.user.username;
+          userDisplay.classList.remove('hidden');
+        }
+        
+        // 顯示登出區域
+        const logoutSection = document.getElementById('logout-section');
+        if (logoutSection) {
+          logoutSection.classList.remove('hidden');
+          logoutSection.classList.add('flex');
+        }
+        
+        const recommendationLink = document.getElementById('recommendation-link');
+        if (recommendationLink && recommendationLink.dataset.base && data.user?.id) {
+          recommendationLink.href = `${recommendationLink.dataset.base}?user_id=${data.user.id}&username=${encodeURIComponent(data.user.username || '')}`;
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+        const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/login/?next=${nextUrl}`);
+      }
+    })();
   </script>
+
   <section id="hero-1946">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div class="layout-container flex h-full grow flex-col">
-        <!-- Header -->
         <header
           class="flex items-center justify-between whitespace-nowrap border-b border-solid border-secondary-light dark:border-secondary-dark px-6 md:px-10 lg:px-20 py-4">
           <div class="flex items-center gap-4">
             <div class="size-6 text-primary">
               <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zm0 4h4v2h-4v-2zm-4-4h4v2H6v-2z">
-                </path>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zm0 4h4v2h-4v-2zm-4-4h4v2H6v-2z"></path>
               </svg>
             </div>
             <h2 class="text-xl font-bold tracking-tight">StyleRec</h2>
@@ -115,7 +146,8 @@
                 <img class="cs-icon" src="{{ url_for('static', filename='pic/png2.png') }}" decoding="async" alt="icon"
                   width="40" height="40" aria-hidden="true">
               </picture>
-              <a class="text-sm font-medium hover:text-primary transition-colors"
+              <a id="recommendation-link" class="text-sm font-medium hover:text-primary transition-colors"
+                data-base="{{ url_for('recommendation.recommend') }}"
                 href="{{ url_for('recommendation.recommend') }}">穿搭推薦</a>
             </li>
             <br>
@@ -129,13 +161,26 @@
             </li>
           </div>
           <div class="flex items-center gap-4">
-            <a href="{{ url_for('home.clear_user_session') }}"><span id="user-display"
-                class="hidden text-sm font-medium text-subtle-light dark:text-subtle-dark"></span></a>
-            <button
-              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"><a
-                href="{{ url_for('login.login') }}">
+            <!-- 使用者頭像與名稱 -->
+            <div class="flex flex-col items-center gap-1">
+              <a href="{{ url_for('login.login') }}"
+                class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
+                title="登入">
                 <span class="material-symbols-outlined text-xl">person</span>
-            </button>
+              </a>
+              <span id="user-display" class="hidden text-xs font-medium text-subtle-light dark:text-subtle-dark"></span>
+            </div>
+            
+            <!-- 登出區域 -->
+            <div id="logout-section" class="hidden flex-col items-center gap-1">
+              <a id="logout-icon-btn" href="{{ url_for('home.clear_user_session') }}"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-secondary-light dark:bg-secondary-dark hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                title="登出">
+                <span class="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark hover:text-red-500">logout</span>
+              </a>
+              <span class="text-xs text-subtle-light dark:text-subtle-dark">登出</span>
+            </div>
+            
             <button class="md:hidden flex items-center justify-center h-10 w-10">
               <span class="material-symbols-outlined text-2xl">menu</span>
             </button>
@@ -144,160 +189,546 @@
 
         <main class="px-6 md:px-10 lg:px-20 py-8">
           <section class="max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold mb-4">我的衣櫃 — 上傳衣物</h3>
+            <h3 class="text-2xl font-bold mb-2">我的衣櫃</h3>
 
-            <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;">
-              <div class="flex flex-wrap gap-3 items-center justify-between">
-                <input id="itemName" type="text" placeholder="衣物名稱"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                <select id="itemCategory" class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80">
-                  <option value="top">上衣</option>
-                  <option value="bottom">下身</option>
-                  <option value="shoes">鞋子</option>
-                </select>
-                <input id="color" type="text" placeholder="衣物顏色"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" />
-                <input id="occasion" type="text" placeholder="場合"
-                  class="px-3 py-2 border rounded-md w-40 bg-white dark:bg-secondary-dark/80" /></br>
-                <input id="itemImage" type="file" accept="image/*" multiple
-                  class="px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
-                <button id="addBtn" type="button"
-                  class="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳</button>
+            <form id="uploadForm" class="flex flex-col gap-4" onsubmit="return false;" enctype="multipart/form-data">
+              <div class="grid grid-cols-[1fr_auto] gap-4 items-center">
+                <!-- 左側：說明 -->
+                <div class="flex flex-col gap-4">
+                  <p class="text-sm text-subtle-light dark:text-subtle-dark">請使用右側「上傳衣物」開啟上傳視窗，預覽、選擇標籤與上傳都在視窗中操作，體驗更佳。</p>
+                </div>
+                <!-- 右側：上傳按鈕（靠右對齊） -->
+                <div class="flex items-center justify-end">
+                  <button id="open-upload-modal" type="button" class="px-3 py-2 bg-primary text-white rounded-md hover:opacity-90">上傳衣物</button>
+                </div>
               </div>
-              <label class="flex flex-col min-w-40 flex-1">
-                  
-                  <div
-                    class="grid grid-cols-10 gap-2 p-3">
-                    <input type="hidden" id="item-style-input" name="itemstyle" >
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="休閒">休閒</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="正式">正式</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="運動">運動</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="街頭">街頭</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="韓風">韓風</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="日系">日系</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="歐美">歐美</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="極簡">極簡</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="復古">復古</button>
-                    <button type="button"
-                      class="style-tag-btn px-3 py-1 rounded-full text-sm bg-secondary-light dark:bg-secondary-dark hover:bg-primary/20 transition-colors"
-                      data-style="中性">中性</button>
-                  </div>
-                </label>
             </form>
 
+            <!-- Upload Modal (moved inputs here to keep code logic intact) -->
+            <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+              <div class="bg-white dark:bg-secondary-dark rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-xl font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined">upload</span>
+                    上傳衣物
+                  </h2>
+                  <button id="close-upload-modal" class="p-1 hover:bg-secondary-light dark:hover:bg-secondary-dark rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+
+                <form id="modal-upload-form" class="space-y-4" onsubmit="return false;">
+                  <div>
+                    <label class="block text-sm font-medium mb-2">衣物名稱</label>
+                    <input id="itemName" type="text" placeholder="衣物名稱" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2">類別</label>
+                      <select id="itemCategory" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80">
+                        <option value="" selected>衣物型別</option>
+                        <option value="上身">上身</option>
+                        <option value="下著">下著</option>
+                        <option value="鞋類">鞋類</option>
+                        <option value="配件">配件</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2">顏色</label>
+                      <input id="color" type="text" placeholder="衣物顏色" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-2">上傳圖片</label>
+                    <div id="upload-area" class="border-2 border-dashed border-secondary-light dark:border-secondary-dark rounded-lg p-4 text-center cursor-pointer hover:bg-secondary-light/20 dark:hover:bg-secondary-dark/20 transition-colors">
+                      <input id="itemImage" type="file" accept="image/*" multiple class="hidden" />
+                      <span class="material-symbols-outlined text-4xl text-primary mb-2 block">image</span>
+                      <p class="text-sm font-medium">點擊或拖放圖片到此處</p>
+                      <p class="text-xs text-subtle-light dark:text-subtle-dark mt-1">支援 JPG, PNG，大小限制視後端而定</p>
+                    </div>
+                    <img id="preview-image" class="w-full rounded-lg mt-2 hidden" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-2">風格標籤</label>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="休閒">休閒</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="正式">正式</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="運動">運動</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="街頭">街頭</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="韓風">韓風</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="日系">日系</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="歐美">歐美</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="極簡">極簡</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="復古">復古</button>
+                      <button type="button" class="style-tag-btn px-3 py-1 rounded-full text-sm bg-primary/30 dark:bg-primary/40 text-text-light dark:text-text-dark hover:bg-primary/50 transition-colors" data-style="中性">中性</button>
+                    </div>
+                    <div id="selected-tags" class="flex flex-wrap gap-2"></div>
+                  </div>
+
+                  <div class="flex gap-2">
+                    <button id="modal-upload-submit" class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">上傳</button>
+                    <button id="modal-upload-cancel" class="px-4 py-2 bg-secondary-light dark:bg-secondary-dark rounded-lg hover:bg-secondary-light/80 dark:hover:bg-secondary-dark/80 transition-colors">取消</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <label for="category-filter" class="text-sm text-subtle-light dark:text-subtle-dark">篩選分類</label>
+                <select id="category-filter"
+                  class="px-3 py-2 border rounded-md bg-white dark:bg-secondary-dark/80 text-sm">
+                  <option value="all">全部</option>
+                  <option value="top">上身</option>
+                  <option value="bottom">下著</option>
+                  <option value="shoes">鞋類</option>
+                  <option value="accessories">配件</option>
+                </select>
+              </div>
+              <div id="delete-bar" class="mt-4 flex items-center justify-between">
+                  <button id="deleteBtn"
+                  class="px-5 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 transition-colors">
+                  刪除已選 (<span id="delete-count">0</span>)
+                  </button>
+                </div>
+            </div>
             <div id="gallery" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
           </section>
 
           <script>
             (function () {
-              const storageKey = 'wardrobeItems_v1';
-              let items = [];
+              const state = {
+                user: null,
+                items: [],
+                selectedStyles: new Set(),
+                selectedIds: new Set(),
+                filterCategory: 'all',
+              };
 
               const el = {
                 name: document.getElementById('itemName'),
                 category: document.getElementById('itemCategory'),
+                color: document.getElementById('color'),
                 image: document.getElementById('itemImage'),
                 addBtn: document.getElementById('addBtn'),
-                gallery: document.getElementById('gallery')
+                gallery: document.getElementById('gallery'),
+                userMeta: document.getElementById('user-meta'),
+                deleteBar: document.getElementById('delete-bar'),
+                deleteBtn: document.getElementById('deleteBtn'),
+                deleteCount: document.getElementById('delete-count'),
+                filter: document.getElementById('category-filter'),
               };
 
-              function loadItems() {
+              const styleButtons = Array.from(document.querySelectorAll('.style-tag-btn'));
+
+              const categoryAlias = {
+                top: ['top', '上衣', '上身'],
+                bottom: ['bottom', '下身', '下著', '褲'],
+                shoes: ['shoes', '鞋', '鞋類'],
+                accessories: ['accessories', '配件', '飾品'],
+              };
+
+              function matchesCategory(cat, filter) {
+                if (filter === 'all') return true;
+                const aliases = categoryAlias[filter] || [];
+                return aliases.some(alias => cat.includes(alias.toLowerCase()));
+              }
+
+              function setUserContext(user) {
+                if (!user) return;
+                state.user = user;
                 try {
-                  const raw = localStorage.getItem(storageKey);
-                  items = raw ? JSON.parse(raw) : [];
-                } catch (e) { items = []; }
+                  sessionStorage.setItem('current_user', JSON.stringify(user));
+                } catch (e) { /* ignore */ }
+                document.body.dataset.userId = user.id || '';
+                document.body.dataset.username = user.username || '';
+                if (el.userMeta) {
+                  el.userMeta.textContent = `登入者：${user.username || ''} (ID: ${user.id || ''})`;
+                }
+                const recLink = document.getElementById('recommendation-link');
+                if (recLink && recLink.dataset.base && user.id) {
+                  recLink.href = `${recLink.dataset.base}?user_id=${user.id}&username=${encodeURIComponent(user.username || '')}`;
+                }
+                const userDisplay = document.getElementById('user-display');
+                if (userDisplay && user.username) {
+                  userDisplay.textContent = user.username;
+                  userDisplay.classList.remove('hidden');
+                }
               }
 
-              function saveItems() {
-                localStorage.setItem(storageKey, JSON.stringify(items));
+              // 統一的 API 請求處理函數，自動處理 401 未登入狀態
+              async function handleApiResponse(res) {
+                if (res.status === 401) {
+                  const data = await res.json().catch(() => ({}));
+                  const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                  const redirectUrl = data.redirect || `/login/?next=${nextUrl}`;
+                  console.warn('未登入，重定向到:', redirectUrl);
+                  window.location.replace(redirectUrl);
+                  return null;
+                }
+                return res;
               }
 
-              function render() {
+              async function ensureLogin() {
+                if (state.user) return state.user;
+                if (document.body.dataset.userId) {
+                  setUserContext({
+                    id: Number(document.body.dataset.userId),
+                    username: document.body.dataset.username,
+                  });
+                  return state.user;
+                }
+                const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                const res = await fetch('/login/status', { credentials: 'same-origin' });
+                const data = await res.json();
+                if (!data.authenticated) {
+                  window.location.replace(`/login/?next=${nextUrl}`);
+                  return null;
+                }
+                setUserContext(data.user);
+                return data.user;
+              }
+
+              function renderGallery() {
                 el.gallery.innerHTML = '';
-                if (!items.length) {
-                  el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請使用上方表單上傳圖片。</p>';
+                const filtered = state.filterCategory === 'all'
+                  ? state.items
+                  : state.items.filter(item => {
+                    const cat = (item.category || '').toString().toLowerCase();
+                    return matchesCategory(cat, state.filterCategory);
+                  });
+
+                if (!filtered.length) {
+                  el.gallery.innerHTML = '<p class="text-sm text-subtle-light dark:text-subtle-dark">目前沒有衣物，請先上傳。</p>';
+                  updateDeleteButton();
                   return;
                 }
-                items.forEach(item => {
-                  const card = document.createElement('div');
-                  card.className = 'bg-white dark:bg-secondary-dark/80 rounded-md p-2 shadow-sm flex flex-col items-center text-center';
+                filtered.forEach(item => {
+                  const card = document.createElement('button');
+                  card.type = 'button';
+                  card.dataset.id = item.id;
+                  card.className = 'text-left bg-white dark:bg-secondary-dark/80 rounded-md p-3 shadow-sm flex flex-col gap-2 border border-secondary-light dark:border-secondary-dark transition hover:border-primary/50';
+
+                  const isSelected = state.selectedIds.has(item.id);
+                  applySelectionStyles(card, isSelected);
+
                   const img = document.createElement('img');
-                  img.src = item.dataUrl;
-                  img.alt = item.name || item.filename || '衣物圖片';
-                  img.className = 'w-full h-36 object-cover rounded-md mb-2';
+                  img.src = item.image_url;
+                  img.alt = item.item_name || '衣物';
+                  img.className = 'w-full h-36 object-cover rounded-md';
+
                   const title = document.createElement('div');
                   title.className = 'text-sm font-medium';
-                  title.textContent = item.name || item.filename;
+                  title.textContent = item.item_name || item.category || '衣物';
+
                   const meta = document.createElement('div');
                   meta.className = 'text-xs text-subtle-light dark:text-subtle-dark';
-                  meta.textContent = item.category || '';
-                  card.appendChild(img);
-                  card.appendChild(title);
-                  card.appendChild(meta);
+                  meta.textContent = [item.category, item.color].filter(Boolean).join(' · ');
+
+                  const tags = document.createElement('div');
+                  tags.className = 'flex flex-wrap gap-2 text-[11px] text-primary';
+                  (item.tags || '').split(',').filter(Boolean).forEach(tag => {
+                    const pill = document.createElement('span');
+                    pill.className = 'px-2 py-1 bg-primary/10 rounded-full';
+                    pill.textContent = tag.trim();
+                    tags.appendChild(pill);
+                  });
+
+                  card.append(img, title, meta, tags);
+                  card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSelect(item.id, card);
+                  });
                   el.gallery.appendChild(card);
                 });
+                updateDeleteButton();
               }
 
-              function handleFiles(files) {
-                const fileList = Array.from(files);
-                if (!fileList.length) return;
+              async function loadItems() {
+                const user = await ensureLogin();
+                if (!user) return;
+                try {
+                  const res = await fetch('/wardrobe/items', { credentials: 'same-origin' });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
+                  const data = await res.json();
+                  if (!data.success) {
+                    throw new Error(data.message || '無法取得衣物資料');
+                  }
+                  state.items = data.items || [];
+                  state.selectedIds.clear();
+                  renderGallery();
+                } catch (error) {
+                  el.gallery.innerHTML = `<p class="text-sm text-red-500">${error.message || '無法載入衣物'}</p>`;
+                  updateDeleteButton();
+                }
+              }
 
-                let remaining = fileList.length;
-                fileList.forEach(file => {
-                  const reader = new FileReader();
-                  reader.onload = function (e) {
-                    const dataUrl = e.target.result;
-                    const entry = {
-                      id: Date.now() + Math.random(),
-                      filename: file.name,
-                      name: el.name.value.trim() || file.name,
-                      category: el.category.value,
-                      dataUrl
-                    };
-                    items.unshift(entry);
-                    remaining -= 1;
-                    if (remaining === 0) {
-                      saveItems();
-                      render();
-                      // reset file input and name
-                      el.image.value = '';
-                      el.name.value = '';
-                    }
-                  };
-                  reader.readAsDataURL(file);
+              function resetForm() {
+                el.name.value = '';
+                el.color.value = '';
+                el.category.value = 'top';
+                el.image.value = '';
+                state.selectedStyles.clear();
+                styleButtons.forEach(btn => {
+                  btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                  btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                });
+                const preview = document.getElementById('preview-image');
+                if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+                const selectedTags = document.getElementById('selected-tags');
+                if (selectedTags) selectedTags.innerHTML = '';
+              }
+
+              async function handleUpload() {
+                const user = await ensureLogin();
+                if (!user) return false;
+
+                const name = el.name.value.trim();
+                const category = el.category.value.trim();
+                const color = el.color.value.trim();
+                const styles = Array.from(state.selectedStyles);
+                const files = Array.from(el.image.files || []);
+
+                if (!name || !category || !color) {
+                  alert('所有欄位都必填');
+                  return;
+                }
+                if (!styles.length) {
+                  alert('請至少選擇一個風格標籤');
+                  return;
+                }
+                if (!files.length) {
+                  alert('請至少上傳一張圖片');
+                  return;
+                }
+
+                const formData = new FormData();
+                formData.append('item_name', name);
+                formData.append('category', category);
+                formData.append('color', color);
+                formData.append('tags', styles.join(','));
+                files.forEach(file => formData.append('images', file));
+
+                try {
+                  const res = await fetch('/wardrobe/items', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    body: formData,
+                  });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
+                  const data = await res.json();
+                      if (!data.success) {
+                        throw new Error(data.message || '上傳失敗');
+                      }
+                      await loadItems();
+                      resetForm();
+                      return true;
+                } catch (error) {
+                  alert(error.message || '上傳失敗，請稍後再試');
+                  return false;
+                }
+              }
+
+              function applySelectionStyles(card, isSelected) {
+                card.classList.toggle('ring-2', isSelected);
+                card.classList.toggle('ring-[#cbb6c3]', isSelected);
+                card.classList.toggle('bg-primary/10', isSelected);
+                card.classList.toggle('border-primary', isSelected);
+              }
+
+              function toggleSelect(id, card) {
+                const numericId = Number(id);
+                if (state.selectedIds.has(numericId)) {
+                  state.selectedIds.delete(numericId);
+                  applySelectionStyles(card, false);
+                } else {
+                  state.selectedIds.add(numericId);
+                  applySelectionStyles(card, true);
+                }
+                updateDeleteButton();
+              }
+
+              function updateDeleteButton() {
+                if (!el.deleteBar) return;
+                const count = state.selectedIds.size;
+                if (el.deleteCount) {
+                  el.deleteCount.textContent = count;
+                }
+                el.deleteBar.classList.toggle('hidden', count === 0);
+              }
+
+              async function handleDelete() {
+                if (!state.selectedIds.size) return;
+                const confirmDelete = window.confirm('無法復原，是否確定刪除？');
+                if (!confirmDelete) return;
+                try {
+                  const res = await fetch('/wardrobe/items/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ ids: Array.from(state.selectedIds) }),
+                  });
+                  const handled = await handleApiResponse(res);
+                  if (!handled) return; // 已重定向
+                  
+                  const data = await res.json();
+                  if (!data.success) {
+                    throw new Error(data.message || '刪除失敗');
+                  }
+                  const deletedSet = new Set(data.deleted_ids || []);
+                  state.items = state.items.filter(item => !deletedSet.has(item.id));
+                  state.selectedIds.clear();
+                  renderGallery();
+                } catch (error) {
+                  alert(error.message || '刪除失敗，請稍後再試');
+                }
+              }
+
+              styleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const style = btn.dataset.style;
+                  if (!style) return;
+                  if (state.selectedStyles.has(style)) {
+                    state.selectedStyles.delete(style);
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                  } else {
+                    state.selectedStyles.add(style);
+                    btn.classList.remove('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                  }
+                  refreshSelectedTags();
+                });
+              });
+
+              // Modal controls and preview
+              const uploadModal = document.getElementById('upload-modal');
+              const openUploadBtn = document.getElementById('open-upload-modal');
+              const closeUploadBtn = document.getElementById('close-upload-modal');
+              const modalCancelBtn = document.getElementById('modal-upload-cancel');
+              const modalSubmitBtn = document.getElementById('modal-upload-submit');
+              const uploadArea = document.getElementById('upload-area');
+              const previewImage = document.getElementById('preview-image');
+
+              function refreshSelectedTags() {
+                const container = document.getElementById('selected-tags');
+                if (!container) return;
+                container.innerHTML = '';
+                Array.from(state.selectedStyles).forEach(tag => {
+                  const span = document.createElement('span');
+                  span.className = 'px-2 py-1 bg-primary/10 rounded-full text-sm text-primary';
+                  span.textContent = tag;
+                  container.appendChild(span);
                 });
               }
 
-              el.addBtn.addEventListener('click', () => {
-                const files = el.image.files;
-                if (!files.length) {
-                  alert('請選擇至少一張圖片來上傳。');
-                  return;
-                }
-                handleFiles(files);
-              });
+              function openModal() {
+                if (!uploadModal) return;
+                uploadModal.classList.remove('hidden');
+                uploadModal.classList.add('flex');
+                // sync tag button states
+                styleButtons.forEach(btn => {
+                  const s = btn.dataset.style;
+                  if (state.selectedStyles.has(s)) {
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.remove('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                  } else {
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'ring-2', 'ring-primary');
+                    btn.classList.add('bg-primary/30', 'dark:bg-primary/40', 'text-text-light', 'dark:text-text-dark');
+                  }
+                });
+                refreshSelectedTags();
+                const nameEl = document.getElementById('itemName'); if (nameEl) nameEl.focus();
+              }
 
-              // init
-              loadItems();
-              render();
+              function closeModal() {
+                if (!uploadModal) return;
+                uploadModal.classList.add('hidden');
+                uploadModal.classList.remove('flex');
+                if (previewImage) { previewImage.src = ''; previewImage.classList.add('hidden'); }
+                const fileInput = document.getElementById('itemImage'); if (fileInput) fileInput.value = '';
+              }
+
+              if (openUploadBtn) openUploadBtn.addEventListener('click', openModal);
+              if (el.addBtn) el.addBtn.addEventListener('click', openModal);
+              if (closeUploadBtn) closeUploadBtn.addEventListener('click', closeModal);
+              if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
+
+              if (uploadArea) {
+                uploadArea.addEventListener('click', () => document.getElementById('itemImage').click());
+                uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('bg-secondary-light/20'); });
+                uploadArea.addEventListener('dragleave', (e) => { uploadArea.classList.remove('bg-secondary-light/20'); });
+                uploadArea.addEventListener('drop', (e) => {
+                  e.preventDefault(); uploadArea.classList.remove('bg-secondary-light/20');
+                  const files = e.dataTransfer.files; if (files && files.length) {
+                    const fileInput = document.getElementById('itemImage');
+                    try { fileInput.files = files; } catch (err) {
+                      // some browsers don't allow programmatic FileList assignment; fallback by creating a DataTransfer
+                      const dt = new DataTransfer(); Array.from(files).forEach(f => dt.items.add(f)); fileInput.files = dt.files;
+                    }
+                    fileInput.dispatchEvent(new Event('change'));
+                  }
+                });
+              }
+
+              // preview handler
+              if (el.image) {
+                el.image.addEventListener('change', () => {
+                  const f = el.image.files && el.image.files[0];
+                  if (f && previewImage) {
+                    previewImage.src = URL.createObjectURL(f);
+                    previewImage.classList.remove('hidden');
+                  } else if (previewImage) {
+                    previewImage.src = '';
+                    previewImage.classList.add('hidden');
+                  }
+                });
+              }
+
+              if (modalSubmitBtn) {
+                modalSubmitBtn.addEventListener('click', async () => {
+                  const ok = await handleUpload();
+                  if (ok) {
+                    closeModal();
+                  }
+                });
+              }
+              if (el.filter) {
+                el.filter.addEventListener('change', () => {
+                  state.filterCategory = el.filter.value || 'all';
+                  state.selectedIds.clear();
+                  renderGallery();
+                });
+              }
+              if (el.deleteBtn) {
+                el.deleteBtn.addEventListener('click', handleDelete);
+              }
+
+              (async function init() {
+                // 全局防護：阻止所有表單的預設提交行為
+                document.addEventListener('submit', (e) => {
+                  e.preventDefault();
+                  console.log('Form submission prevented');
+                  return false;
+                }, true);
+
+                if (window.currentUser) {
+                  setUserContext(window.currentUser);
+                } else if (document.body.dataset.userId) {
+                  setUserContext({
+                    id: Number(document.body.dataset.userId),
+                    username: document.body.dataset.username,
+                  });
+                }
+                await loadItems();
+              })();
             })();
           </script>
         </main>
