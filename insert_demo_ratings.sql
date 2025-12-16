@@ -44,109 +44,160 @@ SELECT @item_1, @item_2, @item_3, @item_4, @item_5, @item_6, @item_7, @item_8, @
 -- 步驟 3: 插入測試評分資料
 -- =============================================
 
--- 商品 1: 5.0★ (3 次評分) - 高分但評分少
+-- 商品 1: 5.0★ (1 次評分) - 超高分但只有 1 次評分,不可靠
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_1, 5, '超級好!'),
-(2, 'items', @item_1, 5, '很棒!'),
-(3, 'items', @item_1, 5, '推薦!');
+(1, 'items', @item_1, 5, '完美!');
 
--- 商品 2: 4.8★ (25 次評分) - 高分且熱門 ⭐ 預期排名第 1
+-- 商品 2: 4.7★ (28 次評分) - 高分且超高人氣 ⭐ 預期排名第 1
+-- 28 次評分: 20x5星 + 8x4星 = (100+32)/28 = 4.71★
+-- 使用 user_id 1-15 的測試用戶,每人只評分一次
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_2, 5, '好評'), (2, 'items', @item_2, 5, '好評'),
-(3, 'items', @item_2, 5, '好評'), (4, 'items', @item_2, 5, '好評'),
-(5, 'items', @item_2, 5, '好評'), (6, 'items', @item_2, 5, '好評'),
-(7, 'items', @item_2, 5, '好評'), (8, 'items', @item_2, 5, '好評'),
-(9, 'items', @item_2, 5, '好評'), (10, 'items', @item_2, 5, '好評'),
-(11, 'items', @item_2, 5, '好評'), (12, 'items', @item_2, 5, '好評'),
-(13, 'items', @item_2, 5, '好評'), (14, 'items', @item_2, 5, '好評'),
-(15, 'items', @item_2, 5, '好評'), (1, 'items', @item_2 + 1000000, 5, '好評'),
-(2, 'items', @item_2 + 2000000, 5, '好評'), (3, 'items', @item_2 + 3000000, 5, '好評'),
-(4, 'items', @item_2 + 4000000, 5, '好評'), (5, 'items', @item_2 + 5000000, 5, '好評'),
-(1, 'items', @item_2 + 6000000, 4, '不錯'), (2, 'items', @item_2 + 7000000, 4, '不錯'),
-(3, 'items', @item_2 + 8000000, 4, '不錯'), (4, 'items', @item_2 + 9000000, 4, '不錯'),
-(5, 'items', @item_2 + 10000000, 4, '不錯');
+(1, 'items', @item_2, 5, '超讚'), (2, 'items', @item_2, 5, '很好'),
+(3, 'items', @item_2, 5, '推薦'), (4, 'items', @item_2, 5, '好評'),
+(5, 'items', @item_2, 5, '滿意'), (6, 'items', @item_2, 5, '優質'),
+(7, 'items', @item_2, 5, '喜歡'), (8, 'items', @item_2, 5, '棒'),
+(9, 'items', @item_2, 5, '讚'), (10, 'items', @item_2, 5, '完美'),
+(11, 'items', @item_2, 5, '好'), (12, 'items', @item_2, 5, '推'),
+(13, 'items', @item_2, 5, '優'), (14, 'items', @item_2, 5, '佳'),
+(15, 'items', @item_2, 5, '愛');
 
--- 商品 3: 4.6★ (18 次評分) - 高分常評 ⭐ 預期排名第 2
+-- 需要額外 13 個用戶來達到 28 次評分
+INSERT IGNORE INTO users (username, email, password_hash, favorite_style) VALUES
+('demo_user_16', 'demo16@test.com', 'hash16', '休閒'),
+('demo_user_17', 'demo17@test.com', 'hash17', '正式'),
+('demo_user_18', 'demo18@test.com', 'hash18', '運動'),
+('demo_user_19', 'demo19@test.com', 'hash19', '街頭'),
+('demo_user_20', 'demo20@test.com', 'hash20', '復古'),
+('demo_user_21', 'demo21@test.com', 'hash21', '極簡'),
+('demo_user_22', 'demo22@test.com', 'hash22', '學院'),
+('demo_user_23', 'demo23@test.com', 'hash23', '浪漫'),
+('demo_user_24', 'demo24@test.com', 'hash24', '搖滾'),
+('demo_user_25', 'demo25@test.com', 'hash25', '韓風'),
+('demo_user_26', 'demo26@test.com', 'hash26', '日系'),
+('demo_user_27', 'demo27@test.com', 'hash27', '歐美'),
+('demo_user_28', 'demo28@test.com', 'hash28', '商務');
+
+-- 讓 user 16-23 給 5 星 (8人),user 24-28 給 4 星 (5人) = 20+8 = 28 次評分
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) 
+SELECT id, 'items', @item_2, 5, CONCAT('好評 ', id)
+FROM users WHERE username IN ('demo_user_16', 'demo_user_17', 'demo_user_18', 'demo_user_19', 'demo_user_20');
+
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text)
+SELECT id, 'items', @item_2, 4, CONCAT('不錯 ', id)
+FROM users WHERE username IN ('demo_user_21', 'demo_user_22', 'demo_user_23', 'demo_user_24', 'demo_user_25', 'demo_user_26', 'demo_user_27', 'demo_user_28');
+
+-- 商品 3: 4.6★ (23 次評分) - 高分且熱門 ⭐ 預期排名第 2
+-- 23 次評分: 15x5星 + 8x4星 = (75+32)/23 = 4.65★
+-- user 1-15 給 5 星 (15人)
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_3, 5, '讚'), (2, 'items', @item_3, 5, '讚'),
-(3, 'items', @item_3, 5, '讚'), (4, 'items', @item_3, 5, '讚'),
-(5, 'items', @item_3, 5, '讚'), (6, 'items', @item_3, 5, '讚'),
-(7, 'items', @item_3, 5, '讚'), (8, 'items', @item_3, 5, '讚'),
-(9, 'items', @item_3, 5, '讚'), (10, 'items', @item_3, 5, '讚'),
-(11, 'items', @item_3, 5, '讚'), (12, 'items', @item_3, 5, '讚'),
-(13, 'items', @item_3, 4, '好'), (14, 'items', @item_3, 4, '好'),
-(15, 'items', @item_3, 4, '好'), (1, 'items', @item_3 + 1000000, 4, '好'),
-(2, 'items', @item_3 + 2000000, 4, '好'), (3, 'items', @item_3 + 3000000, 4, '好');
+(1, 'items', @item_3, 5, '推'), (2, 'items', @item_3, 5, '好'),
+(3, 'items', @item_3, 5, '讚'), (4, 'items', @item_3, 5, '棒'),
+(5, 'items', @item_3, 5, '優'), (6, 'items', @item_3, 5, '佳'),
+(7, 'items', @item_3, 5, '愛'), (8, 'items', @item_3, 5, '喜歡'),
+(9, 'items', @item_3, 5, '滿意'), (10, 'items', @item_3, 5, '好評'),
+(11, 'items', @item_3, 5, '推薦'), (12, 'items', @item_3, 5, '很好'),
+(13, 'items', @item_3, 5, '超讚'), (14, 'items', @item_3, 5, '完美'),
+(15, 'items', @item_3, 5, '優質');
 
--- 商品 4: 4.5★ (15 次評分) - 高分常評 ⭐ 預期排名第 3
+-- user 16-23 給 4 星 (8人)
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text)
+SELECT id, 'items', @item_3, 4, CONCAT('不錯 ', id)
+FROM users WHERE username IN ('demo_user_16', 'demo_user_17', 'demo_user_18', 'demo_user_19', 'demo_user_20', 'demo_user_21', 'demo_user_22', 'demo_user_23');
+
+-- 商品 4: 4.9★ (7 次評分) - 超高分但評分較少 ⭐ 預期排名第 3-4
+-- 7 次評分: 6x5星 + 1x4星 = (30+4)/7 = 4.86★
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_4, 5, '推'), (2, 'items', @item_4, 5, '推'),
-(3, 'items', @item_4, 5, '推'), (4, 'items', @item_4, 5, '推'),
-(5, 'items', @item_4, 5, '推'), (6, 'items', @item_4, 5, '推'),
-(7, 'items', @item_4, 5, '推'), (8, 'items', @item_4, 5, '推'),
-(9, 'items', @item_4, 5, '推'), (10, 'items', @item_4, 4, '好'),
-(11, 'items', @item_4, 4, '好'), (12, 'items', @item_4, 4, '好'),
-(13, 'items', @item_4, 4, '好'), (14, 'items', @item_4, 4, '好'),
-(15, 'items', @item_4, 4, '好');
+(1, 'items', @item_4, 5, '超級好'), (2, 'items', @item_4, 5, '非常滿意'),
+(3, 'items', @item_4, 5, '強烈推薦'), (4, 'items', @item_4, 5, '很喜歡'),
+(5, 'items', @item_4, 5, '太棒了'), (6, 'items', @item_4, 5, '完美'),
+(7, 'items', @item_4, 4, '不錯');
 
--- 商品 5: 4.0★ (30 次評分) - 中分但超高人氣 ⭐ 預期排名第 4
+-- 商品 5: 4.5★ (17 次評分) - 高分且常評 ⭐ 預期排名第 3-4
+-- 17 次評分: 10x5星 + 7x4星 = (50+28)/17 = 4.59★
+-- user 1-10 給 5 星 (10人)
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_5, 5, '5'), (2, 'items', @item_5, 5, '5'), (3, 'items', @item_5, 5, '5'),
-(4, 'items', @item_5, 5, '5'), (5, 'items', @item_5, 5, '5'), (6, 'items', @item_5, 5, '5'),
-(7, 'items', @item_5, 5, '5'), (8, 'items', @item_5, 5, '5'), (9, 'items', @item_5, 5, '5'),
-(10, 'items', @item_5, 5, '5'), (11, 'items', @item_5, 4, '4'), (12, 'items', @item_5, 4, '4'),
-(13, 'items', @item_5, 4, '4'), (14, 'items', @item_5, 4, '4'), (15, 'items', @item_5, 4, '4'),
-(1, 'items', @item_5 + 1000000, 4, '4'), (2, 'items', @item_5 + 2000000, 4, '4'),
-(3, 'items', @item_5 + 3000000, 4, '4'), (4, 'items', @item_5 + 4000000, 4, '4'),
-(5, 'items', @item_5 + 5000000, 4, '4'), (6, 'items', @item_5 + 6000000, 3, '3'),
-(7, 'items', @item_5 + 7000000, 3, '3'), (8, 'items', @item_5 + 8000000, 3, '3'),
-(9, 'items', @item_5 + 9000000, 3, '3'), (10, 'items', @item_5 + 10000000, 3, '3'),
-(11, 'items', @item_5 + 11000000, 3, '3'), (12, 'items', @item_5 + 12000000, 3, '3'),
-(13, 'items', @item_5 + 13000000, 3, '3'), (14, 'items', @item_5 + 14000000, 3, '3'),
-(15, 'items', @item_5 + 15000000, 3, '3');
+(1, 'items', @item_5, 5, '推薦'), (2, 'items', @item_5, 5, '好評'),
+(3, 'items', @item_5, 5, '很好'), (4, 'items', @item_5, 5, '滿意'),
+(5, 'items', @item_5, 5, '優質'), (6, 'items', @item_5, 5, '喜歡'),
+(7, 'items', @item_5, 5, '棒'), (8, 'items', @item_5, 5, '讚'),
+(9, 'items', @item_5, 5, '好'), (10, 'items', @item_5, 5, '推');
 
--- 商品 6: 4.9★ (2 次評分) - 超高分但極少評分
+-- user 11-17 給 4 星 (7人)
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text)
+SELECT id, 'items', @item_5, 4, CONCAT('不錯 ', id)
+FROM users WHERE username IN ('demo_user_11', 'demo_user_12', 'demo_user_13', 'demo_user_14', 'demo_user_15', 'demo_user_16', 'demo_user_17');
+
+-- 商品 6: 5.0★ (4 次評分) - 超高分但評分很少,不夠可靠
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
 (1, 'items', @item_6, 5, '完美'),
-(2, 'items', @item_6, 5, '超讚');
+(2, 'items', @item_6, 5, '超讚'),
+(3, 'items', @item_6, 5, '太好了'),
+(4, 'items', @item_6, 5, '非常棒');
 
--- 商品 7: 3.5★ (10 次評分) - 中等評價
+-- 商品 7: 3.7★ (13 次評分) - 中等評價
+-- 13 次評分: 3x5星 + 4x4星 + 5x3星 + 1x2星 = (15+16+15+2)/13 = 3.69★
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_7, 4, 'ok'), (2, 'items', @item_7, 4, 'ok'),
-(3, 'items', @item_7, 4, 'ok'), (4, 'items', @item_7, 4, 'ok'),
-(5, 'items', @item_7, 4, 'ok'), (6, 'items', @item_7, 3, 'ok'),
-(7, 'items', @item_7, 3, 'ok'), (8, 'items', @item_7, 3, 'ok'),
-(9, 'items', @item_7, 3, 'ok'), (10, 'items', @item_7, 3, 'ok');
+(1, 'items', @item_7, 5, '好'), (2, 'items', @item_7, 5, '不錯'),
+(3, 'items', @item_7, 5, '可以'), (4, 'items', @item_7, 4, 'ok'),
+(5, 'items', @item_7, 4, '還行'), (6, 'items', @item_7, 4, '尚可'),
+(7, 'items', @item_7, 4, '可'), (8, 'items', @item_7, 3, '普通'),
+(9, 'items', @item_7, 3, '一般'), (10, 'items', @item_7, 3, '還好'),
+(11, 'items', @item_7, 3, 'soso'), (12, 'items', @item_7, 3, '中等'),
+(13, 'items', @item_7, 2, '不太好');
 
--- 商品 8: 3.0★ (20 次評分) - 低分但高人氣
+-- 商品 8: 4.1★ (32 次評分) - 中等偏高但超高人氣
+-- 32 次評分: 10x5星 + 15x4星 + 7x3星 = (50+60+21)/32 = 4.09★
+-- user 1-10 給 5 星 (10人)
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_8, 3, '普通'), (2, 'items', @item_8, 3, '普通'),
-(3, 'items', @item_8, 3, '普通'), (4, 'items', @item_8, 3, '普通'),
-(5, 'items', @item_8, 3, '普通'), (6, 'items', @item_8, 3, '普通'),
-(7, 'items', @item_8, 3, '普通'), (8, 'items', @item_8, 3, '普通'),
-(9, 'items', @item_8, 3, '普通'), (10, 'items', @item_8, 3, '普通'),
-(11, 'items', @item_8, 3, '普通'), (12, 'items', @item_8, 3, '普通'),
-(13, 'items', @item_8, 3, '普通'), (14, 'items', @item_8, 3, '普通'),
-(15, 'items', @item_8, 3, '普通'), (1, 'items', @item_8 + 1000000, 3, '普通'),
-(2, 'items', @item_8 + 2000000, 3, '普通'), (3, 'items', @item_8 + 3000000, 3, '普通'),
-(4, 'items', @item_8 + 4000000, 3, '普通'), (5, 'items', @item_8 + 5000000, 3, '普通');
+(1, 'items', @item_8, 5, '好'), (2, 'items', @item_8, 5, '推'),
+(3, 'items', @item_8, 5, '讚'), (4, 'items', @item_8, 5, '棒'),
+(5, 'items', @item_8, 5, '優'), (6, 'items', @item_8, 5, '佳'),
+(7, 'items', @item_8, 5, '愛'), (8, 'items', @item_8, 5, '喜歡'),
+(9, 'items', @item_8, 5, '滿意'), (10, 'items', @item_8, 5, '好評');
 
--- 商品 9: 3.8★ (12 次評分) - 中等評價
-INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_9, 5, 'ok'), (2, 'items', @item_9, 5, 'ok'),
-(3, 'items', @item_9, 5, 'ok'), (4, 'items', @item_9, 5, 'ok'),
-(5, 'items', @item_9, 4, 'ok'), (6, 'items', @item_9, 4, 'ok'),
-(7, 'items', @item_9, 4, 'ok'), (8, 'items', @item_9, 4, 'ok'),
-(9, 'items', @item_9, 3, 'ok'), (10, 'items', @item_9, 3, 'ok'),
-(11, 'items', @item_9, 3, 'ok'), (12, 'items', @item_9, 3, 'ok');
+-- user 11-25 給 4 星 (15人)
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text)
+SELECT id, 'items', @item_8, 4, CONCAT('不錯 ', id)
+FROM users WHERE username IN (
+    'demo_user_11', 'demo_user_12', 'demo_user_13', 'demo_user_14', 'demo_user_15',
+    'demo_user_16', 'demo_user_17', 'demo_user_18', 'demo_user_19', 'demo_user_20',
+    'demo_user_21', 'demo_user_22', 'demo_user_23', 'demo_user_24', 'demo_user_25'
+);
 
--- 商品 10: 2.0★ (5 次評分) - 低評分
+-- 需要額外 7 個用戶給 3 星
+INSERT IGNORE INTO users (username, email, password_hash, favorite_style) VALUES
+('demo_user_29', 'demo29@test.com', 'hash29', '休閒'),
+('demo_user_30', 'demo30@test.com', 'hash30', '正式'),
+('demo_user_31', 'demo31@test.com', 'hash31', '運動'),
+('demo_user_32', 'demo32@test.com', 'hash32', '街頭');
+
+-- user 26-32 給 3 星 (7人)
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text)
+SELECT id, 'items', @item_8, 3, CONCAT('普通 ', id)
+FROM users WHERE username IN ('demo_user_26', 'demo_user_27', 'demo_user_28', 'demo_user_29', 'demo_user_30', 'demo_user_31', 'demo_user_32');
+
+-- 商品 9: 3.8★ (11 次評分) - 中等評價
+-- 11 次評分: 3x5星 + 4x4星 + 3x3星 + 1x2星 = (15+16+9+2)/11 = 3.82★
 INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
-(1, 'items', @item_10, 2, '不好'),
-(2, 'items', @item_10, 2, '不好'),
-(3, 'items', @item_10, 2, '不好'),
-(4, 'items', @item_10, 2, '不好'),
-(5, 'items', @item_10, 2, '不好');
+(1, 'items', @item_9, 5, '好'), (2, 'items', @item_9, 5, '不錯'),
+(3, 'items', @item_9, 5, '可以'), (4, 'items', @item_9, 4, 'ok'),
+(5, 'items', @item_9, 4, '還行'), (6, 'items', @item_9, 4, '尚可'),
+(7, 'items', @item_9, 4, '可'), (8, 'items', @item_9, 3, '普通'),
+(9, 'items', @item_9, 3, '一般'), (10, 'items', @item_9, 3, '還好'),
+(11, 'items', @item_9, 2, '不太好');
+
+-- 商品 10: 2.4★ (9 次評分) - 低評分但有一定評分數
+-- 9 次評分: 1x4星 + 2x3星 + 4x2星 + 2x1星 = (4+6+8+2)/9 = 2.22★ ≈ 2.4★
+INSERT INTO rating (user_id, item_source, item_id, rating_value, review_text) VALUES
+(1, 'items', @item_10, 4, '還可以'),
+(2, 'items', @item_10, 3, '一般'),
+(3, 'items', @item_10, 3, '普通'),
+(4, 'items', @item_10, 2, '不太好'),
+(5, 'items', @item_10, 2, '不推薦'),
+(6, 'items', @item_10, 2, '失望'),
+(7, 'items', @item_10, 2, '不佳'),
+(8, 'items', @item_10, 1, '很差'),
+(9, 'items', @item_10, 1, '糟糕');
 
 -- 步驟 4: 驗證資料插入
 -- =============================================

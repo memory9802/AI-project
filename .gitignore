@@ -83,4 +83,4 @@ visual_*.py
 init/archived/*.sql
 
 # 其他 過多註記說明書
-DATABASE_UPDATE_COMPLETE.md
+*.md
